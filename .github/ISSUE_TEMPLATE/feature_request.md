@@ -1,19 +1,19 @@
 ---
 name: Feature request
 about: Mandatory
-title: "[feat]"
+title: "[feat] "
 labels: 'Priority: ⭑⭑⭑, [Reason] Todo: ⌨, Status: ▶'
 assignees: ''
 
 ---
 
-**제목**
-* context
+**내용**
+* 여기다가 내용 쓰세용
 
 </br></br>
 
 **태스크**
 
-- [ ] context
-- [ ] context
-- [ ] context
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용

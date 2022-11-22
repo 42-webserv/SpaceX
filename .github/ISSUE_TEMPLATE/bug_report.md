@@ -1,19 +1,19 @@
 ---
 name: Bug report
 about: Bug
-title: "[bug]"
+title: "[bug] "
 labels: "Priority: ⭑⭑⭑, [Reason] Bug: \U0001F41E, Status: ▶"
 assignees: ''
 
 ---
 
-**제목**
-* context
+**내용**
+* 여기다가 기술 하세용
 
 </br></br>
 
 **태스크**
 
-- [ ] context
-- [ ] context
-- [ ] context
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용
