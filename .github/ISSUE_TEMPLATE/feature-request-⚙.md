@@ -1,14 +1,14 @@
 ---
-name: Bug report
-about: Bug
-title: "[bug] "
-labels: "Priority: ⭑⭑⭑, [Reason] Bug: \U0001F41E, Status: ▶"
+name: Feature request ⚙
+about: Mandatory ⚙
+title: "[⚙] "
+labels: 'Priority: ⭑⭑⭑, [Reason] Todo: ⌨, Status: ▶'
 assignees: ''
 
 ---
 
 **내용**
-* 여기다가 기술 하세용
+* 여기다가 내용 쓰세용
 
 </br></br>
 
