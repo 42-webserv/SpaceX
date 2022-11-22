@@ -38,7 +38,6 @@ int main( int argc, char **argv ) {
 
 	while ( 1 ) {
 		/* 메시지 입력 전송*/
-
 		fputs( "전송할 메시지를 입력하세요(q to quit) : ", stdout );
 		fgets( message, BUFSIZE, stdin );
 		if ( !strcmp( message, "q\n" ) ) {

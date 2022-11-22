@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 
 #define SERVER_PORT 12345
 
@@ -18,7 +19,7 @@ int main( int argc, char *argv[] ) {
 	int                 listen_sd, max_sd, new_sd;
 	int                 desc_ready, end_server = FALSE;
 	int                 close_conn;
-	char                buffer[80];
+	char                buffer[10];
 	struct sockaddr_in6 addr;
 	struct timeval      timeout;
 	fd_set              master_set, working_set;
@@ -49,7 +50,8 @@ int main( int argc, char *argv[] ) {
 	/* the incoming connections will also be nonblocking since   */
 	/* they will inherit that state from the listening socket.   */
 	/*************************************************************/
-	rc = ioctl( listen_sd, FIONBIO, (char *)&on );
+
+	rc = fcntl( listen_sd, F_SETFL, O_NONBLOCK );
 	if ( rc < 0 ) {
 		perror( "ioctl() failed" );
 		close( listen_sd );
@@ -229,6 +231,8 @@ int main( int argc, char *argv[] ) {
 						/**********************************************/
 						len = rc;
 						printf( "  %d bytes received\n", len );
+						write( STDOUT_FILENO, buffer, len );
+						printf( "\n" );
 
 						/**********************************************/
 						/* Echo the data back to the client           */
