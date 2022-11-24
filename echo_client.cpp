@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 
 #define BUFSIZE 1024
+#define SERV_IP "127.0.0.1"
+#define SERV_PORT 1234
 
 void error_handling( char *message );
 
@@ -16,10 +18,10 @@ int main( int argc, char **argv ) {
 	char               message[BUFSIZE];
 	int                str_len;
 
-	if ( argc != 3 ) {
-		printf( "Usage : %s <IP> <port> \n", argv[0] );
-		exit( 1 );
-	}
+	// if ( argc != 3 ) {
+	// 	printf( "Usage : %s <IP> <port> \n", argv[0] );
+	// 	exit( 1 );
+	// }
 
 	sock = socket( PF_INET, SOCK_STREAM, 0 ); /* 서버 접속을 위한 소켓 생성 */
 	if ( sock == -1 ) {
@@ -28,8 +30,8 @@ int main( int argc, char **argv ) {
 
 	memset( &serv_addr, 0, sizeof( serv_addr ) );
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr( argv[1] );
-	serv_addr.sin_port = htons( atoi( argv[2] ) );
+	serv_addr.sin_addr.s_addr = inet_addr( SERV_IP );
+	serv_addr.sin_port = htons( SERV_PORT );
 
 	if ( connect( sock, (struct sockaddr *)&serv_addr, sizeof( serv_addr ) ) ==
 		 -1 ) {
