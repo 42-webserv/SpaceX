@@ -11,16 +11,6 @@
 #include <iostream>
 
 #define SERVER_PORT 1234
-#define RESPONSE_HEADER                                                       \
-	"HTTP/1.1 404 Not Found\ncontent-encoding: gzip\ncontent-type: "          \
-	"text/html; charset=utf-8\ndate: Thu, 24 Nov 2022 10:43:12 GMT\nserver: " \
-	"nginx\nstatus: 404 Not Found\nvary: Accept-Encoding\nvary: "             \
-	"Origin,Accept-Encoding\nx-rack-cors: preflight-hit; "                    \
-	"no-origin\r\n\r\n<!DOCTYPE html><html><head><title>The page you were "   \
-	"looking "                                                                \
-	"for doesn't exist (404)</title><style>h1{font-weight: normal; "          \
-	"margin: 50px auto;}</style></head><body><h1>Seems like your page "       \
-	"doesn't exist anymore !</h1><script></script></body></html>"
 
 void error_exit( std::string err, int ( *func )( int ), int fd ) {
 	if ( func != NULL ) {
@@ -143,7 +133,7 @@ int main() {
 				} else if ( clients.find( curr_event->ident ) !=
 							clients.end() ) {
 					/* read data from client */
-					char buf[1024];
+					char buf[10];
 					int  n = read( curr_event->ident, buf, sizeof( buf ) );
 
 					if ( n <= 0 ) {
@@ -163,6 +153,8 @@ int main() {
 				/* send data to client */
 				std::map<int, std::string>::iterator it =
 					clients.find( curr_event->ident );
+				std::cout << "write" << std::endl;
+				usleep( 500000 );
 				if ( it != clients.end() ) {
 					if ( clients[curr_event->ident] != "" ) {
 						int n;
@@ -173,8 +165,7 @@ int main() {
 							std::cerr << "client write error!" << std::endl;
 							disconnect_client( curr_event->ident, clients );
 						} else {
-							write( curr_event->ident, RESPONSE_HEADER,
-								   strlen( RESPONSE_HEADER ) );
+							// write( curr_event->ident, "ok", strlen( "ok" ) );
 							clients[curr_event->ident].clear();
 						}
 					}

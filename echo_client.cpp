@@ -45,6 +45,9 @@ int main( int argc, char **argv ) {
 		if ( !strcmp( message, "q\n" ) ) {
 			break;
 		}
+		// char *message =
+		// 	"GET / HTTP/1.1\r\nHost: localhost:1234\r\nUser-Agent: "
+		// 	"Go-http-client/1.1\r\nAccept-Encoding: gzip\r\n\r\n";
 		write( sock, message, strlen( message ) );
 
 		/* 메시지 수신 출력 */

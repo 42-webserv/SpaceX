@@ -9,7 +9,7 @@
 #include <string.h>
 #include <fcntl.h>
 
-#define SERVER_PORT 12345
+#define SERVER_PORT 1234
 
 #define TRUE 1
 #define FALSE 0
