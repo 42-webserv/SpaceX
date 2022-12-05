@@ -102,6 +102,9 @@ spx_http_syntax_start_line_request(char *buf)
 
             case spx_method: // check method
                 find_end_pos = strchr(&buf[pos], ' ');
+                if (find_end_pos == NULL) {
+                    return error_("invalid method _ can't find SP : request line");
+                }
                 method_len = find_end_pos - &buf[pos];
 
                 switch (method_len) {
