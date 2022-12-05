@@ -2,7 +2,7 @@
 
 namespace {
 
-    static uint32_t  syntax_table[] = {
+    uint32_t  usual[] = {
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
 
                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
@@ -20,7 +20,7 @@ namespace {
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
-    static uint32_t  start_line[] = {
+    uint32_t  start_line[] = {
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
 
                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
@@ -38,23 +38,18 @@ namespace {
         0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
-    static uint32_t  start_line_invalid[] = {
-        0x00002400, /* 0000 0000 0000 0000  0010 0100 0000 0000 */
+	u_char  lowcase[] = {
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0-\0\0" "0123456789\0\0\0\0\0\0"
+		"\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
+		"\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+	};
 
-                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-        0x00000000, /* 0111 1111 1111 1111  0011 0111 1101 0110 */
 
-                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-        0x00000000, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-
-                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
-        0x00000000, /* 0111 1111 1111 1111  1111 1111 1111 1111 */
-
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-    };
 
     inline status
     error_(const char *msg)
@@ -91,22 +86,23 @@ spx_http_syntax_start_line_request(char *buf)
 
     state = spx_start;
     pos = 0;
-    while (state != spx_done)   {
-        switch (state) {
 
+    while (state != spx_done)   {
+
+        switch (state) {
 
             case spx_start: // start
                 if (syntax_(start_line, buf[pos])) {
                     state = spx_method;
                     // add request start point to struct
-                    find_end_pos = strchr(&buf[pos], ' ');
-                    method_len = find_end_pos - &buf[pos];
                     break;
                 }
-                return error_("invalid line start");
+                return error_("invalid line start : request line");
 
 
             case spx_method: // check method
+                find_end_pos = strchr(&buf[pos], ' ');
+                method_len = find_end_pos - &buf[pos];
 
                 switch (method_len) {
                     case 3:
@@ -152,7 +148,7 @@ spx_http_syntax_start_line_request(char *buf)
                 }
 
                 if (state != spx_sp_before_uri) {
-                    return error_("invalid method");
+                    return error_("invalid method : request line");
                 }
                 pos += method_len;
                 break;
@@ -164,7 +160,7 @@ spx_http_syntax_start_line_request(char *buf)
                     state = spx_uri_start;
                     break;
                 }
-                return error_("invalid uri or method");
+                return error_("invalid uri or method : request line");
 
 
             case spx_uri_start:
@@ -173,11 +169,11 @@ spx_http_syntax_start_line_request(char *buf)
                     state = spx_uri;
                     break;
                 }
-                return error_("invalid uri start");
+                return error_("invalid uri start : request line");
 
 
             case spx_uri: // start uri check
-                if (syntax_(syntax_table, buf[pos])) {
+                if (syntax_(usual, buf[pos])) {
                     ++pos;
                     break;
                 }
@@ -190,7 +186,7 @@ spx_http_syntax_start_line_request(char *buf)
                         break;
                 }
                 if (state != spx_sp_before_http) {
-                    return error_("invalid uri");
+                    return error_("invalid uri : request line");
                 }
                 break;
 
@@ -201,11 +197,14 @@ spx_http_syntax_start_line_request(char *buf)
                     state = spx_proto;
                     break;
                 }
-                return error_("invalid proto or uri");
+                return error_("invalid proto or uri : request line");
 
 
             case spx_proto:
                 find_end_pos = strchr(&buf[pos], '\r');
+				if (find_end_pos == NULL) {
+					return error_("invalid proto _ can't find CR : request line");
+				}
                 http_len = find_end_pos - &buf[pos];
 
                 switch (http_len)   {
@@ -239,24 +238,164 @@ spx_http_syntax_start_line_request(char *buf)
                     default:
                         break;
                 }
-
                 if (state != spx_almost_done) {
-                    return error_("invalid http version or end line");
+                    return error_("invalid http version or end line : request line");
                 }
                 pos += http_len;
                 break;
+
 
             case spx_almost_done:
                 if (buf[pos] == '\r' && buf[pos + 1] == '\n')   {
                     state = spx_done;
                     break;
                 }
-                return error_("invalid request end line");
+                return error_("invalid request end line : request line");
+
 
             default:
-                return error_("invalid request");
+                return error_("invalid request : request line");
 
         }
+    }
+    return spx_ok;
+}
+
+status
+spx_http_syntax_header_line(char *buf)
+{
+    size_t  pos, key_len, value_len, temp;
+	u_char c;
+	char   *find_end_pos;
+    enum    {
+        spx_start = 0,
+        spx_key,
+        spx_sp_before_value,
+        spx_value,
+		spx_sp_after_value,
+        spx_almost_done,
+        spx_done
+    } state;
+
+    pos = 0;
+    state = spx_start;
+
+    while (state != spx_done)   {
+
+        switch (state) {
+
+            case spx_start:
+
+				switch (buf[pos]) {
+					case '\r':
+						state = spx_almost_done;
+						++pos;
+						break;
+
+					default:
+						state = spx_key;
+				}
+				break;
+
+
+            case spx_key:
+				c = lowcase[buf[pos]];
+
+				if (c)	{
+					// add key to struct or class_member
+					++pos;
+					break;
+				}
+
+				switch (buf[pos]) {
+					case ':':
+						state = spx_sp_before_value;
+						++pos;
+						break;
+
+					case '\r':
+						if (buf[pos + 1] == '\n') {
+							return spx_ok;
+						}
+						++pos;
+						state = spx_almost_done;
+
+					case '\n':
+						return error_("invalid value NL found : header");
+
+					default:
+						break;
+				}
+				if (state != spx_sp_before_value) {
+					return error_("invalid key : header");
+				}
+
+
+            case spx_sp_before_value:
+
+				switch (buf[pos]) {
+					case ' ':
+						++pos;
+						break;
+
+					default:
+						state = spx_value;
+				}
+				break;
+
+
+            case spx_value:
+
+				switch (buf[pos]) {
+					case ' ':
+						state = spx_sp_after_value;
+						++pos;
+						break;
+
+					case '\r':
+						if (buf[pos + 1] == '\n') {
+							return spx_ok;
+						}
+						++pos;
+						state = spx_almost_done;
+
+					case '\n':
+						return error_("invalid value NL found : header");
+
+					case '\0':
+						return error_("invalid value NULL : header");
+
+					default:
+						++pos;
+				}
+				break;
+
+
+            case spx_sp_after_value:
+
+				switch (buf[pos]) {
+					case ' ':
+						++pos;
+						break;
+
+					default:
+						state = spx_value;
+				}
+				break;
+
+
+            case spx_almost_done:
+				if (buf[pos] == '\n')   {
+					state = spx_done;
+					break;
+				}
+				return error_("invalid header end line : header");
+
+
+            default:
+                return error_("invalid key or value : header");
+        }
+
     }
     return spx_ok;
 }

@@ -13,6 +13,11 @@ int main(int argc, char **argv){
 		temp[len + 1] = '\n';
 		temp[len + 2] = '\0';
 		std::cout << spx_http_syntax_start_line_request(temp) << std::endl;
+		std::cout << std::endl;
+		std::cout << spx_http_syntax_header_line(temp) << std::endl;
 		free (temp);
+
+
+
 	}
 }
