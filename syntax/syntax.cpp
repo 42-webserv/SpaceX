@@ -88,19 +88,19 @@ spx_http_syntax_start_line_request(char *buf)
     pos = 0;
 
     while (state != spx_done)   {
-
         switch (state) {
 
-            case spx_start: // start
+            case spx_start: {
                 if (syntax_(start_line, buf[pos])) {
                     state = spx_method;
                     // add request start point to struct
                     break;
                 }
                 return error_("invalid line start : request line");
+            }
 
 
-            case spx_method: // check method
+            case spx_method: {// check method
                 find_end_pos = strchr(&buf[pos], ' ');
                 if (find_end_pos == NULL) {
                     return error_("invalid method _ can't find SP : request line");
@@ -149,33 +149,35 @@ spx_http_syntax_start_line_request(char *buf)
                     default:
                         break;
                 }
-
                 if (state != spx_sp_before_uri) {
                     return error_("invalid method : request line");
                 }
                 pos += method_len;
                 break;
+            }
 
 
-            case spx_sp_before_uri: // check uri
+            case spx_sp_before_uri: {// check uri
                 if (buf[pos] == ' ') {
                     ++pos;
                     state = spx_uri_start;
                     break;
                 }
                 return error_("invalid uri or method : request line");
+            }
 
 
-            case spx_uri_start:
+            case spx_uri_start: {
                 if (buf[pos] == '/') {
                     ++pos;
                     state = spx_uri;
                     break;
                 }
                 return error_("invalid uri start : request line");
+            }
 
 
-            case spx_uri: // start uri check
+            case spx_uri:   {// start uri check
                 if (syntax_(usual, buf[pos])) {
                     ++pos;
                     break;
@@ -192,26 +194,26 @@ spx_http_syntax_start_line_request(char *buf)
                     return error_("invalid uri : request line");
                 }
                 break;
+            }
 
 
-            case spx_sp_before_http:
+            case spx_sp_before_http:    {
                 if (buf[pos] == ' ') {
                     ++pos;
                     state = spx_proto;
                     break;
                 }
                 return error_("invalid proto or uri : request line");
+            }
 
 
-            case spx_proto:
+            case spx_proto: {
                 find_end_pos = strchr(&buf[pos], '\r');
 				if (find_end_pos == NULL) {
 					return error_("invalid proto _ can't find CR : request line");
 				}
                 http_len = find_end_pos - &buf[pos];
-
                 switch (http_len)   {
-
                     case 4:
                         if (strncmp(&buf[pos], "HTTP", 4) == 0) {
                             // add proto to struct or class_member
@@ -246,14 +248,16 @@ spx_http_syntax_start_line_request(char *buf)
                 }
                 pos += http_len;
                 break;
+            }
 
 
-            case spx_almost_done:
+            case spx_almost_done:   {
                 if (buf[pos] == '\r' && buf[pos + 1] == '\n')   {
                     state = spx_done;
                     break;
                 }
                 return error_("invalid request end line : request line");
+            }
 
 
             default:
@@ -284,11 +288,9 @@ spx_http_syntax_header_line(char *buf)
     state = spx_start;
 
     while (state != spx_done)   {
-
         switch (state) {
 
-            case spx_start:
-
+            case spx_start: {
 				switch (buf[pos]) {
 					case '\r':
 						state = spx_almost_done;
@@ -299,17 +301,16 @@ spx_http_syntax_header_line(char *buf)
 						state = spx_key;
 				}
 				break;
+            }
 
 
-            case spx_key:
+            case spx_key:   {
 				c = lowcase[buf[pos]];
-
 				if (c)	{
 					// add key to struct or class_member
 					++pos;
 					break;
 				}
-
 				switch (buf[pos]) {
 					case ':':
 						state = spx_sp_before_value;
@@ -332,10 +333,10 @@ spx_http_syntax_header_line(char *buf)
 				if (state != spx_sp_before_value) {
 					return error_("invalid key : header");
 				}
+            }
 
 
-            case spx_sp_before_value:
-
+            case spx_sp_before_value:   {
 				switch (buf[pos]) {
 					case ' ':
 						++pos;
@@ -345,10 +346,10 @@ spx_http_syntax_header_line(char *buf)
 						state = spx_value;
 				}
 				break;
+            }
 
 
-            case spx_value:
-
+            case spx_value: {
 				switch (buf[pos]) {
 					case ' ':
 						state = spx_sp_after_value;
@@ -372,10 +373,10 @@ spx_http_syntax_header_line(char *buf)
 						++pos;
 				}
 				break;
+            }
 
 
-            case spx_sp_after_value:
-
+            case spx_sp_after_value:    {
 				switch (buf[pos]) {
 					case ' ':
 						++pos;
@@ -385,14 +386,16 @@ spx_http_syntax_header_line(char *buf)
 						state = spx_value;
 				}
 				break;
+            }
 
 
-            case spx_almost_done:
+            case spx_almost_done:   {
 				if (buf[pos] == '\n')   {
 					state = spx_done;
 					break;
 				}
 				return error_("invalid header end line : header");
+            }
 
 
             default:
