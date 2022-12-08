@@ -217,7 +217,6 @@ status
 spx_http_syntax_header_line(string const & line)
 {
     string::const_iterator  it = line.cbegin();
-    size_t                  temp_len;
     uint8_t                 c;
     enum    {
         spx_start = 0,
