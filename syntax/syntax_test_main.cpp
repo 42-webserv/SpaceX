@@ -1,21 +1,25 @@
 #include "syntax.hpp"
+#include <iostream>
 
 int main(int argc, char **argv){
 
 	if (argc == 2)
 	{
-		char *temp;
-		int len = strlen(argv[1]);
+		// char *temp;
+		// int len = strlen(argv[1]);
 
-		temp = (char *)malloc(sizeof(char) * (len + 3));
-		memcpy(temp, argv[1], len);
-		temp[len] = '\r';
-		temp[len + 1] = '\n';
-		temp[len + 2] = '\0';
+		// temp = (char *)malloc(sizeof(char) * (len + 3));
+		// memcpy(temp, argv[1], len);
+		// temp[len] = '\r';
+		// temp[len + 1] = '\n';
+		// temp[len + 2] = '\0';
+
+		std::string temp(argv[1]);
+		temp.append("\r\n\r\n");
 		std::cout << spx_http_syntax_start_line_request(temp) << std::endl;
-		std::cout << std::endl;
-		std::cout << spx_http_syntax_header_line(temp) << std::endl;
-		free (temp);
+		// std::cout << std::endl;
+		// std::cout << spx_http_syntax_header_line(temp) << std::endl;
+		// free (temp);
 
 
 
