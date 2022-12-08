@@ -1,4 +1,5 @@
 #include "syntax.hpp"
+#include <_types/_uint8_t.h>
 #include <iostream>
 
 using namespace std;
@@ -70,9 +71,9 @@ namespace {
 }
 
 status
-spx_http_syntax_start_line_request(std::string const & line)
+spx_http_syntax_start_line_request(string const & line)
 {
-    std::string::const_iterator  it = line.cbegin();
+    string::const_iterator  it = line.cbegin();
     size_t                  temp_len;
     enum    {
         spx_start = 0,
@@ -212,142 +213,127 @@ spx_http_syntax_start_line_request(std::string const & line)
     return spx_ok;
 }
 
-// status
-// spx_http_syntax_header_line(char *buf)
-// {
-//     size_t  pos, key_len, value_len, temp;
-// 	 u_char c;
-// 	char   *find_end_pos;
-//     enum    {
-//         spx_start = 0,
-//         spx_key,
-//         spx_sp_before_value,
-//         spx_value,
-// 		spx_sp_after_value,
-//         spx_almost_done,
-//         spx_done
-//     } state;
+status
+spx_http_syntax_header_line(string const & line)
+{
+    string::const_iterator  it = line.cbegin();
+    size_t                  temp_len;
+    uint8_t                 c;
+    enum    {
+        spx_start = 0,
+        spx_key,
+        spx_sp_before_value,
+        spx_value,
+		spx_sp_after_value,
+        spx_almost_done,
+        spx_done
+    } state;
 
-//     pos = 0;
-//     state = spx_start;
+    state = spx_start;
 
-//     while (state != spx_done)   {
-//         switch (state) {
+    while (state != spx_done)   {
+        switch (state) {
 
-//             case spx_start: {
-// 				switch (buf[pos]) {
-// 					case '\r':
-// 						state = spx_almost_done;
-// 						++pos;
-// 						break;
+            case spx_start: {
+				switch (*it) {
+					case '\r':
+						++it;
+						state = spx_almost_done;
+						break;
 
-// 					default:
-// 						state = spx_key;
-// 				}
-// 				break;
-//             }
-
-
-//             case spx_key:   {
-// 				c = lowcase[buf[pos]];
-// 				if (c)	{
-// 					// add key to struct or class_member
-// 					++pos;
-// 					break;
-// 				}
-// 				switch (buf[pos]) {
-// 					case ':':
-// 						state = spx_sp_before_value;
-// 						++pos;
-// 						break;
-
-// 					case '\r':
-// 						if (buf[pos + 1] == '\n') {
-// 							return spx_ok;
-// 						}
-// 						++pos;
-// 						state = spx_almost_done;
-//                         break ;
-
-// 					case '\n':
-// 						return error_("invalid value NL found : header");
-
-// 					default:
-// 						break;
-// 				}
-// 				if (state != spx_sp_before_value) {
-// 					return error_("invalid key : header");
-// 				}
-//             }
+					default:
+						state = spx_key;
+				}
+				break;
+            }
 
 
-//             case spx_sp_before_value:   {
-// 				switch (buf[pos]) {
-// 					case ' ':
-// 						++pos;
-// 						break;
+            case spx_key:   {
+				c = lowcase[*it];
+				if (c)	{
+					// add key to struct or class_member
+					++it;
+					break;
+				}
+				switch (*it) {
+					case ':':
+						state = spx_sp_before_value;
+						++it;
+						break;
 
-// 					default:
-// 						state = spx_value;
-// 				}
-// 				break;
-//             }
-
-
-//             case spx_value: {
-// 				switch (buf[pos]) {
-// 					case ' ':
-// 						state = spx_sp_after_value;
-// 						++pos;
-// 						break;
-
-// 					case '\r':
-// 						if (buf[pos + 1] == '\n') {
-// 							return spx_ok;
-// 						}
-// 						++pos;
-// 						state = spx_almost_done;
-//                         break ;
-
-// 					case '\n':
-// 						return error_("invalid value NL found : header");
-
-// 					case '\0':
-// 						return error_("invalid value NULL : header");
-
-// 					default:
-// 						++pos;
-// 				}
-// 				break;
-//             }
+					case '\r':
+						++it;
+						state = spx_almost_done;
+                        break ;
+				}
+				if (state != spx_sp_before_value) {
+					return error_("invalid key : header");
+				}
+                break;
+            }
 
 
-//             case spx_sp_after_value:    {
-// 				switch (buf[pos]) {
-// 					case ' ':
-// 						++pos;
-// 						break;
+            case spx_sp_before_value:   {
+				switch (*it) {
+					case ' ':
+						++it;
+						break;
 
-// 					default:
-// 						state = spx_value;
-// 				}
-// 				break;
-//             }
-
-
-//             case spx_almost_done:   {
-// 				if (buf[pos] == '\n')   {
-// 					state = spx_done;
-// 					break;
-// 				}
-// 				return error_("invalid header end line : header");
-//             }
+					default:
+						state = spx_value;
+				}
+				break;
+            }
 
 
-//             default:
-//                 return error_("invalid key or value : header");
-//         }
+            case spx_value: {
+				switch (*it) {
+					case ' ':
+						state = spx_sp_after_value;
+						++it;
+						break;
 
-//     }
-//     return spx_ok;
-// }
+					case '\r':
+						++it;
+						state = spx_almost_done;
+                        break ;
+
+					case '\0':
+						return error_("invalid value NULL : header");
+
+					default:
+						++it;
+				}
+				break;
+            }
+
+
+            case spx_sp_after_value:    {
+				switch (*it) {
+					case ' ':
+						++it;
+						break;
+
+					default:
+						state = spx_value;
+				}
+				break;
+            }
+
+
+            case spx_almost_done:   {
+				if (*it == '\n')   {
+					state = spx_done;
+					break;
+				}
+				return error_("invalid header end line : header");
+            }
+
+
+            default:
+                return error_("invalid key or value : header");
+        }
+
+    }
+    return spx_ok;
+}

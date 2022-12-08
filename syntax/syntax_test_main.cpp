@@ -17,8 +17,8 @@ int main(int argc, char **argv){
 		std::string temp(argv[1]);
 		temp.append("\r\n\r\n");
 		std::cout << spx_http_syntax_start_line_request(temp) << std::endl;
-		// std::cout << std::endl;
-		// std::cout << spx_http_syntax_header_line(temp) << std::endl;
+		std::cout << std::endl;
+		std::cout << spx_http_syntax_header_line(temp) << std::endl;
 		// free (temp);
 
 
