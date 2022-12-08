@@ -55,7 +55,7 @@ namespace {
     error_(const char *msg)
     {
         // throw(msg);
-        std::cerr << msg << std::endl;
+       cerr << msg << endl;
         return spx_error;
     }
 
@@ -68,30 +68,28 @@ namespace {
 }
 
 status
-spx_http_syntax_start_line_request(char *buf)
+spx_http_syntax_start_line_request(string const & line)
 {
-    size_t  pos, method_len, http_len;
-    char   *find_end_pos;
+    string::const_iterator  it = line.cbegin();
+    size_t                  temp_len;
     enum    {
         spx_start = 0,
         spx_method,
         spx_sp_before_uri,
         spx_uri_start,
         spx_uri,
-        spx_sp_before_http,
         spx_proto,
         spx_almost_done,
         spx_done
     } state;
 
     state = spx_start;
-    pos = 0;
 
     while (state != spx_done)   {
         switch (state) {
 
             case spx_start: {
-                if (syntax_(start_line, buf[pos])) {
+                if (syntax_(start_line, *it)) {
                     state = spx_method;
                     // add request start point to struct
                     break;
@@ -101,65 +99,58 @@ spx_http_syntax_start_line_request(char *buf)
 
 
             case spx_method: {// check method
-                find_end_pos = strchr(&buf[pos], ' ');
-                if (find_end_pos == NULL) {
-                    return error_("invalid method _ can't find SP : request line");
-                }
-                method_len = find_end_pos - &buf[pos];
-
-                switch (method_len) {
+                temp_len = line.find(' ', 0);
+                switch (temp_len) {
                     case 3:
-                        if (strncmp(&buf[pos], "GET", 3) == 0) {
+                        if (line.find("GET", 0, 3) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                             break;
                         }
-                        if (strncmp(&buf[pos], "PUT", 3) == 0) {
+                        if (line.find("PUT", 0, 3) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                         }
                         break;
 
                     case 4:
-                        if (strncmp(&buf[pos], "POST", 4) == 0) {
+                        if (line.find("POST", 0, 4) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                             break;
                         }
-                        if (strncmp(&buf[pos], "HEAD", 4) == 0) {
+                        if (line.find("HEAD", 0, 4) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                         }
                         break;
 
                     case 6:
-                        if (strncmp(&buf[pos], "DELETE", 6) == 0) {
+                        if (line.find("DELETE", 0, 5) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                         }
                         break;
 
                     case 7:
-                        if (strncmp(&buf[pos], "OPTIONS", 7) == 0) {
+                        if (line.find("OPTIONS", 0, 5) != string::npos) {
                             // add method to struct or class_member
                             state = spx_sp_before_uri;
                         }
                         break;
 
-                    default:
-                        break;
+                    }
                 }
                 if (state != spx_sp_before_uri) {
                     return error_("invalid method : request line");
                 }
-                pos += method_len;
+                it += temp_len;
                 break;
-            }
 
 
             case spx_sp_before_uri: {// check uri
-                if (buf[pos] == ' ') {
-                    ++pos;
+                if (*it == ' ') {
+                    ++it;
                     state = spx_uri_start;
                     break;
                 }
@@ -168,8 +159,8 @@ spx_http_syntax_start_line_request(char *buf)
 
 
             case spx_uri_start: {
-                if (buf[pos] == '/') {
-                    ++pos;
+                if (*it == '/') {
+                    ++it;
                     state = spx_uri;
                     break;
                 }
@@ -178,56 +169,24 @@ spx_http_syntax_start_line_request(char *buf)
 
 
             case spx_uri:   {// start uri check
-                if (syntax_(usual, buf[pos])) {
-                    ++pos;
+                if (syntax_(usual, *it)) {
+                    ++it;
                     break;
                 }
-                switch (buf[pos]) {
-                    case ' ':
-                        state = spx_sp_before_http;
-                        break;
-
-                    default:
-                        break;
-                }
-                if (state != spx_sp_before_http) {
-                    return error_("invalid uri : request line");
-                }
-                break;
-            }
-
-
-            case spx_sp_before_http:    {
-                if (buf[pos] == ' ') {
-                    ++pos;
+                if (*it == ' ') {
+                    ++it;
                     state = spx_proto;
                     break;
                 }
-                return error_("invalid proto or uri : request line");
+                return error_("invalid uri : request line");
             }
 
 
             case spx_proto: {
-                find_end_pos = strchr(&buf[pos], '\r');
-				if (find_end_pos == NULL) {
-					return error_("invalid proto _ can't find CR : request line");
-				}
-                http_len = find_end_pos - &buf[pos];
+                temp_len = line.find('\r', it - line.cbegin(), 8);
+
+                // http_len = find_end_pos - &buf[pos];
                 switch (http_len)   {
-                    case 4:
-                        if (strncmp(&buf[pos], "HTTP", 4) == 0) {
-                            // add proto to struct or class_member
-                            state = spx_almost_done;
-                        }
-                        break;
-
-                    case 5:
-                        if (strncmp(&buf[pos], "HTTP/", 5) == 0) {
-                            // add proto to struct or class_member
-                            state = spx_almost_done;
-                        }
-                        break;
-
                     case 8:
                         if (strncmp(&buf[pos], "HTTP/1.1", 8) == 0) {
                             // add proto to struct or class_member
@@ -323,6 +282,7 @@ spx_http_syntax_header_line(char *buf)
 						}
 						++pos;
 						state = spx_almost_done;
+                        break ;
 
 					case '\n':
 						return error_("invalid value NL found : header");
@@ -362,6 +322,7 @@ spx_http_syntax_header_line(char *buf)
 						}
 						++pos;
 						state = spx_almost_done;
+                        break ;
 
 					case '\n':
 						return error_("invalid value NL found : header");

@@ -6,7 +6,9 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
-#include <iostream>
+#include <string>
+
+using namespace std;
 
 typedef enum {
     spx_error = -1,
@@ -15,10 +17,10 @@ typedef enum {
 }   status;
 
 status
-spx_http_syntax_start_line_request(char *buf);
+spx_http_syntax_start_line_request(string const & line);
 
 status
-spx_http_syntax_header_line(char *buf);
+spx_http_syntax_header_line(string const & line);
 
 
 #endif
