@@ -1,0 +1,22 @@
+---
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: Align
+AlignConsecutiveDeclarations: "true"
+AlwaysBreakAfterDefinitionReturnType: All
+BreakBeforeBraces: Attach
+Language: Cpp
+NamespaceIndentation: All
+SortIncludes: 'true'
+Standard: Cpp03
+TabWidth: "4"
+IndentWidth: "4"
+UseTab: Always
+
+...
+
+# AlignConsecutiveDeclarations: "true"
+# #AllowShortIfStatementsOnASingleLine: Never
+# ConstructorInitializerIndentWidth: "4"
+# SpacesInParentheses: "true"
+# SpacesInSquareBrackets: "false"
+# UseTab: ForContinuationAndIndentation
