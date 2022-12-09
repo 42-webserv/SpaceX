@@ -54,8 +54,8 @@ namespace {
 	}
 
 	inline int
-	syntax_(const uint32_t table[8], int c) {
-		return (table[((unsigned char)c >> 5)] & (1U << (((unsigned char)c) & 0x1f)));
+	syntax_(const uint32_t table[8], uint8_t c) {
+		return (table[(c >> 5)] & (1U << (c & 0x1f)));
 	}
 
 } // namespace
