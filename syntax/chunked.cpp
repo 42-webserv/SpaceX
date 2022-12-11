@@ -24,28 +24,24 @@
 
 /*
 chunked-body   = *chunk
-                   last-chunk
-                   trailer-section
-                   CRLF
+				   last-chunk
+				   trailer-section
+				   CRLF
 
   chunk          = chunk-size [ chunk-ext ] CRLF
-                   chunk-data CRLF
+				   chunk-data CRLF
   chunk-size     = 1*HEXDIG
   last-chunk     = 1*("0") [ chunk-ext ] CRLF
 
   chunk-data     = 1*OCTET ; a sequence of chunk-size octets
 */
 
-
 /*
    chunk-ext      = *( BWS ";" BWS chunk-ext-name
-                       [ BWS "=" BWS chunk-ext-val ] )
+					   [ BWS "=" BWS chunk-ext-val ] )
 
    chunk-ext-name = token
    chunk-ext-val  = token / quoted-string
 */
 
 // trailer-section   = *( field-line CRLF )
-
-
-status

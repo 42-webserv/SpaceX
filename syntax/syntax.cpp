@@ -1,6 +1,8 @@
 #include "syntax.hpp"
 #include <_types/_uint8_t.h>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 namespace {
 
@@ -32,6 +34,32 @@ namespace {
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 	};
 
+	uint32_t chunk_ext_[] = {
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+		0xd7fffffe, /*	1101 0111 1111 1111  1111 1111 1111 1110 */
+		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
+		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
+		0x7fffffff, /*	0111 1111 1111 1111  1111 1111 1111 1111 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+	};
+
+	uint8_t chunked_[] = {
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"0123456789\0\0\0\0\0\0"
+		"\0ABCDEFGHIJKLMNOPQRSTUVWXYZ\0\0\0\0\0"
+		"\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+	};
+
 	uint8_t lowcase_[] = {
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0-\0\0"
@@ -61,7 +89,7 @@ namespace {
 } // namespace
 
 status
-spx_http_syntax_start_line_request(std::string const& line) {
+spx_http_syntax_start_line(std::string const& line) {
 	std::string::const_iterator it = line.begin();
 	size_t						temp_len;
 	enum {
@@ -126,12 +154,12 @@ spx_http_syntax_start_line_request(std::string const& line) {
 				}
 				break;
 			}
-		}
 			if (state != spx_sp_before_uri) {
 				return error_("invalid method : request line");
 			}
 			it += temp_len;
 			break;
+		}
 
 		case spx_sp_before_uri: { // check uri
 			if (*it == ' ') {
@@ -295,4 +323,304 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 	}
 	return spx_ok;
+}
+
+status
+spx_chunked_syntax_start_line(std::string const& line,
+							  uint16_t&			 chunk_size,
+							  std::string&		 chunk_ext,
+							  uint8_t&			 ext_count) {
+	std::string::const_iterator it = line.begin();
+	std::string					count_size;
+	std::stringstream			ss;
+	enum {
+		spx_start = 0,
+		spx_size,
+		spx_BWS_before_ext,
+		spx_semicolon,
+		spx_BWS_before_ext_name,
+		spx_ext_name,
+		spx_BWS_after_ext_name,
+		spx_equal,
+		spx_BWS_before_ext_value,
+		spx_ext_value,
+		spx_almost_done,
+		spx_last_chunk,
+		spx_done
+	} state;
+
+	state = spx_start;
+	while (state != spx_done) {
+		switch (state) {
+		case spx_start: {
+			if (chunked_[*it]) {
+				state = spx_size;
+				if (*it == '0') {
+					state = spx_last_chunk;
+				}
+				break;
+			}
+			return error_("invalid chunked start line : chunked_start");
+		}
+
+		case spx_last_chunk: {
+			switch (*it) {
+			case '0':
+				++it;
+				break;
+			case '\r':
+				++it;
+				state = spx_almost_done;
+				break;
+			case ' ':
+				state = spx_BWS_before_ext;
+				break;
+			case ';':
+				state = spx_semicolon;
+				break;
+			default:
+				return error_("invalid chunked start line last chunk : chunked_start");
+			}
+			break;
+		}
+
+		case spx_size: {
+			if (chunked_[*it]) {
+				count_size.push_back(*it);
+				++it;
+				break;
+			}
+			switch (*it) {
+			case ';':
+				state = spx_semicolon;
+				break;
+			case ' ':
+				++it;
+				state = spx_BWS_before_ext;
+				break;
+			case '\r':
+				++it;
+				state = spx_almost_done;
+				break;
+			default:
+				return error_("invalid chunked start line number : chunked_start");
+			}
+			break;
+		}
+
+		case spx_BWS_before_ext: {
+			switch (*it) {
+			case ' ':
+				++it;
+				break;
+			case ';':
+				state = spx_semicolon;
+				break;
+			default:
+				return error_("invalid chunked start line : BWS_before_ext : chunked_start");
+			}
+			break;
+		}
+
+		case spx_semicolon: {
+			++it;
+			state = spx_BWS_before_ext_name;
+			break;
+		}
+
+		case spx_BWS_before_ext_name: {
+			switch (*it) {
+			case ' ':
+				++it;
+				break;
+			case '\r':
+				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
+			case '=':
+				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
+			case ';':
+				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
+			default:
+				state = spx_ext_name;
+			}
+			break;
+		}
+
+		case spx_ext_name: {
+			switch (*it) {
+			case ' ':
+				state = spx_BWS_after_ext_name;
+				break;
+			case '=':
+				state = spx_equal;
+				break;
+			case '\r':
+				state = spx_almost_done;
+				chunk_ext.push_back(';');
+				++ext_count;
+				++it;
+				break;
+			case ';':
+				state = spx_semicolon;
+				chunk_ext.push_back(';');
+				++ext_count;
+				break;
+			default:
+				chunk_ext.push_back(*it);
+				++it;
+				break;
+			}
+			break;
+		}
+
+		case spx_BWS_after_ext_name: {
+			switch (*it) {
+			case ' ':
+				++it;
+				break;
+			case '=':
+				state = spx_equal;
+				break;
+			case ';':
+				state = spx_semicolon;
+				chunk_ext.push_back(';');
+				++ext_count;
+				break;
+			case '\r':
+				state = spx_almost_done;
+				chunk_ext.push_back(';');
+				++ext_count;
+				++it;
+				break;
+			default:
+				return error_("invalid chunked start line : BWS_after_ext_name : chunked_start");
+			}
+			break;
+		}
+
+		case spx_equal: {
+			chunk_ext.push_back('=');
+			++it;
+			state = spx_BWS_before_ext_value;
+			break;
+		}
+
+		case spx_BWS_before_ext_value: {
+			switch (*it) {
+			case ' ':
+				++it;
+				break;
+			case '\r':
+				return error_("invalid chunked start line : BWS_before_ext_value : chunked_start");
+			default:
+				state = spx_ext_value;
+			}
+			break;
+		}
+
+		case spx_ext_value: {
+			switch (*it) {
+			case ' ':
+				state = spx_BWS_before_ext;
+				chunk_ext.push_back(';');
+				++ext_count;
+				break;
+			case ';':
+				state = spx_semicolon;
+				chunk_ext.push_back(*it);
+				++ext_count;
+				break;
+			case '\r':
+				state = spx_almost_done;
+				chunk_ext.push_back(';');
+				++ext_count;
+				++it;
+				break;
+			default:
+				chunk_ext.push_back(*it);
+				it++;
+			}
+			break;
+		}
+
+		case spx_almost_done: {
+			if (*it == '\n') {
+				state = spx_done;
+				ss << std::hex << count_size;
+				ss >> chunk_size;
+				break;
+			}
+			return error_("invalid chunked end line : chunked_start");
+		}
+
+		default:
+			return error_("invalid chunked_start : chunked_start");
+		}
+	}
+
+	return spx_ok;
+}
+
+status
+spx_chunked_syntax_data_line(std::string const& line,
+							 uint16_t&			chunk_size,
+							 std::string&		data_store,
+							 std::string&		trailer_section,
+							 uint8_t&			trailer_count) {
+	std::string::const_iterator it = line.begin();
+	enum {
+		spx_start = 0,
+		spx_data_read,
+		spx_trailer_start,
+		spx_trailer_line,
+		spx_trailer_almost_done,
+		spx_trailer_done,
+		spx_almost_done,
+		spx_done
+	} state;
+
+	state = spx_start;
+
+	if (chunk_size == 0) {
+		while (state != spx_done) {
+		}
+		return spx_ok;
+	} else {
+		while (state != spx_done) {
+			switch (state) {
+			case spx_start: {
+				data_store.push_back(*it);
+				--chunk_size;
+				++it;
+				state = spx_data_read;
+				break;
+			}
+
+			case spx_data_read: {
+				while (chunk_size > 0) {
+					data_store.push_back(*it);
+					++it;
+					--chunk_size;
+					if (it == line.end()) {
+						state = spx_almost_done;
+						break;
+					}
+				}
+				break;
+			}
+
+			case spx_almost_done: {
+				if (chunk_size == 0) {
+					if (*it == '\r' && *(it + 1) == '\n') {
+						state = spx_done;
+						break;
+					}
+					return error_("invalid chunked end line : chunked_data");
+				}
+				if (chunk_size != 0)
+					return spx_need_more;
+			}
+			}
+		}
+		return spx_ok;
+	}
 }
