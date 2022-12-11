@@ -45,3 +45,12 @@ chunked-body   = *chunk
 */
 
 // trailer-section   = *( field-line CRLF )
+
+// field - line = field - name ":" OWS field - value OWS
+
+//  token          = 1*tchar
+
+//   tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+//                  / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+//                  / DIGIT / ALPHA
+//                  ; any VCHAR, except delimiters

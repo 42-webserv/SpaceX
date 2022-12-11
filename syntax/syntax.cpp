@@ -248,26 +248,18 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 
 		case spx_key: {
-			c = lowcase_[*it];
+			c = lowcase_[static_cast<uint8_t>(*it)];
 			if (c) {
 				// add key to struct or class_member
 				++it;
 				break;
 			}
-			switch (*it) {
-			case ':':
+			if (*it == ':') {
 				state = spx_sp_before_value;
 				++it;
 				break;
-			case '\r':
-				++it;
-				state = spx_almost_done;
-				break;
 			}
-			if (state != spx_sp_before_value) {
-				return error_("invalid key : header");
-			}
-			break;
+			return error_("invalid key : header");
 		}
 
 		case spx_sp_before_value: {
@@ -276,6 +268,7 @@ spx_http_syntax_header_line(std::string const& line) {
 				++it;
 				break;
 			default:
+				// need to check syntax,  rfc token? or some other syntax?
 				state = spx_value;
 			}
 			break;
@@ -353,7 +346,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 	while (state != spx_done) {
 		switch (state) {
 		case spx_start: {
-			if (chunked_[*it]) {
+			if (chunked_[static_cast<uint8_t>(*it)]) {
 				state = spx_size;
 				if (*it == '0') {
 					state = spx_last_chunk;
@@ -385,7 +378,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 		}
 
 		case spx_size: {
-			if (chunked_[*it]) {
+			if (chunked_[static_cast<uint8_t>(*it)]) {
 				count_size.push_back(*it);
 				++it;
 				break;
@@ -568,50 +561,63 @@ spx_chunked_syntax_data_line(std::string const& line,
 							 uint8_t&			trailer_count) {
 	std::string::const_iterator it = line.begin();
 	enum {
-		spx_start = 0,
-		spx_data_read,
-		spx_trailer_start,
-		spx_trailer_line,
-		spx_trailer_almost_done,
-		spx_trailer_done,
-		spx_almost_done,
-		spx_done
-	} state;
+		last_start = 0,
+		last_trailer_start,
+		last_trailer_line,
+		last_trailer_almost_done,
+		last_trailer_done,
+		last_almost_done,
+		last_done
+	} state_last_chunk;
 
-	state = spx_start;
+	enum {
+		data_start = 0,
+		data_read,
+		data_almost_done,
+		data_done
+	} state_data;
 
 	if (chunk_size == 0) {
-		while (state != spx_done) {
+		state_last_chunk = last_start;
+		while (state_last_chunk != data_done) {
+			// add field-line syntax check
+			// same as header field line = field-line
+			switch (state_last_chunk) {
+
+			default:
+				return error_("invalid chunked : chunked_data");
+			}
 		}
 		return spx_ok;
 	} else {
-		while (state != spx_done) {
-			switch (state) {
-			case spx_start: {
+		state_data = data_start;
+		while (state_data != data_done) {
+			switch (state_data) {
+			case data_start: {
 				data_store.push_back(*it);
 				--chunk_size;
 				++it;
-				state = spx_data_read;
+				state_data = data_read;
 				break;
 			}
 
-			case spx_data_read: {
+			case data_read: {
 				while (chunk_size > 0) {
 					data_store.push_back(*it);
 					++it;
 					--chunk_size;
 					if (it == line.end()) {
-						state = spx_almost_done;
+						state_data = data_almost_done;
 						break;
 					}
 				}
 				break;
 			}
 
-			case spx_almost_done: {
+			case data_almost_done: {
 				if (chunk_size == 0) {
 					if (*it == '\r' && *(it + 1) == '\n') {
-						state = spx_done;
+						state_data = data_done;
 						break;
 					}
 					return error_("invalid chunked end line : chunked_data");
@@ -619,6 +625,9 @@ spx_chunked_syntax_data_line(std::string const& line,
 				if (chunk_size != 0)
 					return spx_need_more;
 			}
+
+			default:
+				return error_("invalid chunked_data : chunked_data");
 			}
 		}
 		return spx_ok;
