@@ -102,7 +102,6 @@ spx_http_syntax_start_line_request(std::string const& line) {
 					state = spx_sp_before_uri;
 				}
 				break;
-
 			case 4:
 				if (line.find("POST", 0, 4) != std::string::npos) {
 					// add method to struct or class_member
@@ -114,14 +113,12 @@ spx_http_syntax_start_line_request(std::string const& line) {
 					state = spx_sp_before_uri;
 				}
 				break;
-
 			case 6:
 				if (line.find("DELETE", 0, 5) != std::string::npos) {
 					// add method to struct or class_member
 					state = spx_sp_before_uri;
 				}
 				break;
-
 			case 7:
 				if (line.find("OPTIONS", 0, 5) != std::string::npos) {
 					// add method to struct or class_member
@@ -216,7 +213,6 @@ spx_http_syntax_header_line(std::string const& line) {
 				++it;
 				state = spx_almost_done;
 				break;
-
 			default:
 				state = spx_key;
 			}
@@ -235,7 +231,6 @@ spx_http_syntax_header_line(std::string const& line) {
 				state = spx_sp_before_value;
 				++it;
 				break;
-
 			case '\r':
 				++it;
 				state = spx_almost_done;
@@ -252,7 +247,6 @@ spx_http_syntax_header_line(std::string const& line) {
 			case ' ':
 				++it;
 				break;
-
 			default:
 				state = spx_value;
 			}
@@ -265,15 +259,12 @@ spx_http_syntax_header_line(std::string const& line) {
 				state = spx_sp_after_value;
 				++it;
 				break;
-
 			case '\r':
 				++it;
 				state = spx_almost_done;
 				break;
-
 			case '\0':
 				return error_("invalid value NULL : header");
-
 			default:
 				++it;
 			}
@@ -285,7 +276,6 @@ spx_http_syntax_header_line(std::string const& line) {
 			case ' ':
 				++it;
 				break;
-
 			default:
 				state = spx_value;
 			}
