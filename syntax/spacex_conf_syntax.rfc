@@ -3,36 +3,67 @@
 // set test config
 
 *	Choose the port and host of each ’server’
++ listen [IP:]PORT;
 
 *	Setup the server_names or not.
++ server_name name1 [name2] [...];
 
 *	The first server for a host:port will be the default for this host:port
 ( we will add default_server keyword)
++ listen [IP:]PORT default_server;
 
 *	Setup default error pages.
++ error_page 404 [40X] [...] /custom_40X.html;
 
 *	Limit client body size.
++ client_max_body_size DIGIT(B, K, M);
+
+
 
 *	Setup routes with one or multiple of the following rules/configuration
-*	Define a list of accepted HTTP methods for the route.
-*	Define a HTTP redirection
-*	Define a directory or a file from where the file should be searched
-*	Turn on or off directory listing.
-*	◦ Set a default file to answer if the request is a directory.
-location / {
++ location URI_RULE {}
 
-}
+*	Define a list of accepted HTTP methods for the route.
++ accepted_methods "^(GET|POST|PUT|DELETE|...)$";
+
+*	Define a HTTP redirection
++ redirect URI;
+(+ proxy_pass URI)
+
+*	Define a directory or a file from where the file should be searched
++ root DIR;
+
+*	Turn on or off directory listing.
++ autoindex on|off; ( how to build the file list view?? )
+
+*	◦ Set a default file to answer if the request is a directory.
++ index FILE1 [FILE2] [...];
+
+
+
 
 
 *	 Execute CGI based on certain file extension (for example .php).
 Make the route able to accept uploaded files and configure where they should
 be saved.
-∗	Do you wonder what a CGI is?
++ location /[URI/].php$ {}
++ location /[URI/].py$ {}
++ location /upload {
+	cgi_pass CGI_FILE_NAME;
+	cgi_save SHOULD_BE_SAVED;
+	path_info(cgi_path) FULL_PATH_CGI(can be relative path); (same logic root)
+}
+
 ∗	Because you won’t call the CGI directly, use the full path as PATH_INFO.
++ path_info FULL_PATH_CGI(can be relative path);
+
 ∗	Just remember that, for chunked request, your server needs to unchunked
 it and the CGI will expect EOF as end of the body.
++ chunked로 받고, cgi에게 줄떄 EOF 마무리 하기
+
 ∗	Same things for the output of the CGI. If no content_length is returned
 from the CGI, EOF will mark the end of the returned data.
+
 ∗	Your program should call the CGI with the file requested as first argument.
+
 ∗	The CGI should be run in the correct directory for relative path file access.
-∗	Your server should work with one CGI (php-CGI, Python, and so forth).
