@@ -1,5 +1,4 @@
 #include "syntax.hpp"
-#include <_types/_uint8_t.h>
 #include <iostream>
 #include <sstream>
 #include <string>
