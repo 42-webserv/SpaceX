@@ -42,4 +42,7 @@ spx_chunked_syntax_data_line(std::string const& line,
 							 std::string&		trailer_section,
 							 uint8_t&			trailer_count);
 
+status
+spx_config_syntax_server();
+
 #endif
