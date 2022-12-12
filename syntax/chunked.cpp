@@ -48,6 +48,13 @@ chunked-body   = *chunk
 
 // field - line = field - name ":" OWS field - value OWS
 
+// field-name     = token
+//   field-value    = *field-content
+//   field-content  = field-vchar
+//                    [ 1*( SP / HTAB / field-vchar ) field-vchar ]
+//   field-vchar    = VCHAR / obs-text
+//   obs-text       = %x80-FF
+
 //  token          = 1*tchar
 
 //   tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
