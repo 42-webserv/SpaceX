@@ -7,28 +7,29 @@
 #include <vector>
 
 struct Response {
-  typedef std::pair<std::string, std::string> header;
+	typedef std::pair<std::string, std::string> header;
 
 private:
-  std::vector<header> headers;
-  int versionMinor;
-  int versionMajor;
-  std::vector<char> body;
-  bool keepAlive;
-  unsigned int statusCode;
-  std::string status;
+	std::vector<header> headers_;
+	int					versionMinor_;
+	int					versionMajor_;
+	std::vector<char>	body_;
+	bool				keepAlive_;
+	unsigned int		statusCode_;
+	std::string			status_;
 
-  std::string make() const {
-    std::stringstream stream;
-    stream << "HTTP/" << versionMajor << "." << versionMinor << " " << status
-           << "\r\n";
-    for (std::vector<Response::header>::const_iterator it = headers.begin();
-         it != headers.end(); ++it)
-      stream << it->first << ": " << it->second << "\r\n";
-    std::string data(body.begin(), body.end());
-    stream << data << "\r\n";
-    return stream.str();
-  }
+	std::string
+	make() const {
+		std::stringstream stream;
+		stream << "HTTP/" << versionMajor_ << "." << versionMinor_ << " " << status_
+			   << "\r\n";
+		for (std::vector<Response::header>::const_iterator it = headers_.begin();
+			 it != headers_.end(); ++it)
+			stream << it->first << ": " << it->second << "\r\n";
+		std::string data(body_.begin(), body_.end());
+		stream << data << "\r\n";
+		return stream.str();
+	}
 };
 
 #endif
