@@ -78,6 +78,7 @@ http_status_str(enum http_status s) {
 	}
 };
 
+#include <iostream>
 std::string
 http_status_sstr(enum http_status s) {
 	switch (s) {

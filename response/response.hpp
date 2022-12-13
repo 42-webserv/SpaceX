@@ -1,5 +1,6 @@
 #ifndef __RESPONSE_HPP__
 #define __RESPONSE_HPP__
+#pragma once
 
 #include <algorithm>
 #include <iostream>
@@ -24,7 +25,7 @@ private:
 	std::string
 	make() const {
 		std::stringstream stream;
-		stream << "HTTP/" << 1 << "." << 1 << " " << status_
+		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
 			   << "\r\n";
 		for (std::vector<Response::header>::const_iterator it = headers_.begin();
 			 it != headers_.end(); ++it)
@@ -33,13 +34,34 @@ private:
 		stream << data << "\r\n";
 		return stream.str();
 	}
-
+	/*
+	Server: nginx/1.23.3
+	Date: Tue, 13 Dec 2022 15:45:26 GMT
+	Content-Type: text/html
+	Content-Length: 157
+	Connection: close
+	*/
+	/*
+		void
+		makeBaseHeader() {
+			headers_.push_back(header("Server:", " webserv"));
+			headers_.push_back(header("Date",))
+			// headers_.push_back(header("Content-Type:", " webserv"));
+		}
+	*/
 	void
 	generateStatus_(enum http_status status) {
 		std::stringstream stream;
-		stream << status << " " << http_status_sstr(status) << "\r\n";
+		stream << status << " " << http_status_sstr(status);
 		status_ = stream.str();
 	};
+
+	void
+	setContentLength() {
+		std::stringstream stream;
+		stream << body_.size();
+		headers_.push_back(header("Content-Length", stream.str()));
+	}
 
 public:
 	// constructor
@@ -61,11 +83,17 @@ public:
 	std::string
 	make_test() {
 		std::stringstream stream;
+		setContentType(NULL);
+		setBody("<html>\r\n"
+				"<body>hello</body>\r\n"
+				"</html>\r\n");
+		setContentLength();
 		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
 			   << "\r\n";
 		for (std::vector<Response::header>::const_iterator it = headers_.begin();
 			 it != headers_.end(); ++it)
 			stream << it->first << ": " << it->second << "\r\n";
+		stream << "\r\n";
 		std::string data(body_.begin(), body_.end());
 		stream << data << "\r\n";
 		return stream.str();
@@ -74,6 +102,20 @@ public:
 	//  TODO : 요청에 따라 BODY 여부 확인
 	//  TODO : 요청내용이 어떻게 들어오는지 확인
 	//  TODO : 요청에 따른 필수 Header key value 셋팅
+
+	void
+	setBody(const char* content) {
+		while (*content) {
+			body_.push_back(*content++);
+		}
+	}
+	void
+	setContentType(const char* content_type) {
+		if (content_type == NULL)
+			headers_.push_back(header("Content-Type", "text"));
+		else
+			headers_.push_back(header("Content-Type", content_type));
+	};
 };
 
 /*
@@ -97,6 +139,13 @@ Connection: close
 </body>
 </html>
 
+	const char* str = "<html>\r\n"
+					  "<head><title>400 Bad Request</title></head>\r\n"
+					  "<body>\r\n"
+					  "<center><h1>400 Bad Request</h1></center>\r\n"
+					  "<hr><center>nginx/1.23.3</center>\r\n"
+					  "</body>\r\n"
+					  "</html>\r\n";
 
 */
 
