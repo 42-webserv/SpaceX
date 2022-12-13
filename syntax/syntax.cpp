@@ -60,16 +60,18 @@ namespace {
 		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
 	};
 
-	uint8_t chunked_[] = {
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"0123456789\0\0\0\0\0\0"
-		"\0ABCDEFGHIJKLMNOPQRSTUVWXYZ\0\0\0\0\0"
-		"\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+	uint32_t chunked_size_[] = {
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+		0x03ff0000, /*	0000 0011 1111 1111  0000 0000 0000 0000 */
+		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
+		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
+		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 	};
 
 	inline status
@@ -352,7 +354,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 	while (state != spx_done) {
 		switch (state) {
 		case spx_start: {
-			if (chunked_[static_cast<uint8_t>(*it)]) {
+			if (syntax_(chunked_size_, static_cast<uint8_t>(*it))) {
 				state = spx_size;
 				break;
 			}
@@ -378,7 +380,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 		}
 
 		case spx_size: {
-			if (chunked_[static_cast<uint8_t>(*it)]) {
+			if (syntax_(chunked_size_, static_cast<uint8_t>(*it))) {
 				count_size.push_back(*it);
 				++it;
 				break;

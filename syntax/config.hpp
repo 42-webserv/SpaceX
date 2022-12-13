@@ -128,7 +128,4 @@ public:
 // std::map<std::string, t_server_info>		server_map;
 // t_server_info* 							default_server_ptr; // default server ptr;
 
-status
-spx_config_syntax_server();
-
 #endif
