@@ -11,6 +11,11 @@
  * --------------------
  */
 
+enum {
+	KSame = 0,
+	KDiff
+};
+
 typedef enum {
 	flag_listen				  = 1 << 1,
 	flag_server_name		  = 1 << 2,
