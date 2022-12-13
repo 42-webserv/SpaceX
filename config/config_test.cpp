@@ -87,7 +87,7 @@ main() {
 		it->second.print();
 	}
 
-	server_info_t* default_server_ptr; // default server ptr;
+	server_info_t* default_server_ptr = NULL; // default server ptr;
 
 	it = test_map.begin();
 	while (it != test_map.end()) {
