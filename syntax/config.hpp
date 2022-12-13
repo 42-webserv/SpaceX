@@ -10,12 +10,12 @@
 typedef enum {
 	other_server = 0,
 	default_server
-} t_default_server_state;
+} default_server_state_e;
 
 typedef enum {
 	autoindex_on = 0,
 	autoindex_off
-} t_autoindex_state;
+} autoindex_state_e;
 
 typedef enum {
 	module_none = 0,
@@ -23,7 +23,7 @@ typedef enum {
 	module_upload,
 	module_redirect,
 	module_cgi
-} t_module_case_state;
+} module_case_state_e;
 
 typedef enum {
 	GET		= 1 << 1,
@@ -32,98 +32,74 @@ typedef enum {
 	DELETE	= 1 << 4,
 	HEAD	= 1 << 5,
 	OPTIONS = 1 << 6
-} t_accepted_method_flag;
+} accepted_method_flag_e;
 
-typedef struct server_location {
-	t_module_case_state module_state;
+// typedef struct {
+// 	module_case_state_e module_state;
+// 	uint8_t				accepted_method_flag;
+// 	std::string			redirect;
+// 	std::string			root;
+// 	std::string			index;
+// 	autoindex_state_e	autoindex_flag;
+// 	std::string			saved_path;
+// 	std::string			cgi_pass;
+// 	std::string			cgi_path_info;
+// } uri_location_t;
+
+typedef struct {
+	module_case_state_e module_state;
 	uint8_t				accepted_method_flag;
 	std::string			redirect;
 	std::string			root;
 	std::string			index;
-	t_autoindex_state	autoindex_flag;
+	autoindex_state_e	autoindex_flag;
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
-} t_location;
+} uri_location_for_copy_stage_t;
 
-typedef struct server_info_copy {
-	std::string									  ip;
-	uint32_t									  port;
-	t_default_server_state						  default_server_flag;
-	std::string									  server_name;
-	std::string									  error_page;
-	uint32_t									  client_max_body_size;
-	std::map<const std::string, const t_location> uri_case;
+typedef struct uri_location {
+	const module_case_state_e module_state;
+	const uint8_t			  accepted_method_flag;
+	const std::string		  redirect;
+	const std::string		  root;
+	const std::string		  index;
+	const autoindex_state_e	  autoindex_flag;
+	const std::string		  saved_path;
+	const std::string		  cgi_pass;
+	const std::string		  cgi_path_info;
+	//
+	uri_location(uri_location_for_copy_stage_t const& from);
+	~uri_location();
+	void print(void) const;
+} uri_location_t;
 
-} t_server_info_copy;
+typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
+
+typedef struct {
+	std::string			   ip;
+	uint32_t			   port;
+	default_server_state_e default_server_flag;
+	std::string			   server_name;
+	std::string			   error_page;
+	uint32_t			   client_max_body_size;
+	uri_location_map_p	   uri_case;
+} server_info_for_copy_stage_t;
 
 typedef struct server_info {
-private:
-	const std::string							  ip;
-	const uint32_t								  port;
-	const t_default_server_state				  default_server_flag;
-	const std::string							  server_name;
-	const std::string							  error_page;
-	const uint32_t								  client_max_body_size;
-	std::map<const std::string, const t_location> uri_case;
+	const std::string			 ip;
+	const uint32_t				 port;
+	const default_server_state_e default_server_flag;
+	const std::string			 server_name;
+	const std::string			 error_page;
+	const uint32_t				 client_max_body_size;
+	mutable uri_location_map_p	 uri_case;
+	//
+	server_info(server_info_for_copy_stage_t const& from);
+	~server_info();
+	void print(void) const;
 
-public:
-	server_info(t_server_info_copy const& from)
-		: ip(from.ip)
-		, port(from.port)
-		, default_server_flag(from.default_server_flag)
-		, server_name(from.server_name)
-		, error_page(from.error_page)
-		, client_max_body_size(from.client_max_body_size)
-		, uri_case(from.uri_case) {
-	}
-
-	~server_info() {
-	}
-
-	t_default_server_state
-	is_default_server(void) const {
-		return default_server_flag;
-	}
-
-	const std::string&
-	get_server_name(void) const {
-		return server_name;
-	}
-
-	inline void
-	print(void) {
-#ifdef DEBUG
-		std::cout
-			<< "ip: " << ip << std::endl;
-		std::cout << "port: " << port << std::endl;
-		std::cout << "default_server_flag: " << default_server_flag << std::endl;
-		std::cout << "server_name: " << server_name << std::endl;
-		std::cout << "error_page: " << error_page << std::endl;
-		std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
-		std::cout << "uri_case: " << uri_case.size() << std::endl;
-		std::cout << std::endl;
-
-		std::map<const std::string, const t_location>::iterator it = uri_case.begin();
-		while (it != uri_case.end()) {
-			std::cout << "uri: " << it->first << std::endl;
-			std::cout << "t_location: " << &it->second << std::endl;
-			std::cout << "module_state: " << it->second.module_state << std::endl;
-			std::cout << "accepted_method_flag: " << it->second.accepted_method_flag << std::endl;
-			std::cout << "redirect: " << it->second.redirect << std::endl;
-			std::cout << "root: " << it->second.root << std::endl;
-			std::cout << "index: " << it->second.index << std::endl;
-			std::cout << "autoindex_flag: " << it->second.autoindex_flag << std::endl;
-			std::cout << "saved_path: " << it->second.saved_path << std::endl;
-			std::cout << "cgi_pass: " << it->second.cgi_pass << std::endl;
-			std::cout << "cgi_path_info: " << it->second.cgi_path_info << std::endl;
-			std::cout << std::endl;
-			it++;
-		}
-#endif
-	}
-
-} t_server_info;
+} server_info_t;
 
 // std::map<std::string, t_server_info>		server_map;
 // t_server_info* 							default_server_ptr; // default server ptr;
