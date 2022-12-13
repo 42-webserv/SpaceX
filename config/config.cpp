@@ -150,6 +150,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 	uint8_t							  flag_default_part;
 	uint8_t							  flag_location_part;
 	uint8_t							  size_count;
+	uint32_t						  server_count = 0;
 	server_info_for_copy_stage_t	  temp_basic_server_info;
 	uri_location_for_copy_stage_t	  temp_uri_location_info;
 
@@ -195,11 +196,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 	while (state != conf_done) {
 		switch (state) {
 		case conf_zero: {
+			memset_(temp_basic_server_info);
 			memset_(flag_default_part);
+			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
 			memset_(size_count);
-			memset_(temp_basic_server_info);
-			memset_(temp_uri_location_info);
+			temp_string.clear();
 			prev_state = state;
 			state	   = conf_start;
 			next_state = conf_server;
@@ -250,6 +252,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 					break;
 				}
 				return error_("conf_waiting_default_value", "syntax error");
+			}
+			if (size_count == 0 && *it == '}' && flag_default_part != 0) {
+				prev_state = state;
+				state	   = conf_server_CB_close;
+				next_state = conf_start;
+				break;
+			} else if (size_count == 0 && *it == '}' && flag_location_part == 0) {
+				return error_("conf_waiting_default_value", "empty server - syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
 				prev_state = state;
@@ -326,6 +336,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state = conf_server_CB_open;
 				break;
 			}
+			if (*it == std::string::npos) {
+				if (server_count == 0) {
+					return error_("conf_server", "empty config file - syntax error");
+				}
+				state	   = conf_almost_done;
+				next_state = conf_done;
+				break;
+			}
 			return error_("conf_server", "syntax error");
 		}
 
@@ -335,12 +353,20 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state = state;
 				state	   = conf_start;
 				next_state = conf_waiting_default_value;
+				++server_count;
 				break;
 			}
 			return error_("conf_server_CB_open", "syntax error");
 		}
 
 		case conf_server_CB_close: {
+			if (*it == '}') {
+				++it;
+				prev_state = state;
+				state	   = conf_zero;
+				break;
+			}
+			return error_("conf_server_CB_close", "syntax error");
 
 			break;
 		}
@@ -482,9 +508,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 			break;
 		}
 
-		case conf_location_zero: {
+		case conf_location_zero: { // TODO: add uri_location to temp_server_info;
 			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
+			memset_(size_count);
+			temp_string.clear();
 			prev_state = state;
 			state	   = conf_start;
 			next_state = conf_waiting_default_value;
@@ -636,8 +664,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_CB_close: {
-
-			break;
+			if (*it == '}') {
+				++it;
+				prev_state = state;
+				state	   = conf_location_zero;
+				break;
+			}
+			return error_("conf_location_CB_close", "syntax error");
 		}
 
 		case conf_accepted_methods: {
@@ -835,7 +868,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_almost_done: {
-
+			// NOTE: what do we do here?
+			state = next_state;
 			break;
 		}
 
@@ -843,6 +877,5 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("syntax error", "config file");
 		}
 	}
-
 	return spx_ok;
 }

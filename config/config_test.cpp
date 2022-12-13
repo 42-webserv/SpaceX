@@ -25,26 +25,26 @@ generator(std::string plus_name) {
 	server_info_copy.client_max_body_size = 1024;
 
 	uri_location_for_copy_stage_t location;
-	location.module_state		  = module_serve;
-	location.accepted_method_flag = GET | POST;
-	location.redirect			  = "github.com";
-	location.root				  = "/home/username";
-	location.index				  = "index.html";
-	location.autoindex_flag		  = autoindex_on;
-	location.saved_path			  = "/home/username/saved";
-	location.cgi_pass			  = "/home/username/cgi";
-	location.cgi_path_info		  = "/home/username/cgi_path_info";
+	location.module_state		   = module_serve;
+	location.accepted_methods_flag = KGet | KPost;
+	location.redirect			   = "github.com";
+	location.root				   = "/home/username";
+	location.index				   = "index.html";
+	location.autoindex_flag		   = Kautoindex_on;
+	location.saved_path			   = "/home/username/saved";
+	location.cgi_pass			   = "/home/username/cgi";
+	location.cgi_path_info		   = "/home/username/cgi_path_info";
 
 	uri_location_for_copy_stage_t location2;
-	location2.module_state		   = module_upload;
-	location2.accepted_method_flag = HEAD;
-	location2.redirect			   = "hi.com";
-	location2.root				   = "test";
-	location2.index				   = "test";
-	location2.autoindex_flag	   = autoindex_off;
-	location2.saved_path		   = "test";
-	location2.cgi_pass			   = "test";
-	location2.cgi_path_info		   = "test";
+	location2.module_state			= module_upload;
+	location2.accepted_methods_flag = KHead;
+	location2.redirect				= "hi.com";
+	location2.root					= "test";
+	location2.index					= "test";
+	location2.autoindex_flag		= Kautoindex_off;
+	location2.saved_path			= "test";
+	location2.cgi_pass				= "test";
+	location2.cgi_path_info			= "test";
 
 	server_info_copy.uri_case.insert(std::pair<const std::string, const uri_location_t>("/first", location));
 	server_info_copy.uri_case.insert(std::pair<const std::string, const uri_location_t>("/second", location2));
