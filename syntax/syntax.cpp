@@ -83,7 +83,7 @@ namespace {
 		return spx_error;
 	}
 
-	inline int
+	inline uint8_t
 	syntax_(const uint32_t table[8], uint8_t c) {
 		return (table[(c >> 5)] & (1U << (c & 0x1f)));
 	}
@@ -110,7 +110,7 @@ spx_http_syntax_start_line(std::string const& line) {
 	while (state != spx_done) {
 		switch (state) {
 		case spx_start: {
-			if (syntax_(start_line_, *it)) {
+			if (syntax_(start_line_, static_cast<uint8_t>(*it))) {
 				state = spx_method;
 				// add request start point to struct
 				break;
@@ -182,7 +182,7 @@ spx_http_syntax_start_line(std::string const& line) {
 		}
 
 		case spx_uri: { // start uri check
-			if (syntax_(usual_, *it)) {
+			if (syntax_(usual_, static_cast<uint8_t>(*it))) {
 				++it;
 				break;
 			}

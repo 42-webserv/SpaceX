@@ -7,7 +7,28 @@
 #include <map>
 #include <string>
 
-#include <vector> // need to check what data type is used in buffer
+/*
+ * --------------------
+ */
+
+typedef enum {
+	flag_listen				  = 1 << 1,
+	flag_server_name		  = 1 << 2,
+	flag_error_page			  = 1 << 3,
+	flag_client_max_body_size = 1 << 4
+} flag_config_parse_basic_part_e;
+
+typedef enum {
+	flag_accepted_method = 1 << 0,
+	flag_root			 = 1 << 1,
+	flag_index			 = 1 << 2,
+	flag_autoindex		 = 1 << 3,
+	flag_redirect		 = 1 << 4,
+	flag_saved_path		 = 1 << 5,
+	flag_cgi_pass		 = 1 << 6,
+	flag_cgi_path_info	 = 1 << 7
+} flag_config_parse_location_part_e;
+
 /*
  * --------------------
  */
@@ -36,5 +57,6 @@ struct server_info_for_copy_stage {
 
 typedef std::map<const std::uint32_t, const server_map_p> total_port_server_map_p;
 // target_port_server_map_p								  my_config_map;
+// < port_number , < server_name, server_info_t> > my_config_map;
 
 #endif

@@ -12,8 +12,8 @@ typedef enum {
 } default_server_state_e;
 
 typedef enum {
-	autoindex_on = 0,
-	autoindex_off
+	autoindex_off = 0,
+	autoindex_on
 } autoindex_state_e;
 
 typedef enum {
