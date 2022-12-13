@@ -79,6 +79,7 @@ typedef struct target_port_server_info {
 	server_info_t* my_port_default_server_ptr;
 	server_map_p   my_port_map;
 	// add handler function
+
 } target_port_server_info_t;
 
 #endif

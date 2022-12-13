@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 
+#include <vector> // need to check what data type is used in buffer
 /*
  * --------------------
  */
@@ -23,7 +24,6 @@ struct uri_location_for_copy_stage {
 	std::string			cgi_path_info;
 };
 
-typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
 struct server_info_for_copy_stage {
 	std::string			   ip;
 	uint32_t			   port;
@@ -34,9 +34,7 @@ struct server_info_for_copy_stage {
 	uri_location_map_p	   uri_case;
 };
 
-typedef std::map<const std::uint32_t, const server_map_p> target_port_server_map_p;
-typedef struct config_info {
-	target_port_server_map_p my_config_map;
-} config_info_t;
+typedef std::map<const std::uint32_t, const server_map_p> total_port_server_map_p;
+// target_port_server_map_p								  my_config_map;
 
 #endif
