@@ -37,6 +37,7 @@ typedef struct uri_location_for_copy_stage uri_location_for_copy_stage_t;
 typedef struct server_info_for_copy_stage  server_info_for_copy_stage_t;
 
 typedef struct uri_location {
+	const std::string		  uri;
 	const module_case_state_e module_state;
 	const uint8_t			  accepted_method_flag;
 	const std::string		  redirect;
@@ -61,7 +62,7 @@ typedef struct server_info {
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
 	const std::string			 error_page;
-	const uint32_t				 client_max_body_size;
+	const uint64_t				 client_max_body_size;
 	mutable uri_location_map_p	 uri_case;
 	//
 	server_info(server_info_for_copy_stage_t const& from);

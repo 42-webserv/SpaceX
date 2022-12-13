@@ -20,18 +20,32 @@ namespace {
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 	};
 
-	uint32_t path_[] = {
+	uint32_t digit_[] = {
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
 		0x03ff0000, /*	0000 0011 1111 1111  0000 0000 0000 0000 */
 		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+	};
+
+	uint32_t vchar_[] = {
+		0x00000200, /*	0000 0000 0000 0000  0000 0010 0000 0000 */
+		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+		0xfffffffe, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
+		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
+		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
+		0x7fffffff, /*	0111 1111 1111 1111  1111 1111 1111 1111 */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */ /* obs-text */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
+		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
 	};
 
 	uint32_t listen_[] = {
@@ -53,7 +67,7 @@ namespace {
 		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x80000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x80000000, /*	1000 0000 0000 0000  0000 0000 0000 0000 */
 		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
 		0x077df3fe, /*	0000 0111 0111 1101  1111 0011 1111 1110 */
 		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
@@ -130,8 +144,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		conf_waiting_location_value,
 
-		conf_location, // check is_set default value.
-		conf_location_uri,
+		conf_location_zero,
+		conf_location_uri, // NOTE:: check is_set default value.
 		conf_location_CB_open,
 		conf_location_CB_close,
 		conf_accepted_method,
@@ -179,7 +193,17 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
+				prev_state = state;
 				break;
+			}
+			if (*it == ';') {
+				if (prev_state == conf_start) {
+					prev_state = state;
+					state	   = conf_endline;
+					next_state = conf_start;
+					break;
+				}
+				return error_("conf_waiting_default_value", "syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
 				prev_state = state;
@@ -191,6 +215,20 @@ spx_config_syntax_checker(std::string const&	   buf,
 							return error_("conf_waiting_value", "listen is already set");
 						}
 						next_state = conf_listen;
+						break;
+					}
+					return error_("conf_waiting_value", "syntax error");
+				}
+				case 8: {
+					if (temp_string.compare("location") == KSame) {
+						if (!(flag_default_part & flag_listen)
+							|| !(flag_default_part & flag_server_name)
+							|| !(flag_default_part & flag_error_page)
+							|| !(flag_default_part & flag_client_max_body_size)) {
+							return error_("conf_waiting_value",
+										  "need sed default value before location - syntax error");
+						}
+						next_state = conf_location_uri;
 						break;
 					}
 					return error_("conf_waiting_value", "syntax error");
@@ -238,9 +276,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 		case conf_endline: {
 			if (*it == ';') {
 				++it;
+				if (prev_state == conf_waiting_default_value) {
+					next_state = conf_waiting_default_value;
+				} else {
+					next_state = conf_waiting_location_value;
+				}
 				prev_state = state;
 				state	   = conf_start;
-				next_state = conf_waiting_default_value;
 				break;
 			}
 		}
@@ -354,11 +396,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_basic_server_info.server_name = temp_string;
 				prev_state						   = state;
 				next_state						   = conf_waiting_default_value;
-				if (*it == ';') {
-					state = conf_endline;
-				} else {
-					state = conf_start;
-				}
+				state							   = conf_start;
 				flag_default_part |= flag_server_name;
 				temp_string.clear();
 				break;
@@ -366,50 +404,135 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("conf_server_name", "syntax error");
 		}
 
-		case conf_error_page: {
-
-			break;
+		case conf_error_page: { // NOTE : is it need to check valid path?
+			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++it;
+				break;
+			}
+			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				temp_basic_server_info.error_page = temp_string;
+				prev_state						  = state;
+				next_state						  = conf_waiting_default_value;
+				if (*it == ';') {
+					state = conf_endline;
+				} else {
+					state = conf_start;
+				}
+				flag_default_part |= flag_error_page;
+				temp_string.clear();
+				break;
+			}
+			return error_("conf_error_page", "syntax error");
 		}
+
 		case conf_client_max_body_size: {
+			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++size_count;
+				++it;
+				break;
+			}
+			if ((*it == 'M' || *it == 'K') && (size_count && size_count <= 4)) {
+				uint64_t check_body_size = std::atoi(temp_string.c_str());
+				if (check_body_size > 0) {
+					if (*it == 'M') {
+						check_body_size *= (1024 * 1024);
+					} else if (*it == 'K') {
+						check_body_size *= 1024;
+					}
+					temp_basic_server_info.client_max_body_size = check_body_size;
+					flag_default_part |= flag_client_max_body_size;
+					prev_state = state;
+					state	   = conf_start;
+					next_state = conf_waiting_default_value;
+				} else {
+					return error_("conf_client_max_body_size - minus size", "syntax error");
+				}
+			} else {
+				return error_("conf_client_max_body_size", "syntax error");
+			}
+			break;
+		}
+
+		case conf_location_zero: {
+			memset_(temp_uri_location_info);
+			break;
+		}
+
+		case conf_waiting_location_value: {
+			if (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++size_count;
+				++it;
+				prev_state = state;
+				break;
+			}
+			if (*it == ';') {
+				if (prev_state == conf_start) {
+					prev_state = state;
+					state	   = conf_endline;
+					next_state = conf_start;
+					break;
+				}
+				return error_("conf_waiting_default_value", "syntax error");
+			}
 
 			break;
 		}
-		case conf_location: {
 
-			break;
-		}
 		case conf_location_uri: {
-
-			break;
+			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++it;
+				break;
+			}
+			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == '{') {
+				temp_uri_location_info.uri = temp_string;
+				prev_state				   = state;
+				state					   = conf_start;
+				next_state				   = conf_location_CB_open;
+				temp_string.clear();
+				break;
+			}
 		}
+
 		case conf_location_CB_open: {
-
-			break;
+			if (*it == '{') {
+				++it;
+				prev_state = state;
+				state	   = conf_start;
+				next_state = conf_waiting_location_value;
+				break;
+			}
+			return error_("conf_location_CB_open", "syntax error");
 		}
+
 		case conf_location_CB_close: {
 
 			break;
 		}
-		case conf_waiting_location_value: {
 
-			break;
-		}
 		case conf_accepted_method: {
 
 			break;
 		}
+
 		case conf_root: {
 
 			break;
 		}
+
 		case conf_index: {
 
 			break;
 		}
+
 		case conf_autoindex: {
 
 			break;
 		}
+
 		case conf_redirect: {
 
 			break;

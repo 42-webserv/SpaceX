@@ -23,7 +23,8 @@ uri_location_t::print(void) const {
 }
 
 uri_location_t::uri_location(uri_location_for_copy_stage_t const& from)
-	: module_state(from.module_state)
+	: uri(from.uri)
+	, module_state(from.module_state)
 	, accepted_method_flag(from.accepted_method_flag)
 	, redirect(from.redirect)
 	, root(from.root)

@@ -39,6 +39,7 @@ typedef enum {
  */
 
 struct uri_location_for_copy_stage {
+	std::string			uri;
 	module_case_state_e module_state;
 	uint8_t				accepted_method_flag;
 	std::string			redirect;
@@ -56,7 +57,7 @@ struct server_info_for_copy_stage {
 	default_server_state_e default_server_flag;
 	std::string			   server_name;
 	std::string			   error_page;
-	uint32_t			   client_max_body_size;
+	uint64_t			   client_max_body_size;
 	uri_location_map_p	   uri_case;
 };
 
