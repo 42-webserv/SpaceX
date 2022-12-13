@@ -70,6 +70,10 @@ public:
 		stream << data << "\r\n";
 		return stream.str();
 	}
+	// make 분리
+	//  TODO : 요청에 따라 BODY 여부 확인
+	//  TODO : 요청내용이 어떻게 들어오는지 확인
+	//  TODO : 요청에 따른 필수 Header key value 셋팅
 };
 
 /*
