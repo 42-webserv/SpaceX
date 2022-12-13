@@ -12,8 +12,8 @@ typedef enum {
 } default_server_state_e;
 
 typedef enum {
-	autoindex_off = 0,
-	autoindex_on
+	Kautoindex_off = 0,
+	Kautoindex_on
 } autoindex_state_e;
 
 typedef enum {
@@ -25,12 +25,12 @@ typedef enum {
 } module_case_state_e;
 
 typedef enum {
-	GET		= 1 << 1,
-	POST	= 1 << 2,
-	PUT		= 1 << 3,
-	DELETE	= 1 << 4,
-	HEAD	= 1 << 5,
-	OPTIONS = 1 << 6
+	KGet	 = 1 << 1,
+	KPost	 = 1 << 2,
+	KPut	 = 1 << 3,
+	KDelete	 = 1 << 4,
+	KHead	 = 1 << 5,
+	KOptions = 1 << 6
 } accepted_method_flag_e;
 
 typedef struct uri_location_for_copy_stage uri_location_for_copy_stage_t;
@@ -39,7 +39,7 @@ typedef struct server_info_for_copy_stage  server_info_for_copy_stage_t;
 typedef struct uri_location {
 	const std::string		  uri;
 	const module_case_state_e module_state;
-	const uint8_t			  accepted_method_flag;
+	const uint8_t			  accepted_methods_flag;
 	const std::string		  redirect;
 	const std::string		  root;
 	const std::string		  index;

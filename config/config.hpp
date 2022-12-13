@@ -24,14 +24,14 @@ typedef enum {
 } flag_config_parse_basic_part_e;
 
 typedef enum {
-	flag_accepted_method = 1 << 0,
-	flag_root			 = 1 << 1,
-	flag_index			 = 1 << 2,
-	flag_autoindex		 = 1 << 3,
-	flag_redirect		 = 1 << 4,
-	flag_saved_path		 = 1 << 5,
-	flag_cgi_pass		 = 1 << 6,
-	flag_cgi_path_info	 = 1 << 7
+	flag_accepted_methods = 1 << 0,
+	flag_root			  = 1 << 1,
+	flag_index			  = 1 << 2,
+	flag_autoindex		  = 1 << 3,
+	flag_redirect		  = 1 << 4,
+	flag_saved_path		  = 1 << 5,
+	flag_cgi_pass		  = 1 << 6,
+	flag_cgi_path_info	  = 1 << 7
 } flag_config_parse_location_part_e;
 
 /*
@@ -41,7 +41,7 @@ typedef enum {
 struct uri_location_for_copy_stage {
 	std::string			uri;
 	module_case_state_e module_state;
-	uint8_t				accepted_method_flag;
+	uint8_t				accepted_methods_flag;
 	std::string			redirect;
 	std::string			root;
 	std::string			index;

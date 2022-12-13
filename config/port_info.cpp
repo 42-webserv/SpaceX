@@ -25,7 +25,7 @@ uri_location_t::print(void) const {
 uri_location_t::uri_location(uri_location_for_copy_stage_t const& from)
 	: uri(from.uri)
 	, module_state(from.module_state)
-	, accepted_method_flag(from.accepted_method_flag)
+	, accepted_methods_flag(from.accepted_methods_flag)
 	, redirect(from.redirect)
 	, root(from.root)
 	, index(from.index)
