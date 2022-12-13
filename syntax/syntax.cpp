@@ -1,7 +1,6 @@
 #include "syntax.hpp"
 #include <iostream>
 #include <sstream>
-#include <string>
 
 namespace {
 
