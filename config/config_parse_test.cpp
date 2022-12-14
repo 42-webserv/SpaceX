@@ -5,6 +5,7 @@
 #include <sstream>
 
 /* HOW TO USE*/
+// c++ -std=c++98 -Wall -Werror -Wextra -D CONFIG_STATE_DEBUG -D REAK -D CONFIG_DEBUG *.cpp && ./a.out
 
 #ifdef REAK
 void
@@ -13,20 +14,20 @@ ft_handler() {
 }
 #endif
 
-int
-main() {
+void
+inner_main(void) {
 	std::fstream file("test.conf", std::ios::in);
 
 	if (file.is_open() == false) {
 		std::cout << "test_main: file open error" << std::endl;
-		return 1;
+		return;
 	}
 	std::stringstream ss;
 	ss << file.rdbuf();
 	if (ss.fail()) {
 		std::cout << "test_main: file read error" << std::endl;
 		file.close();
-		return 1;
+		return;
 	}
 	file.close();
 
@@ -35,10 +36,18 @@ main() {
 
 	if (spx_config_syntax_checker(ss.str(), org_config) != spx_ok) {
 		std::cout << "test_main: error" << std::endl;
-		return 1;
 	} else {
 		std::cout << "test_main: success" << std::endl;
 	}
+}
+
+int
+main() {
+#ifdef REAK
+	atexit(ft_handler);
+#endif
+
+	inner_main();
 
 	return 0;
 }

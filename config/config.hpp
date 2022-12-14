@@ -49,6 +49,7 @@ typedef struct uri_location_for_copy_stage {
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
+
 } uri_location_for_copy_stage_t;
 
 typedef struct server_info_for_copy_stage {

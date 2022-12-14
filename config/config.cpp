@@ -4,9 +4,12 @@
 #include <cctype>
 #include <cstring>
 #include <string>
-#include <utility>
 
 #ifdef CONFIG_DEBUG
+#include <iostream>
+#endif
+
+#ifdef CONFIG_STATE_DEBUG
 #include <iostream>
 #endif
 
@@ -71,12 +74,6 @@ namespace {
 		}
 	};
 #endif
-
-	template <typename T>
-	inline void
-	memset_(T& target) {
-		memset(&target, 0, sizeof(T));
-	}
 
 	inline status
 	error_(const char* msg, const char* msg2) {
@@ -211,21 +208,18 @@ spx_config_syntax_checker(std::string const&	   buf,
 						return error_("conf_zero", "server name is already exist");
 					}
 					spx_log_("server name dup check done");
-					// TODO: final stage : check default keyword in same port pool, is there only one default server?;
 				}
 #ifdef CONFIG_DEBUG
 #endif
 				server_info_for_copy_stage_t flush_server_info;
 				temp_basic_server_info = flush_server_info;
 				// temp_basic_server_info.uri_case.clear()
-			} else {
-				memset_(temp_basic_server_info);
 			}
-			memset_(flag_default_part);
-			memset_(temp_uri_location_info);
-			memset_(flag_location_part);
-			memset_(size_count);
-			memset_(location_count);
+			temp_uri_location_info.accepted_methods_flag = 0;
+			flag_default_part							 = 0;
+			flag_location_part							 = 0;
+			size_count									 = 0;
+			location_count								 = 0;
 			saved_location_uri_map_1.clear();
 			saved_server_name_map_2.clear();
 			temp_string.clear();
@@ -236,15 +230,15 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_start: {
-			// if (*it == '\n') {
-			// 	spx_log_("new line!!");
-			// 	spx_log_((int)syntax_(isspace_, static_cast<uint8_t>(*it)));
-			// 	spx_log_((int)syntax_(isspace_, '\n'));
-			// 	spx_log_((int)syntax_(isspace_, '\t'));
-			// 	spx_log_((int)static_cast<uint8_t>(*it));
-			// }
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
 				++it;
+				break;
+			}
+			if (*it == '#'
+				&& (next_state == conf_waiting_default_value || next_state == conf_waiting_location_value || next_state == conf_server)) {
+				while (*it != '\n') {
+					++it;
+				}
 				break;
 			}
 			if (*it == ';') {
@@ -272,7 +266,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_waiting_default_value: {
-			// spx_log_(std::distance(buf.begin(), it));
 			if (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
@@ -561,14 +554,17 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (check_dup.second == false) {
 					return error_("conf_location_zero", "duplicate location");
 				}
+				// check_dup.
 #ifdef CONFIG_DEBUG
 				spx_log_(check_dup.first->first.c_str());
 				check_dup.first->second.print();
 #endif
 			}
-			memset_(temp_uri_location_info);
-			memset_(flag_location_part);
-			memset_(size_count);
+			uri_location_for_copy_stage_t flush_uri_location_info;
+			temp_uri_location_info						 = flush_uri_location_info;
+			temp_uri_location_info.accepted_methods_flag = 0;
+			flag_location_part							 = 0;
+			size_count									 = 0;
 			temp_string.clear();
 			prev_state = state;
 			state	   = next_state;
@@ -696,7 +692,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
 				temp_string.push_back(*it);
 				++it;
 				break;
@@ -743,6 +739,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				flag_location_part |= flag_accepted_methods;
 				switch (size_count) {
 				case 3: {
 					if (temp_string.compare("GET") == KSame) {
@@ -802,15 +799,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_root: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.root = temp_string;
 				prev_state					= state;
 				state						= conf_start;
@@ -823,15 +817,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_index: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.index = temp_string;
 				prev_state					 = state;
 				state						 = conf_start;
@@ -851,7 +842,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_uri_location_info.autoindex_flag = Kautoindex_off;
 				it += 3;
 			} else {
-				return error_("conf_autoindex", "syntax error");
+				return error_("conf_autoindex", "not on and off - syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				prev_state = state;
@@ -864,15 +855,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_redirect: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.redirect = temp_string;
 				prev_state						= state;
 				state							= conf_start;
@@ -885,15 +873,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_saved_path: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.saved_path = temp_string;
 				prev_state						  = state;
 				state							  = conf_start;
@@ -906,15 +891,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_cgi_pass: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.cgi_pass = temp_string;
 				prev_state						= state;
 				state							= conf_start;
@@ -927,15 +909,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_cgi_path_info: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
-				}
 				temp_uri_location_info.cgi_path_info = temp_string;
 				prev_state							 = state;
 				state								 = conf_start;
@@ -959,9 +938,17 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 	}
 #ifdef CONFIG_DEBUG
-	std::cout << "\033[1;31m"
+	std::cout << "\n\033[1;31m"
 			  << " -- config file parsed successfully -- "
-			  << "\033[0m" << std::endl;
+			  << "\033[0m\n"
+			  << std::endl;
+	for (total_port_server_map_p::iterator print = saved_total_port_map_3.begin(); print != saved_total_port_map_3.end(); ++print) {
+		std::cout << "port: " << print->first << std::endl;
+		for (server_map_p::iterator print2 = print->second.begin(); print2 != print->second.end(); ++print2) {
+			print2->second.print();
+		}
+	}
 #endif
+
 	return spx_ok;
 }

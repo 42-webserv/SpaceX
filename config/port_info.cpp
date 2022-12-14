@@ -11,21 +11,39 @@ uri_location_t::print(void) const {
 #ifdef CONFIG_DEBUG
 	// std::cout << "uri_location_t: " << this << std::endl;
 	std::cout << "module_state: " << module_state << std::endl;
-	std::cout << "accepted_method_flag: " << accepted_methods_flag << std::endl;
+	std::cout << "accepted_methods_flag: ";
+	if (accepted_methods_flag & KGet)
+		std::cout << "GET ";
+	if (accepted_methods_flag & KPost)
+		std::cout << "POST ";
+	if (accepted_methods_flag & KHead)
+		std::cout << "HEAD ";
+	if (accepted_methods_flag & KPut)
+		std::cout << "PUT ";
+	if (accepted_methods_flag & KDelete)
+		std::cout << "DELETE ";
+	if (accepted_methods_flag & KOptions)
+		std::cout << "OPTIONS ";
+	std::cout << std::endl;
+
 	if (redirect != "")
 		std::cout << "redirect: " << redirect << std::endl;
 	if (root != "")
 		std::cout << "root: " << root << std::endl;
 	if (index != "")
 		std::cout << "index: " << index << std::endl;
-	std::cout << "autoindex_flag: " << autoindex_flag << std::endl;
+
+	if (autoindex_flag == Kautoindex_on)
+		std::cout << "autoindex: on" << std::endl;
+	else
+		std::cout << "autoindex: off" << std::endl;
+
 	if (saved_path != "")
 		std::cout << "saved_path: " << saved_path << std::endl;
 	if (cgi_pass != "")
 		std::cout << "cgi_pass: " << cgi_pass << std::endl;
 	if (cgi_path_info != "")
 		std::cout << "cgi_path_info: " << cgi_path_info << std::endl;
-	std::cout << std::endl;
 #endif
 }
 
@@ -55,10 +73,10 @@ uri_location_t::~uri_location() {
 void
 server_info_t::print(void) const {
 #ifdef CONFIG_DEBUG
+	std::cout << "[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
 	std::cout << "default_server_flag: " << default_server_flag << std::endl;
-	std::cout << "server_name: " << server_name << std::endl;
 	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 	std::cout << "error_page: " << error_page << std::endl;
 
@@ -71,11 +89,11 @@ server_info_t::print(void) const {
 	std::cout << "uri_case: " << uri_case.size() << std::endl;
 	uri_location_map_p::iterator it = uri_case.begin();
 	while (it != uri_case.end()) {
-		std::cout << "uri: " << it->first << std::endl;
+		std::cout << "\n[ uri ] " << it->first << std::endl;
 		it->second.print();
-		std::cout << std::endl;
 		it++;
 	}
+	std::cout << std::endl;
 #endif
 }
 
