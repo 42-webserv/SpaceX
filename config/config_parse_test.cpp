@@ -5,9 +5,9 @@
 #include <sstream>
 
 /* HOW TO USE*/
-// c++ -std=c++98 -Wall -Werror -Wextra -D CONFIG_STATE_DEBUG -D REAK -D CONFIG_DEBUG *.cpp && ./a.out
+// c++ -std=c++98 -Wall -Werror -Wextra -D CONFIG_STATE_DEBUG -D LEAK -D CONFIG_DEBUG *.cpp && ./a.out
 
-#ifdef REAK
+#ifdef LEAK
 void
 ft_handler() {
 	system("leaks a.out");
@@ -43,7 +43,7 @@ inner_main(void) {
 
 int
 main() {
-#ifdef REAK
+#ifdef LEAK
 	atexit(ft_handler);
 #endif
 
