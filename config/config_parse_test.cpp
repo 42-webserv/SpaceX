@@ -12,18 +12,19 @@ ft_handler() {
 	system("leaks a.out");
 }
 #endif
+
 int
 main() {
 	std::fstream file("test.conf", std::ios::in);
 
 	if (file.is_open() == false) {
-		std::cout << "file open error" << std::endl;
+		std::cout << "test_main: file open error" << std::endl;
 		return 1;
 	}
 	std::stringstream ss;
 	ss << file.rdbuf();
 	if (ss.fail()) {
-		std::cout << "file read error" << std::endl;
+		std::cout << "test_main: file read error" << std::endl;
 		file.close();
 		return 1;
 	}
@@ -33,10 +34,10 @@ main() {
 	std::cout << ss.str() << std::endl;
 
 	if (spx_config_syntax_checker(ss.str(), org_config) != spx_ok) {
-		std::cout << "config syntax_checker error" << std::endl;
+		std::cout << "test_main: error" << std::endl;
 		return 1;
 	} else {
-		std::cout << "config syntax_checker success" << std::endl;
+		std::cout << "test_main: success" << std::endl;
 	}
 
 	return 0;

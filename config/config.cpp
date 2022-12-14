@@ -1,14 +1,62 @@
 #include "config.hpp"
 #include "port_info.hpp"
+#include "spacex_type.hpp"
 #include <cctype>
 #include <cstring>
 #include <string>
+#include <utility>
 
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
 #include <iostream>
 #endif
 
+extern const uint32_t isspace_[];
+extern const uint32_t config_elem_syntax_[];
+extern const uint32_t config_listen_[];
+extern const uint32_t vchar_[];
+extern const uint32_t digit_[];
+extern const uint32_t alpha_upper_case_[];
+extern const uint32_t digit_alpha_[];
+
 namespace {
+
+#ifdef CONFIG_STATE_DEBUG
+#include <string>
+
+#define CONFIG_STATE_MAP(XX)                               \
+	XX(0, ZERO, Continue)                                  \
+	XX(1, START, skip space)                               \
+	XX(2, ENDLINE, check endline)                          \
+	XX(3, WAITING_DEFAULT_VALUE, waiting default value)    \
+	XX(4, SERVER, server position found)                   \
+	XX(5, SERVER_OPEN, server curly bracket open)          \
+	XX(6, SERVER_CLOSE, server curly bracket close)        \
+	XX(7, LISTEN, listen found)                            \
+	XX(8, LISTEN_DEFAULT, default_server)                  \
+	XX(9, SERVER_NAME, server_name)                        \
+	XX(10, ERROR_PAGE, error_page)                         \
+	XX(11, CLIENT_MAX_BODY_SIZE, client_max_body_size)     \
+	XX(12, WAITING_LOCATION_VALUE, waiting location value) \
+	XX(13, LOCATION_ZERO, location flush)                  \
+	XX(14, LOCATION_URI, location uri)                     \
+	XX(15, LOCATION_OPEN, location curly bracket open)     \
+	XX(16, LOCATION_CLOSE, location curly bracket close)   \
+	XX(17, ACCEPTED_METHODS, accepted_methods)             \
+	XX(18, ROOT, root)                                     \
+	XX(19, INDEX, index)                                   \
+	XX(20, AUTOINDEX, autoindex)                           \
+	XX(21, REDIRECT, redirect)                             \
+	XX(22, SAVED_PATH, saved_path)                         \
+	XX(23, CGI_PASS, cgi_pass)                             \
+	XX(24, CGI_PATH_INFO, cgi_path_info)                   \
+	XX(25, ALMOST_DONE, almost done)                       \
+	XX(26, DONE, done)
+
+	typedef enum config_state {
+#define XX(num, name, string) CONFIG_STATE_##name = num,
+		CONFIG_STATE_MAP(XX)
+#undef XX
+	} config_state_e;
 
 	std::string
 	config_state_str_(config_state_e s) {
@@ -22,123 +70,18 @@ namespace {
 			return "<unknown>";
 		}
 	};
+#endif
 
-	uint32_t digit_alpha_[] = {
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x03ff0000, /*	0000 0011 1111 1111  0000 0000 0000 0000 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
-
-	uint32_t alpha_upper_case_[] = {
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x07fffffe, /*	0000 0111 0000 0000  0000 0000 0000 1110 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
-
-	uint32_t digit_[] = {
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x03ff0000, /*	0000 0011 1111 1111  0000 0000 0000 0000 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
-
-	// uint32_t name_token_[] = {
-	// 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	// 	/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-	// 	0x03ff6cfa, /*	0000 0011 1111 1111  0110 1100 1111 1010 */
-	// 	/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-	// 	0xc7fffffe, /*	1100 0111 1111 1111  1111 1111 1111 1110 */
-	// 	/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-	// 	0x57ffffff, /*	0101 0111 1111 1111  1111 1111 1111 1111 */
-	// 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	// 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	// 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	// 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	// };
-
-	uint32_t vchar_[] = {
-		0x00000200, /*	0000 0000 0000 0000  0000 0010 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0xfffffffe, /*	1111 1111 1111 1111  1111 1111 1111 1110 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x7fffffff, /*	0111 1111 1111 1111  1111 1111 1111 1111 */
-		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */ /* obs-text */
-		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
-		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
-		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
-	};
-
-	uint32_t listen_[] = {
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x07ff4000, /*	0000 0111 1111 1111  0100 0000 0000 0000 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
-
-	uint32_t config_elem_syntax_[] = {
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x80000000, /*	1000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x077df3fe, /*	0000 0111 0111 1101  1111 0011 1111 1110 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
-
-	uint32_t isspace_[] = {
-		0x00003e00, /*	0000 0000 0000 0000  0011 1110 0000 0000 */
-		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-		0x00000001, /*	0000 0000 0000 0000  0000 0000 0000 0001 */
-		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
-	};
+	template <typename T>
+	inline void
+	memset_(T& target) {
+		memset(&target, 0, sizeof(T));
+	}
 
 	inline status
 	error_(const char* msg, const char* msg2) {
 // throw(msg);
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
 		std::cout << "\033[1;31m" << msg << "\033[0m"
 				  << " : "
 				  << "\033[1;33m" << msg2 << "\033[0m" << std::endl;
@@ -152,7 +95,7 @@ namespace {
 	template <typename T>
 	inline void
 	spx_log_(T msg) {
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
 		std::cout << "\033[1;32m" << msg << ";"
 				  << "\033[0m" << std::endl;
 #else
@@ -160,21 +103,11 @@ namespace {
 #endif
 	}
 
-	inline bool
-	syntax_(const uint32_t table[8], uint8_t c) {
-		return (table[(c >> 5)] & (1U << (c & 0x1f)));
-	}
-
-	template <typename T>
-	inline void
-	memset_(T& target) {
-		memset(&target, 0, sizeof(T));
-	}
-}
+} // namespace end;
 
 status
 spx_config_syntax_checker(std::string const&	   buf,
-						  total_port_server_map_p& config_map) { // TODO : [add function] check default_server is exist and properly handle
+						  total_port_server_map_p& config_map) {
 
 	std::string::const_iterator	  it = buf.begin();
 	std::string					  temp_string;
@@ -188,7 +121,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 	uri_location_map_p			  saved_location_uri_map_1;
 	server_map_p				  saved_server_name_map_2;
 	total_port_server_map_p&	  saved_total_port_map_3 = config_map;
-	// total_port_server_map_p::iterator total_conf_it			 = config_map.begin();
 
 	enum {
 		conf_zero = 0,
@@ -231,21 +163,71 @@ spx_config_syntax_checker(std::string const&	   buf,
 	state	   = conf_zero;
 	next_state = conf_start;
 
+#ifdef CONFIG_STATE_DEBUG
+	config_state_e debug_prev_state = static_cast<config_state_e>(prev_state);
+#endif
+
 	while (state != conf_done) {
-#ifdef DEBUG
-		std::cout << "state : "
-				  << "\033[1;33m" << config_state_str_(static_cast<config_state_e>(state)) << "\033[0m" << std::endl;
+
+#ifdef CONFIG_STATE_DEBUG
+		if (debug_prev_state != state) {
+			if (state != conf_start && state != conf_waiting_default_value && state != conf_waiting_location_value) {
+				std::cout << "state : "
+						  << "\033[1;33m" << config_state_str_(static_cast<config_state_e>(state)) << "\033[0m" << std::endl;
+			}
+			debug_prev_state = static_cast<config_state_e>(state);
+		}
 #endif
 		switch (state) {
+
 		case conf_zero: {
-			memset_(temp_basic_server_info);
+			if (server_count != 0) {
+				temp_basic_server_info.uri_case = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
+				server_info_t					  yoma(temp_basic_server_info);
+				total_port_server_map_p::iterator check_port_map;
+
+				saved_server_name_map_2.insert(std::make_pair(yoma.server_name, yoma)); // STEP2: saved server to map
+				check_port_map = saved_total_port_map_3.find(temp_basic_server_info.port);
+				if (check_port_map == saved_total_port_map_3.end()) { // STEP3: saved map to total map (port not exist case)
+					spx_log_("port not exist case : add new port to map");
+					std::pair<std::map<const uint32_t, server_map_p>::iterator, bool> check_dup; // check server name dup case
+					check_dup = saved_total_port_map_3.insert(std::make_pair(temp_basic_server_info.port, saved_server_name_map_2));
+					if (check_dup.second == false) {
+						return error_("conf_zero", "server_map_p insert fail");
+					}
+				} else { // STEP3: saved map to total map (port exist case)
+					spx_log_("port exist case : add new server to port");
+					if (temp_basic_server_info.default_server_flag == default_server) { // check default server dup case
+						for (server_map_p::iterator it = check_port_map->second.begin(); it != check_port_map->second.end(); ++it) {
+							if (it->second.default_server_flag == default_server) {
+								return error_("conf_zero", "default server is already exist");
+							}
+						}
+					}
+					spx_log_("default_server dup check done");
+					std::pair<std::map<const std::string, server_info_t>::iterator, bool> check_dup; // check server name dup case
+					check_dup = check_port_map->second.insert(std::make_pair(temp_basic_server_info.server_name, temp_basic_server_info));
+					if (check_dup.second == false) {
+						return error_("conf_zero", "server name is already exist");
+					}
+					spx_log_("server name dup check done");
+					// TODO: final stage : check default keyword in same port pool, is there only one default server?;
+				}
+#ifdef CONFIG_DEBUG
+#endif
+				server_info_for_copy_stage_t flush_server_info;
+				temp_basic_server_info = flush_server_info;
+				// temp_basic_server_info.uri_case.clear()
+			} else {
+				memset_(temp_basic_server_info);
+			}
 			memset_(flag_default_part);
 			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
 			memset_(size_count);
 			memset_(location_count);
-			memset_(saved_location_uri_map_1); // NOTE:
-			memset_(saved_server_name_map_2); // NOTE:: check why this is needed
+			saved_location_uri_map_1.clear();
+			saved_server_name_map_2.clear();
 			temp_string.clear();
 			prev_state = state;
 			state	   = next_state;
@@ -380,7 +362,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 				size_count = 0;
 				break;
 			}
-			spx_log_(*it);
 			return error_("conf_waiting_value", "isspace not found - syntax error");
 		}
 
@@ -415,7 +396,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("conf_server_CB_open", "syntax error");
 		}
 
-		case conf_server_CB_close: { // TODO: add server_map_p to total_server_map_p
+		case conf_server_CB_close: {
 			if (*it == '}') {
 				++it;
 				prev_state = state;
@@ -424,15 +405,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (location_count == 0) {
 					return error_("conf_server_CB_close", "empty server block - syntax error");
 				}
-				uri_location_map_p& check_uri_location_map = saved_total_port_map_3.find(temp_basic_server_info.port)->second.find(temp_basic_server_info.server_name)->second.uri_case;
-				check_uri_location_map					   = saved_location_uri_map_1;
 				break;
 			}
 			return error_("conf_server_CB_close", "syntax error");
 		}
 
 		case conf_listen: {
-			if (syntax_(listen_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_listen_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
@@ -505,7 +484,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_server_name: {
-			if (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
+			if (syntax_(config_uri_host_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
@@ -529,6 +508,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_basic_server_info.error_page = temp_string;
 				prev_state						  = state;
 				state							  = conf_start;
@@ -555,11 +537,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 					} else if (*it == 'K') {
 						check_body_size *= 1024;
 					}
+					++it;
 					temp_basic_server_info.client_max_body_size = check_body_size;
+					prev_state									= state;
+					state										= conf_start;
+					next_state									= conf_waiting_default_value;
 					flag_default_part |= flag_client_max_body_size;
-					prev_state = state;
-					state	   = conf_start;
-					next_state = conf_waiting_default_value;
+					temp_string.clear();
+					size_count = 0;
 				} else {
 					return error_("conf_client_max_body_size - minus size", "syntax error");
 				}
@@ -570,6 +555,17 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_zero: {
+			if (location_count != 0) {
+				std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
+				check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
+				if (check_dup.second == false) {
+					return error_("conf_location_zero", "duplicate location");
+				}
+#ifdef CONFIG_DEBUG
+				spx_log_(check_dup.first->first.c_str());
+				check_dup.first->second.print();
+#endif
+			}
 			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
 			memset_(size_count);
@@ -700,23 +696,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
-			if (location_count == 0) {
-				total_port_server_map_p::iterator check_ip_server_map;
-
-				check_ip_server_map = saved_total_port_map_3.find(temp_basic_server_info.port);
-				if (check_ip_server_map == saved_total_port_map_3.end()) {
-					saved_server_name_map_2.insert(std::pair<const std::string, server_info_t>(temp_basic_server_info.server_name, temp_basic_server_info));
-					saved_total_port_map_3.insert(std::pair<const uint32_t, server_map_p>(temp_basic_server_info.port, saved_server_name_map_2));
-					saved_server_name_map_2.clear();
-				} else {
-					std::pair<std::map<const std::string, server_info_t>::iterator, bool> check_dup;
-
-					check_dup = check_ip_server_map->second.insert(std::pair<const std::string, server_info_t>(temp_basic_server_info.server_name, temp_basic_server_info));
-					if (check_dup.second == false) {
-						return error_("conf_location_uri", "server name is already exist");
-					}
-				}
-			}
 			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
@@ -730,6 +709,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
+			return error_("conf_location_uri", "syntax error");
 		}
 
 		case conf_location_CB_open: {
@@ -750,13 +730,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state = state;
 				state	   = conf_location_zero;
 				next_state = conf_start;
-
-				std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
-				// NOTE : move to save and move to server.uri_case in saved_total_port_map_3
-				check_dup = saved_location_uri_map_1.insert(std::pair<const std::string, uri_location_t>(temp_uri_location_info.uri, temp_uri_location_info));
-				if (check_dup.second == false) {
-					return error_("conf_location_CB_close", "location uri is already exist");
-				}
 				break;
 			}
 			return error_("conf_location_CB_close", "syntax error");
@@ -835,6 +808,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.root = temp_string;
 				prev_state					= state;
 				state						= conf_start;
@@ -853,6 +829,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.index = temp_string;
 				prev_state					 = state;
 				state						 = conf_start;
@@ -891,6 +870,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.redirect = temp_string;
 				prev_state						= state;
 				state							= conf_start;
@@ -909,6 +891,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.saved_path = temp_string;
 				prev_state						  = state;
 				state							  = conf_start;
@@ -927,6 +912,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.cgi_pass = temp_string;
 				prev_state						= state;
 				state							= conf_start;
@@ -945,6 +933,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				if (*(it - 1) == ';') {
+					temp_string.pop_back();
+				}
 				temp_uri_location_info.cgi_path_info = temp_string;
 				prev_state							 = state;
 				state								 = conf_start;
@@ -962,9 +953,15 @@ spx_config_syntax_checker(std::string const&	   buf,
 			break;
 		}
 
-		default:
+		default: {
 			return error_("syntax error", "config file");
 		}
+		}
 	}
+#ifdef CONFIG_DEBUG
+	std::cout << "\033[1;31m"
+			  << " -- config file parsed successfully -- "
+			  << "\033[0m" << std::endl;
+#endif
 	return spx_ok;
 }

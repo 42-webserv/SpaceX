@@ -11,45 +11,6 @@
  * --------------------
  */
 
-#define CONFIG_STATE_MAP(XX)                               \
-	XX(0, ZERO, Continue)                                  \
-	XX(1, START, skip space)                               \
-	XX(2, ENDLINE, check endline)                          \
-	XX(3, WAITING_DEFAULT_VALUE, waiting default value)    \
-	XX(4, SERVER, server position found)                   \
-	XX(5, SERVER_OPEN, server curly bracket open)          \
-	XX(6, SERVER_CLOSE, server curly bracket close)        \
-	XX(7, LISTEN, listen found)                            \
-	XX(8, LISTEN_DEFAULT, default_server)                  \
-	XX(9, SERVER_NAME, server_name)                        \
-	XX(10, ERROR_PAGE, error_page)                         \
-	XX(11, CLIENT_MAX_BODY_SIZE, client_max_body_size)     \
-	XX(12, WAITING_LOCATION_VALUE, waiting location value) \
-	XX(13, LOCATION_ZERO, location flush)                  \
-	XX(14, LOCATION_URI, location uri)                     \
-	XX(15, LOCATION_OPEN, location curly bracket open)     \
-	XX(16, LOCATION_CLOSE, location curly bracket close)   \
-	XX(17, ACCEPTED_METHODS, accepted_methods)             \
-	XX(18, ROOT, root)                                     \
-	XX(19, INDEX, index)                                   \
-	XX(20, AUTOINDEX, autoindex)                           \
-	XX(21, REDIRECT, redirect)                             \
-	XX(22, SAVED_PATH, saved_path)                         \
-	XX(23, CGI_PASS, cgi_pass)                             \
-	XX(24, CGI_PATH_INFO, cgi_path_info)                   \
-	XX(25, ALMOST_DONE, almost done)                       \
-	XX(26, DONE, done)
-
-typedef enum config_state {
-#define XX(num, name, string) CONFIG_STATE_##name = num,
-	CONFIG_STATE_MAP(XX)
-#undef XX
-} config_state_e;
-
-/*
- * --------------------
- */
-
 enum {
 	KSame = 0,
 	KDiff
@@ -77,7 +38,7 @@ typedef enum {
  * --------------------
  */
 
-struct uri_location_for_copy_stage {
+typedef struct uri_location_for_copy_stage {
 	std::string			uri;
 	module_case_state_e module_state;
 	uint8_t				accepted_methods_flag;
@@ -88,9 +49,9 @@ struct uri_location_for_copy_stage {
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
-};
+} uri_location_for_copy_stage_t;
 
-struct server_info_for_copy_stage {
+typedef struct server_info_for_copy_stage {
 	std::string			   ip;
 	uint32_t			   port;
 	default_server_state_e default_server_flag;
@@ -99,7 +60,7 @@ struct server_info_for_copy_stage {
 	uint64_t			   client_max_body_size;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
-};
+} server_info_for_copy_stage_t;
 
 typedef std::map<const uint32_t, server_map_p> total_port_server_map_p;
 // < port_number , < server_name, server_info_t> > my_config_map;
