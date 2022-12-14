@@ -380,6 +380,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				size_count = 0;
 				break;
 			}
+			spx_log_(*it);
 			return error_("conf_waiting_value", "isspace not found - syntax error");
 		}
 
@@ -451,13 +452,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 					}
 					temp_basic_server_info.port = std::atoi(temp_string.c_str());
 				} else if (10 < size_count && size_count <= 15) { // IP:PORT case / 127.0.0.1:80808 - 15 / localhost:80808 - 15
-					if (temp_string.compare("localhost:") == KSame
-						|| temp_string.compare("127.0.0.1:") == KSame) {
+					if (temp_string.compare(0, 10, "localhost:") == KSame
+						|| temp_string.compare(0, 10, "127.0.0.1:") == KSame) {
 						temp_it += 10;
 						temp_cycle -= 10;
 						while (temp_cycle) {
-							if (std::isdigit(*(temp_it + temp_cycle))) {
-								--temp_cycle;
+							if (std::isdigit(*temp_it)) {
+								temp_it++;
+								temp_cycle--;
 							} else {
 								return error_("conf_listen invalid PORT", "syntax error");
 							}
@@ -465,7 +467,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 						temp_string.erase(0, 10);
 						temp_basic_server_info.port = std::atoi(temp_string.c_str());
 					} else {
-						spx_log_(temp_string);
 						return error_("conf_listen invalid IP:", "syntax error");
 					}
 				} else {
