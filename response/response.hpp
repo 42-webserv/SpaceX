@@ -8,7 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "file_utils.hpp"
 #include "response_form.hpp"
+
+#define SERVER_HEADER_KEY "Server"
+#define SERVER_HEADER_VALUE "SpaceX"
+#define SERVER_HEADER_CONTENT_LENGTH "Content-Legnth"
+#define TEST_FILE "html/test.html"
 
 struct Response {
 	typedef std::pair<std::string, std::string> header;
@@ -57,10 +63,11 @@ private:
 	};
 
 	void
-	setContentLength() {
-		std::stringstream stream;
-		stream << body_.size();
-		headers_.push_back(header("Content-Length", stream.str()));
+	setContentLength(const std::string dir) {
+		off_t			  length = getLength(dir);
+		std::stringstream ss;
+		ss << length;
+		headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
 	}
 
 public:
@@ -78,16 +85,27 @@ public:
 		, status_code_(status) {
 		generateStatus_(status);
 	};
+	void
+	generateCommonHeader() {
+		headers_.push_back(header(SERVER_HEADER_KEY, SERVER_HEADER_VALUE));
+		headers_.push_back(header());
+		// TODO: lseek 로 content-length 구해서 넣기
+		// headers_.push_back();
+	};
 
 	// make
 	std::string
 	make_test() {
 		std::stringstream stream;
+		// open some file for response
+		// content type check - extention check
 		setContentType(NULL);
+		// check file length (lseek)
+		setContentLength(TEST_FILE);
+		// set body
 		setBody("<html>\r\n"
 				"<body>hello</body>\r\n"
 				"</html>\r\n");
-		setContentLength();
 		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
 			   << "\r\n";
 		for (std::vector<Response::header>::const_iterator it = headers_.begin();
@@ -109,6 +127,7 @@ public:
 			body_.push_back(*content++);
 		}
 	}
+
 	void
 	setContentType(const char* content_type) {
 		if (content_type == NULL)
