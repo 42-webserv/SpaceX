@@ -61,7 +61,7 @@ typedef struct server_info {
 	const uint32_t				 port;
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
-	const std::string			 error_page;
+	const std::string			 error_page; // TODO : error_page change to map
 	const uint64_t				 client_max_body_size;
 	mutable uri_location_map_p	 uri_case;
 	//
@@ -75,10 +75,21 @@ typedef struct server_info {
 /*
  * --------------------
  */
+
+typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
+typedef std::map<const std::string, const server_info_t>  server_map_p;
+
+typedef std::map<const std::uint32_t, const server_map_p> total_port_server_map_p;
+
+// std::map<std::string, server_info_t> test_map;
+// test_map.insert(std::pair<std::string, server_info_t>(test.server_name, test));
+// test_map.insert(std::pair<std::string, server_info_t>(test2.server_name, test2));
+// server_info_copy.uri_case.insert(std::pair<const std::string, const uri_location_t>("/first", location));
+
 typedef std::map<const std::string, const server_info_t> server_map_p;
 typedef struct target_port_server_info {
 	server_info_t* my_port_default_server_ptr;
-	server_map_p   my_port_map;
+	server_map_p*  my_port_map;
 	// add handler function
 
 } target_port_server_info_t;

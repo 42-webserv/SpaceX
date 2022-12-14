@@ -142,17 +142,22 @@ status
 spx_config_syntax_checker(std::string const&	   buf,
 						  total_port_server_map_p& config_map) { // TODO : [add function] check default_server is exist and properly handle
 
-	std::string::const_iterator		  it			= buf.begin();
+	std::string::const_iterator	  it = buf.begin();
+	std::string					  temp_string;
+	uint8_t						  flag_default_part;
+	uint8_t						  flag_location_part;
+	uint8_t						  size_count;
+	uint32_t					  server_count	 = 0;
+	uint32_t					  location_count = 0;
+	server_info_for_copy_stage_t  temp_basic_server_info;
+	uri_location_for_copy_stage_t temp_uri_location_info;
+	uri_location_map_p			  saved_location_uri_map_1; // TODO: need to flush
+	server_map_p				  saved_server_name_map_2; // TODO: need to flush
+	total_port_server_map_p&	  saved_total_port_map_3 = config_map;
+
+	server_map_p::iterator			  per_port_server_it; // TODO :: saved server info
+	uri_location_map_p::iterator	  per_uri_location_it; // TODO :: saved location info
 	total_port_server_map_p::iterator total_conf_it = config_map.begin();
-	server_map_p::iterator			  per_port_server_it;
-	uri_location_map_p::iterator	  per_uri_location_it;
-	std::string						  temp_string;
-	uint8_t							  flag_default_part;
-	uint8_t							  flag_location_part;
-	uint8_t							  size_count;
-	uint32_t						  server_count = 0;
-	server_info_for_copy_stage_t	  temp_basic_server_info;
-	uri_location_for_copy_stage_t	  temp_uri_location_info;
 
 	enum {
 		conf_zero,
@@ -173,7 +178,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_waiting_location_value,
 
 		conf_location_zero,
-		conf_location_uri, // NOTE:: check is_set default value.
+		conf_location_uri,
 		conf_location_CB_open,
 		conf_location_CB_close,
 		conf_accepted_methods,
@@ -201,9 +206,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
 			memset_(size_count);
+			memset_(location_count);
+			memset_(saved_location_uri_map_1); // NOTE:
+			memset_(saved_server_name_map_2); // NOTE:: check why this is needed
 			temp_string.clear();
 			prev_state = state;
-			state	   = conf_start;
+			state	   = next_state;
 			next_state = conf_server;
 			break;
 		}
@@ -359,16 +367,18 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("conf_server_CB_open", "syntax error");
 		}
 
-		case conf_server_CB_close: {
+		case conf_server_CB_close: { // TODO: add server_map_p to total_server_map_p
 			if (*it == '}') {
 				++it;
 				prev_state = state;
 				state	   = conf_zero;
+				next_state = conf_start;
+				if (location_count == 0) {
+					return error_("conf_server_CB_close", "empty server block - syntax error");
+				}
 				break;
 			}
 			return error_("conf_server_CB_close", "syntax error");
-
-			break;
 		}
 
 		case conf_listen: {
@@ -429,7 +439,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 			break;
 		}
 
-		case conf_listen_default: { // NOTE: check other default server
+		case conf_listen_default: {
 			if (buf.compare(it - buf.begin(), 14, "default_server") == KSame) {
 				temp_basic_server_info.default_server_flag = default_server;
 				it += 14;
@@ -508,13 +518,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 			break;
 		}
 
-		case conf_location_zero: { // TODO: add uri_location to temp_server_info;
+		case conf_location_zero: {
 			memset_(temp_uri_location_info);
 			memset_(flag_location_part);
 			memset_(size_count);
 			temp_string.clear();
 			prev_state = state;
-			state	   = conf_start;
+			state	   = next_state;
 			next_state = conf_waiting_default_value;
 			break;
 		}
@@ -583,7 +593,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_redirect;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					if (temp_string.compare("location") == KSame) {
+						return error_("conf_waiting_default_value", "location depth is only 1 supported - syntax error");
+					}
 				}
 				case 9: {
 					if (temp_string.compare("autoindex") == KSame) {
@@ -637,6 +649,27 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
+			if (location_count == 0) {
+				// TODO : search IP -> if not -> server_map_p init -> add
+				// TODO : if exist -> search ip.server_map_p -> insert name, info
+
+				total_port_server_map_p::const_iterator check_ip_server_map;
+
+				check_ip_server_map = saved_total_port_map_3.find(temp_basic_server_info.port);
+				if (check_ip_server_map == saved_total_port_map_3.end()) {
+					// add server_map_p
+				} else {
+					// find that server_map_p
+				}
+
+				// typedef std::map<const std::uint32_t, const server_map_p> total_port_server_map_p;
+				std::pair<std::map<const std::string, const server_info_t>::iterator, bool> check_dup;
+
+				check_dup = saved_server_name_map_2.insert(std::pair<std::string, server_info_t>(temp_basic_server_info.server_name, temp_basic_server_info));
+				if (check_dup.second == false) {
+					return error_("conf_location_uri", "server name is already exist");
+				}
+			}
 			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
@@ -658,16 +691,24 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state = state;
 				state	   = conf_start;
 				next_state = conf_waiting_location_value;
+				++location_count;
 				break;
 			}
 			return error_("conf_location_CB_open", "syntax error");
 		}
 
-		case conf_location_CB_close: {
+		case conf_location_CB_close: { // TODO: add temp_uri_location_info to uri_location_map_p in server_map_p
 			if (*it == '}') {
 				++it;
 				prev_state = state;
 				state	   = conf_location_zero;
+				next_state = conf_start;
+
+				// typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
+				std::pair<std::map<const std::string, const uri_location_t>::iterator, bool> check_dup;
+				// check_dup =
+				// server_info_copy.uri_case.insert(std::pair<const std::string, const uri_location_t>("/first", location));
+
 				break;
 			}
 			return error_("conf_location_CB_close", "syntax error");
