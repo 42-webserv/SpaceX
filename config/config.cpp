@@ -211,9 +211,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 #ifdef CONFIG_DEBUG
 #endif
-				server_info_for_copy_stage_t flush_server_info;
-				temp_basic_server_info = flush_server_info;
-				// temp_basic_server_info.uri_case.clear()
+				// server_info_for_copy_stage_t flush_server_info;
+				// temp_basic_server_info = flush_server_info;
 			}
 			temp_uri_location_info.accepted_methods_flag = 0;
 			flag_default_part							 = 0;
@@ -560,8 +559,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				check_dup.first->second.print();
 #endif
 			}
-			uri_location_for_copy_stage_t flush_uri_location_info;
-			temp_uri_location_info						 = flush_uri_location_info;
+			// uri_location_for_copy_stage_t flush_uri_location_info;
+			// temp_uri_location_info						 = flush_uri_location_info;
 			temp_uri_location_info.accepted_methods_flag = 0;
 			flag_location_part							 = 0;
 			size_count									 = 0;
