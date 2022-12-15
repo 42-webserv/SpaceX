@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 
+class t_client_buf;
+
 namespace {
 
 	uint32_t usual_[] = {
@@ -91,7 +93,7 @@ namespace {
 } // namespace
 
 status
-spx_http_syntax_start_line(std::string const& line) {
+spx_http_syntax_start_line(std::string const& line, t_client_buf &buf) {
 	std::string::const_iterator it = line.begin();
 	size_t						temp_len;
 	enum {
@@ -144,13 +146,13 @@ spx_http_syntax_start_line(std::string const& line) {
 				}
 				break;
 			case 6:
-				if (line.find("DELETE", 0, 5) != std::string::npos) {
+				if (line.find("DELETE", 0, 6) != std::string::npos) {
 					// add method to struct or class_member
 					state = spx_sp_before_uri;
 				}
 				break;
 			case 7:
-				if (line.find("OPTIONS", 0, 5) != std::string::npos) {
+				if (line.find("OPTIONS", 0, 7) != std::string::npos) {
 					// add method to struct or class_member
 					state = spx_sp_before_uri;
 				}
@@ -183,8 +185,8 @@ spx_http_syntax_start_line(std::string const& line) {
 
 		case spx_uri: { // start uri check
 			if (syntax_(usual_, static_cast<uint8_t>(*it))) {
+			while (it != line.end() && syntax_(usual_, *it) && *it != ' ') {
 				++it;
-				break;
 			}
 			if (*it == ' ') {
 				++it;
@@ -195,9 +197,24 @@ spx_http_syntax_start_line(std::string const& line) {
 		}
 
 		case spx_proto: {
-			if (line.compare(it - line.begin(), 8, "HTTP/1.1") == 0) {
+			if (line.compare(it - line.begin(), 5, "HTTP/") == 0) {
 				// add proto to struct or class_member
-				it += 8;
+				it += 5;
+				if (line.compare(it - line.begin(), 2, "1.") == 0)  {
+					it += 2;
+				} else if (line.compare(it - line.begin(), 2, "2.") == 0) {
+					it += 2;
+				} else {
+					while (it != line.end() && isdigit(*it)) {
+						++it;
+					}
+					if (it == line.end()) {
+						// Not Supported.
+					}
+					else {
+						// Not allowed.
+					}
+				} 
 				state = spx_almost_done;
 				break;
 			}
@@ -205,7 +222,7 @@ spx_http_syntax_start_line(std::string const& line) {
 		}
 
 		case spx_almost_done: {
-			if (line.find("\r\n", it - line.begin(), 2) != std::string::npos) {
+			if (it == line.end()) {
 				state = spx_done;
 				break;
 			}
