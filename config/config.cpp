@@ -1,6 +1,5 @@
 #include "config.hpp"
 #include "port_info.hpp"
-#include "spacex_type.hpp"
 #include <cctype>
 #include <cstring>
 #include <string>
