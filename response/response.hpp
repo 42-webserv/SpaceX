@@ -8,8 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "file_utils.hpp"
+// #include "file_utils.hpp"
+
+// for file handling
 #include "response_form.hpp"
+#include <fcntl.h>
+#include <unistd.h>
 
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
@@ -61,22 +65,22 @@ private:
 		stream << status << " " << http_status_sstr(status);
 		status_ = stream.str();
 	};
-
-	void
-	setContentLength(const std::string dir) {
-		off_t			  length = getLength(dir);
-		std::stringstream ss;
-		ss << length;
-		headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
-	}
-
+	/*
+		void
+		setContentLength(const std::string dir) {
+			off_t			  length = getLength(dir);
+			std::stringstream ss;
+			ss << length;
+			headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
+		}
+	*/
 public:
 	// constructor
 	Response()
 		: version_minor_(1)
 		, version_major_(1)
 		, status_code_(HTTP_STATUS_BAD_REQUEST) {
-		generateStatus_(HTTP_STATUS_BAD_REQUEST);
+		generateStatus_(HTTP_STATUS_OK);
 	};
 
 	Response(enum http_status status)
@@ -100,12 +104,7 @@ public:
 		// open some file for response
 		// content type check - extention check
 		setContentType(NULL);
-		// check file length (lseek)
-		setContentLength(TEST_FILE);
-		// set body
-		setBody("<html>\r\n"
-				"<body>hello</body>\r\n"
-				"</html>\r\n");
+		setBody(TEST_FILE);
 		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
 			   << "\r\n";
 		for (std::vector<Response::header>::const_iterator it = headers_.begin();
@@ -113,6 +112,7 @@ public:
 			stream << it->first << ": " << it->second << "\r\n";
 		stream << "\r\n";
 		std::string data(body_.begin(), body_.end());
+		// std::cout << data << std::endl;
 		stream << data << "\r\n";
 		return stream.str();
 	}
@@ -122,10 +122,33 @@ public:
 	//  TODO : 요청에 따른 필수 Header key value 셋팅
 
 	void
-	setBody(const char* content) {
-		while (*content) {
-			body_.push_back(*content++);
+	setBody(const char* dir) {
+
+		int fd = open(dir, O_RDONLY);
+		if (fd < 0)
+			std::cout << "fd error" << std::endl;
+		off_t length = lseek(fd, 0, SEEK_END);
+		off_t i = 0;
+		char  buf[1024];
+
+		std::stringstream ss;
+		ss << length;
+		headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
+
+		std::cout << read(fd, buf, 1024)
+				  << std::endl;
+		int x = 0;
+		while (buf[x]) {
+			std::cout << *buf << std::endl;
+			x++;
 		}
+
+		for (off_t i = 0; i < length; i++) {
+			body_.push_back(buf[i]);
+		}
+		for (std::vector<char>::iterator it = body_.begin(); it != body_.end(); it++)
+			std::cout << *it;
+		std::cout << "\n";
 	}
 
 	void

@@ -2,6 +2,6 @@
 #include <iostream>
 int
 main(void) {
-	Response r;
+	Response r(HTTP_STATUS_ACCEPTED);
 	std::cout << r.make_test() << std::endl;
 }
