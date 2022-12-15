@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #ifdef CONFIG_DEBUG
 #include <iostream>
@@ -53,7 +54,8 @@ namespace {
 	XX(23, CGI_PASS, cgi_pass)                             \
 	XX(24, CGI_PATH_INFO, cgi_path_info)                   \
 	XX(25, ALMOST_DONE, almost done)                       \
-	XX(26, DONE, done)
+	XX(26, DONE, done)                                     \
+	XX(27, ERROR_PAGE_NUMBER, error page number)
 
 	typedef enum config_state {
 #define XX(num, name, string) CONFIG_STATE_##name = num,
@@ -115,6 +117,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 	uint32_t					  location_count = 0;
 	server_info_for_copy_stage_t  temp_basic_server_info;
 	uri_location_for_copy_stage_t temp_uri_location_info;
+	std::vector<uint32_t>		  temp_error_page_number;
+	uint8_t						  flag_error_page_default = 0;
+	error_page_map_p			  saved_error_page_map_0;
 	uri_location_map_p			  saved_location_uri_map_1;
 	server_map_p				  saved_server_name_map_2;
 	total_port_server_map_p&	  saved_total_port_map_3 = config_map;
@@ -152,7 +157,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_cgi_path_info,
 
 		conf_almost_done, // 25
-		conf_done
+		conf_done,
+		conf_error_page_number
 	} state,
 		prev_state,
 		next_state;
@@ -179,7 +185,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_zero: {
 			if (server_count != 0) {
-				temp_basic_server_info.uri_case = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
+				temp_basic_server_info.uri_case		   = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
+				temp_basic_server_info.error_page_case = saved_error_page_map_0; // STEP 1: saved_error_page_ to server
 				server_info_t					  yoma(temp_basic_server_info);
 				total_port_server_map_p::iterator check_port_map;
 
@@ -215,10 +222,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 				// temp_basic_server_info = flush_server_info;
 			}
 			temp_uri_location_info.accepted_methods_flag = 0;
+			temp_basic_server_info.default_server_flag	 = other_server;
 			flag_default_part							 = 0;
 			flag_location_part							 = 0;
+			flag_error_page_default						 = 0;
 			size_count									 = 0;
 			location_count								 = 0;
+			temp_error_page_number.clear();
+			saved_error_page_map_0.clear();
 			saved_location_uri_map_1.clear();
 			saved_server_name_map_2.clear();
 			temp_string.clear();
@@ -307,10 +318,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (temp_string.compare("location") == KSame) {
 						if (!(flag_default_part & flag_listen)
 							|| !(flag_default_part & flag_server_name)
-							|| !(flag_default_part & flag_error_page)
 							|| !(flag_default_part & flag_client_max_body_size)) {
 							return error_("conf_waiting_value",
-										  "need sed default value before location - syntax error");
+										  "need to set default value before location - syntax error");
 						}
 						next_state = conf_location_uri;
 						break;
@@ -319,10 +329,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 10: {
 					if (temp_string.compare("error_page") == KSame) {
-						if (flag_default_part & flag_error_page) {
-							return error_("conf_waiting_value", "error_page is already set");
-						}
-						next_state = conf_error_page;
+						next_state = conf_error_page_number;
 						break;
 					}
 					return error_("conf_waiting_value", "10 - syntax error");
@@ -493,21 +500,72 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("conf_server_name", "syntax error");
 		}
 
-		case conf_error_page: { // NOTE : is it need to check valid path?
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+		case conf_error_page_number: {
+			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++it;
+				++size_count;
+				break;
+			} else if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+				if (prev_state == conf_error_page_number) {
+					prev_state = state;
+					state	   = conf_error_page;
+					break;
+				} else if (prev_state == conf_waiting_default_value) {
+					flag_error_page_default |= 1;
+					prev_state = state;
+					state	   = conf_error_page;
+					break;
+				} else {
+					return error_("conf_error_page_number : how can you reach here", "syntax error");
+				}
+			}
+			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
+				if (size_count == 3) {
+					temp_error_page_number.push_back(std::atoi(temp_string.c_str()));
+					size_count = 0;
+					temp_string.clear();
+					prev_state = state;
+					state	   = conf_start;
+					next_state = conf_error_page_number;
+					break;
+				} else {
+					return error_("conf_error_page_number : ONLY 3 DIGIT", "syntax error");
+				}
+			}
+			return error_("conf_error_page_number", "syntax error");
+		}
+
+		case conf_error_page: {
+			// typedef std::map<const uint32_t, const std::string> error_page_map_p;
+			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				if (*(it - 1) == ';') {
-					temp_string.pop_back();
+				if (flag_error_page_default) {
+					if (!(flag_default_part & flag_error_page)) {
+						flag_default_part |= flag_error_page;
+						temp_basic_server_info.default_error_page = temp_string;
+						flag_error_page_default					  = 0;
+					} else {
+						return error_("conf_error_page : default error page already exist", "syntax error");
+					}
 				}
-				temp_basic_server_info.error_page = temp_string;
-				prev_state						  = state;
-				state							  = conf_start;
-				next_state						  = conf_waiting_default_value;
-				flag_default_part |= flag_error_page;
+				{
+					for (std::vector<uint32_t>::iterator it = temp_error_page_number.begin(); it != temp_error_page_number.end(); ++it) {
+						std::pair<error_page_map_p::iterator, bool> dup_check;
+						dup_check = saved_error_page_map_0.insert(std::make_pair(*it, temp_string));
+						if (dup_check.second == false) {
+							return error_("conf_error_page : duplicate error page number", "syntax error");
+						}
+					}
+					temp_error_page_number.clear();
+				}
+				prev_state = state;
+				state	   = conf_start;
+				next_state = conf_waiting_default_value;
 				temp_string.clear();
 				break;
 			}
@@ -528,6 +586,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 						check_body_size *= (1024 * 1024);
 					} else if (*it == 'K') {
 						check_body_size *= 1024;
+					}
+					if (check_body_size > 2147483647) {
+						return error_("conf_client_max_body_size : 255M or 262131K limited", "syntax error");
+					} else if (check_body_size <= 0) {
+						return error_("conf_client_max_body_size : 0 or - size not supported", "syntax error");
 					}
 					++it;
 					temp_basic_server_info.client_max_body_size = check_body_size;

@@ -57,8 +57,8 @@ typedef struct server_info_for_copy_stage {
 	uint32_t			   port;
 	default_server_state_e default_server_flag;
 	std::string			   server_name;
-	std::string			   error_page;
 	uint64_t			   client_max_body_size;
+	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
 } server_info_for_copy_stage_t;

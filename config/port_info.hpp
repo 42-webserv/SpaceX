@@ -62,8 +62,8 @@ typedef struct server_info {
 	const uint32_t				 port;
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
-	const std::string			 error_page;
 	const uint64_t				 client_max_body_size;
+	const std::string			 default_error_page;
 	mutable error_page_map_p	 error_page_case;
 	mutable uri_location_map_p	 uri_case;
 	//

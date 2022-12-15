@@ -76,15 +76,23 @@ server_info_t::print(void) const {
 	std::cout << "[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
-	std::cout << "default_server_flag: " << default_server_flag << std::endl;
+	if (default_server_flag == default_server)
+		std::cout << "default_server_flag: on" << std::endl;
+	else
+		std::cout << "default_server_flag: off" << std::endl;
 	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
-	std::cout << "error_page: " << error_page << std::endl;
 
-	// error_page_map_p::iterator it_error_page = error_page_case.begin();
-	// while (it_error_page != error_page_case.end()) {
-	// 	std::cout << "error_page: " << it_error_page->first << " " << it_error_page->second << std::endl;
-	// 	it_error_page++;
-	// }
+	if (default_error_page != "")
+		std::cout << "\ndefault_error_page: " << default_error_page << std::endl;
+	else
+		std::cout << "\ndefault_error_page: none" << std::endl;
+	std::cout << "error_page_case: " << error_page_case.size() << std::endl;
+	error_page_map_p::iterator it_error_page = error_page_case.begin();
+	while (it_error_page != error_page_case.end()) {
+		std::cout << it_error_page->first << " : " << it_error_page->second << std::endl;
+		it_error_page++;
+	}
+	std::cout << std::endl;
 
 	std::cout << "uri_case: " << uri_case.size() << std::endl;
 	uri_location_map_p::iterator it = uri_case.begin();
@@ -102,13 +110,15 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	, port(from.port)
 	, default_server_flag(from.default_server_flag)
 	, server_name(from.server_name)
-	, error_page(from.error_page)
-	, client_max_body_size(from.client_max_body_size) {
+	, client_max_body_size(from.client_max_body_size)
+	, default_error_page(from.default_error_page) {
 #ifdef CONFIG_DEBUG
 
 	std::cout << "server_info copy construct" << std::endl;
 #endif
-	// error_page_case = from.error_page_case;
+	if (from.error_page_case.size() != 0) {
+		error_page_case.insert(from.error_page_case.begin(), from.error_page_case.end());
+	}
 	if (from.uri_case.size() != 0) {
 		uri_case.insert(from.uri_case.begin(), from.uri_case.end());
 	}
