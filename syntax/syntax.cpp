@@ -1,7 +1,6 @@
 #include "syntax.hpp"
 #include <iostream>
 #include <sstream>
-#include <string>
 
 class t_client_buf;
 
@@ -63,16 +62,18 @@ namespace {
 		0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
 	};
 
-	uint8_t chunked_[] = {
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"0123456789\0\0\0\0\0\0"
-		"\0ABCDEFGHIJKLMNOPQRSTUVWXYZ\0\0\0\0\0"
-		"\0abcdefghijklmnopqrstuvwxyz\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+	uint32_t chunked_size_[] = {
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+		0x03ff0000, /*	0000 0011 1111 1111  0000 0000 0000 0000 */
+		/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
+		/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */
+		0x07fffffe, /*	0000 0111 1111 1111  1111 1111 1111 1110 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
+		0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 	};
 
 	inline status
@@ -84,7 +85,7 @@ namespace {
 		return spx_error;
 	}
 
-	inline int
+	inline uint8_t
 	syntax_(const uint32_t table[8], uint8_t c) {
 		return (table[(c >> 5)] & (1U << (c & 0x1f)));
 	}
@@ -111,7 +112,7 @@ spx_http_syntax_start_line(std::string const& line, t_client_buf &buf) {
 	while (state != spx_done) {
 		switch (state) {
 		case spx_start: {
-			if (syntax_(start_line_, *it)) {
+			if (syntax_(start_line_, static_cast<uint8_t>(*it))) {
 				state = spx_method;
 				// add request start point to struct
 				break;
@@ -183,6 +184,7 @@ spx_http_syntax_start_line(std::string const& line, t_client_buf &buf) {
 		}
 
 		case spx_uri: { // start uri check
+			if (syntax_(usual_, static_cast<uint8_t>(*it))) {
 			while (it != line.end() && syntax_(usual_, *it) && *it != ' ') {
 				++it;
 			}
@@ -369,7 +371,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 	while (state != spx_done) {
 		switch (state) {
 		case spx_start: {
-			if (chunked_[static_cast<uint8_t>(*it)]) {
+			if (syntax_(chunked_size_, static_cast<uint8_t>(*it))) {
 				state = spx_size;
 				break;
 			}
@@ -395,7 +397,7 @@ spx_chunked_syntax_start_line(std::string const& line,
 		}
 
 		case spx_size: {
-			if (chunked_[static_cast<uint8_t>(*it)]) {
+			if (syntax_(chunked_size_, static_cast<uint8_t>(*it))) {
 				count_size.push_back(*it);
 				++it;
 				break;
