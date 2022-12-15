@@ -92,6 +92,7 @@ typedef struct server_info_for_copy_stage {
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
 	void				   clear();
+	void				   print() const;
 } server_info_for_copy_stage_t;
 
 typedef struct uri_location {

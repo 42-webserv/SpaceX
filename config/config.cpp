@@ -13,14 +13,6 @@
 #include <iostream>
 #endif
 
-extern const uint32_t isspace_[];
-extern const uint32_t config_elem_syntax_[];
-extern const uint32_t config_listen_[];
-extern const uint32_t vchar_[];
-extern const uint32_t digit_[];
-extern const uint32_t alpha_upper_case_[];
-extern const uint32_t digit_alpha_[];
-
 namespace {
 
 #ifdef CONFIG_STATE_DEBUG
@@ -156,24 +148,16 @@ spx_config_syntax_checker(std::string const&	   buf,
 	} state,
 		prev_state,
 		next_state;
+
 	prev_state = conf_zero;
 	state	   = conf_zero;
 	next_state = conf_start;
 
-#ifdef CONFIG_STATE_DEBUG
-	config_state_e debug_prev_state = static_cast<config_state_e>(prev_state);
-#endif
-
 	while (state != conf_done) {
 
 #ifdef CONFIG_STATE_DEBUG
-		if (debug_prev_state != state) {
-			if (state != conf_start && state != conf_waiting_default_value && state != conf_waiting_location_value) {
-				std::cout << "state : "
-						  << "\033[1;33m" << config_state_str_(static_cast<config_state_e>(state)) << "\033[0m" << std::endl;
-			}
-			debug_prev_state = static_cast<config_state_e>(state);
-		}
+		std::cout << "state : "
+				  << "\033[1;33m" << config_state_str_(static_cast<config_state_e>(state)) << "\033[0m" << std::endl;
 #endif
 		switch (state) {
 
@@ -234,9 +218,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_start: {
-			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
+			while (syntax_(isspace_, static_cast<uint8_t>(*it))) {
 				++it;
-				break;
 			}
 			if (*it == '#'
 				&& (next_state == conf_waiting_default_value || next_state == conf_waiting_location_value || next_state == conf_server)) {
@@ -270,12 +253,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_waiting_default_value: {
-			if (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
 				prev_state = state;
-				break;
 			}
 			if (*it == ';') {
 				if (prev_state == conf_start) {
@@ -316,6 +298,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 							return error_("conf_waiting_default_value",
 										  "need to set default value before location - syntax error");
 						}
+#ifdef CONFIG_DEBUG
+						temp_basic_server_info.print();
+
+#endif
 						next_state = conf_location_uri;
 						break;
 					}
@@ -404,11 +390,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_listen: {
-			if (syntax_(config_listen_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_listen_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				std::string::const_iterator temp_it	   = temp_string.begin();
@@ -477,10 +462,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_server_name: {
-			if (syntax_(config_uri_host_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_uri_host_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_basic_server_info.server_name = temp_string;
@@ -496,10 +480,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_error_page_number: {
 			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
-				temp_string.push_back(*it);
-				++it;
-				++size_count;
-				break;
+				while (syntax_(digit_, static_cast<uint8_t>(*it))) {
+					temp_string.push_back(*it);
+					++it;
+					++size_count;
+				}
 			} else if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				if (prev_state == conf_error_page_number) {
 					prev_state = state;
@@ -532,10 +517,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_error_page: {
 			// typedef std::map<const uint32_t, const std::string> error_page_map_p;
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				if (flag_error_page_default) {
@@ -567,11 +551,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_client_max_body_size: {
-			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
+			while (syntax_(digit_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
-				break;
 			}
 			if (0 < size_count && size_count <= 10) {
 				uint64_t check_body_size = std::atoi(temp_string.c_str());
@@ -614,8 +597,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				// check_dup.
 #ifdef CONFIG_DEBUG
+				std::cout << std::endl;
 				spx_log_(check_dup.first->first.c_str());
 				check_dup.first->second.print();
+				std::cout << std::endl;
 #endif
 			}
 			temp_uri_location_info.clear();
@@ -629,12 +614,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_waiting_location_value: {
-			if (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_elem_syntax_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++size_count;
 				++it;
 				prev_state = state;
-				break;
 			}
 			if (*it == ';') {
 				if (prev_state == conf_start) {
@@ -748,10 +732,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
+			while (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == '{') {
 				temp_uri_location_info.uri = temp_string;
@@ -788,11 +771,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_accepted_methods: {
-			if (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
+			while (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
 				++size_count;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				flag_location_part |= flag_accepted_methods;
@@ -855,10 +837,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_root: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.root = temp_string;
@@ -873,10 +854,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_index: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.index = temp_string;
@@ -911,10 +891,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_redirect: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.redirect = temp_string;
@@ -929,10 +908,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_saved_path: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.saved_path = temp_string;
@@ -947,10 +925,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_cgi_pass: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.cgi_pass = temp_string;
@@ -965,10 +942,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_cgi_path_info: {
-			if (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
 				temp_string.push_back(*it);
 				++it;
-				break;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.cgi_path_info = temp_string;

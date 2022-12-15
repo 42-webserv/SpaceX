@@ -33,6 +33,27 @@ server_info_for_copy_stage_t::clear(void) {
 }
 
 void
+server_info_for_copy_stage_t::print() const {
+
+#ifdef CONFIG_DEBUG
+	std::cout << "\n[ server_name ] " << server_name << std::endl;
+	std::cout << "ip: " << ip << std::endl;
+	std::cout << "port: " << port << std::endl;
+	if (default_server_flag == default_server)
+		std::cout << "default_server_flag: on" << std::endl;
+	else
+		std::cout << "default_server_flag: off" << std::endl;
+	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
+
+	if (default_error_page != "")
+		std::cout << "default_error_page: " << default_error_page << std::endl;
+	else
+		std::cout << "default_error_page: none" << std::endl;
+	std::cout << std::endl;
+#endif
+}
+
+void
 uri_location_t::print(void) const {
 #ifdef CONFIG_DEBUG
 	// std::cout << "uri_location_t: " << this << std::endl;
