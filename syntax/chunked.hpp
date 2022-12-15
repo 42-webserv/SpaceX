@@ -3,19 +3,19 @@
 #define __SYNTAX_CHUNKED_HPP__
 
 #include "spacex_type.hpp"
+#include <map>
 #include <string>
+#include <vector>
 
 status
-spx_chunked_syntax_start_line(std::string const& line,
-							  uint16_t&			 chunk_size,
-							  std::string&		 chunk_ext,
-							  uint8_t&			 ext_count);
+spx_chunked_syntax_start_line(std::string const&				  line,
+							  uint16_t&							  chunk_size,
+							  std::map<std::string, std::string>& chunk_ext);
 
 status
-spx_chunked_syntax_data_line(std::string const& line,
-							 uint16_t&			chunk_size,
-							 std::string&		data_store,
-							 std::string&		trailer_section,
-							 uint8_t&			trailer_count);
+spx_chunked_syntax_data_line(std::string const&					 line,
+							 uint16_t&							 chunk_size,
+							 std::vector<char>&					 data_store,
+							 std::map<std::string, std::string>& trailer_section);
 
 #endif

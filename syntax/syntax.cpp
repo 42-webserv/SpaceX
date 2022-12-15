@@ -62,7 +62,7 @@ spx_http_syntax_start_line(std::string const& line) {
 	while (state != start_line__done) {
 		switch (state) {
 		case start_line__start: {
-			if (syntax_(start_line_, static_cast<uint8_t>(*it))) {
+			if (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
 				state = start_line__method;
 				break;
 			}
@@ -70,11 +70,10 @@ spx_http_syntax_start_line(std::string const& line) {
 		}
 
 		case start_line__method: {
-			if (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
+			while (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
 				temp_str.push_back(*it);
 				++it;
 				++size_count;
-				break;
 			}
 			switch (size_count) {
 			case 3: {
@@ -105,9 +104,7 @@ spx_http_syntax_start_line(std::string const& line) {
 				return error_("invalid method : request line");
 			}
 			}
-			state	   = start_line__sp_before_uri;
-			size_count = 0;
-			temp_str.clear();
+			state = start_line__sp_before_uri;
 			break;
 		}
 
@@ -265,9 +262,8 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 
 		case spx_key: {
-			if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
+			while (syntax_(name_token_, static_cast<uint8_t>(*it))) {
 				++it;
-				break;
 			}
 			if (*it == ':') {
 				state = spx_OWS_before_value;
@@ -278,46 +274,37 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 
 		case spx_OWS_before_value: {
-			switch (*it) {
-			case ' ':
+			while (*it == ' ') {
 				++it;
-				break;
-			case '\r':
-				return error_("invalid value : header");
-			default:
-				state = spx_value;
 			}
-			break;
+			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+				state = spx_value;
+				break;
+			}
+			return error_("invalid value : header");
 		}
 
 		case spx_value: {
-			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
+			while (syntax_(vchar_, static_cast<uint8_t>(*it))) {
 				++it;
-				break;
 			}
 			if (it == line.end()) {
 				state = spx_almost_done;
 				break;
 			}
-			switch (*it) {
-			case ' ':
+			if (*it == ' ') {
 				state = spx_OWS_after_value;
 				++it;
 				break;
-			default:
-				return error_("invalid value : header");
 			}
-			break;
+			return error_("invalid value : header");
 		}
 
 		case spx_OWS_after_value: {
-			switch (*it) {
-			case ' ':
+			while (*it == ' ') {
 				++it;
-				break;
-			default:
-				state = spx_value;
 			}
+			state = spx_value;
 			break;
 		}
 

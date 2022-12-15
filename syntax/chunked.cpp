@@ -1,4 +1,5 @@
 #include "chunked.hpp"
+#include "spacex_type.hpp"
 #include <sstream>
 
 #ifdef SYNTAX_DEBUG
@@ -34,54 +35,57 @@ namespace {
 } // namespace
 
 status
-spx_chunked_syntax_start_line(std::string const& line,
-							  uint16_t&			 chunk_size,
-							  std::string&		 chunk_ext,
-							  uint8_t&			 ext_count) {
+spx_chunked_syntax_start_line(std::string const&				  line,
+							  uint16_t&							  chunk_size,
+							  std::map<std::string, std::string>& chunk_ext) {
 	std::string::const_iterator it = line.begin();
-	std::string					count_size;
+	std::string					temp_str_key;
+	std::string					empty_str;
+	std::string					temp_str_value;
 	std::stringstream			ss;
 	uint8_t						f_quoted_open = 0;
-	enum {
-		spx_start = 0,
-		spx_size,
-		spx_BWS_before_ext,
-		spx_semicolon,
-		spx_BWS_before_ext_name,
-		spx_ext_name,
-		spx_BWS_after_ext_name,
-		spx_equal,
-		spx_BWS_before_ext_value,
-		spx_ext_quoted_open,
-		spx_ext_value,
-		spx_ext_quoted_close,
-		spx_almost_done,
-		spx_last_chunk,
-		spx_done
-	} state;
 
-	state = spx_start;
-	while (state != spx_done) {
+	enum {
+		chunked_start = 0,
+		chunked_size,
+		chunked_size_input,
+		chunked_BWS_before_ext,
+		chunked_semicolon,
+		chunked_BWS_before_ext_name,
+		chunked_ext_name,
+		chunked_BWS_after_ext_name,
+		chunked_equal,
+		chunked_BWS_before_ext_value,
+		chunked_ext_quoted_open,
+		chunked_ext_value,
+		chunked_ext_quoted_close,
+		chunked_almost_done,
+		chunked_last_chunk,
+		chunked_done
+	} state,
+		next_state;
+
+	state = chunked_start;
+	while (state != chunked_done) {
 		switch (state) {
-		case spx_start: {
+		case chunked_start: {
 			if (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
-				state = spx_size;
+				state = chunked_size;
 				break;
 			}
 			return error_("invalid chunked start line : chunked_start");
 		}
 
-		case spx_last_chunk: {
+		case chunked_last_chunk: {
 			switch (*it) {
 			case '\r':
-				++it;
-				state = spx_almost_done;
+				state = chunked_almost_done;
 				break;
 			case ' ':
-				state = spx_BWS_before_ext;
+				state = chunked_BWS_before_ext;
 				break;
 			case ';':
-				state = spx_semicolon;
+				state = chunked_semicolon;
 				break;
 			default:
 				return error_("invalid chunked start line last chunk : chunked_start");
@@ -89,38 +93,23 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_size: {
-			if (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
-				count_size.push_back(*it);
+		case chunked_size: {
+			while (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
+				temp_str_key.push_back(*it);
 				++it;
-				break;
 			}
 			switch (*it) {
 			case ';':
-				state = spx_semicolon;
-				ss << std::hex << count_size;
-				ss >> chunk_size;
-				if (chunk_size == 0) {
-					state = spx_last_chunk;
-				}
+				next_state = chunked_semicolon;
+				state	   = chunked_size_input;
 				break;
 			case ' ':
-				++it;
-				state = spx_BWS_before_ext;
-				ss << std::hex << count_size;
-				ss >> chunk_size;
-				if (chunk_size == 0) {
-					state = spx_last_chunk;
-				}
+				next_state = chunked_BWS_before_ext;
+				state	   = chunked_size_input;
 				break;
 			case '\r':
-				++it;
-				state = spx_almost_done;
-				ss << std::hex << count_size;
-				ss >> chunk_size;
-				if (chunk_size == 0) {
-					state = spx_last_chunk;
-				}
+				next_state = chunked_almost_done;
+				state	   = chunked_size_input;
 				break;
 			default:
 				return error_("invalid chunked start line number : chunked_start");
@@ -128,13 +117,27 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_BWS_before_ext: {
-			switch (*it) {
-			case ' ':
+		case chunked_size_input: {
+			ss << std::hex << temp_str_key;
+			ss >> chunk_size;
+			if (chunk_size == 0) {
+				state = chunked_last_chunk;
+			} else {
+				state = next_state;
+			}
+			temp_str_key.clear();
+		}
+
+		case chunked_BWS_before_ext: {
+			while (*it == ' ') {
 				++it;
-				break;
+			}
+			switch (*it) {
 			case ';':
-				state = spx_semicolon;
+				state = chunked_semicolon;
+				break;
+			case '\r':
+				state = chunked_almost_done;
 				break;
 			default:
 				return error_("invalid chunked start line : BWS_before_ext : chunked_start");
@@ -142,52 +145,44 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_semicolon: {
+		case chunked_semicolon: {
+			temp_str_key.clear();
+			temp_str_value.clear();
 			++it;
-			state = spx_BWS_before_ext_name;
+			state = chunked_BWS_before_ext_name;
 			break;
 		}
 
-		case spx_BWS_before_ext_name: {
-			switch (*it) {
-			case ' ':
+		case chunked_BWS_before_ext_name: {
+			while (*it == ' ') {
 				++it;
-				break;
-			case '\r':
-				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
-			case '=':
-				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
-			case ';':
-				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
-			default:
-				state = spx_ext_name;
 			}
+			if (*it == '\r' || *it == '=' || *it == ';') {
+				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
+			}
+			state = chunked_ext_name;
 			break;
 		}
 
-		case spx_ext_name: {
-			if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
-				chunk_ext.push_back(*it);
+		case chunked_ext_name: {
+			while (syntax_(name_token_, static_cast<uint8_t>(*it))) {
+				temp_str_key.push_back(*it);
 				++it;
-				break;
 			}
 			switch (*it) {
 			case ' ':
-				state = spx_BWS_after_ext_name;
+				state = chunked_BWS_after_ext_name;
 				break;
 			case '=':
-				state = spx_equal;
+				state = chunked_equal;
 				break;
 			case '\r':
-				state = spx_almost_done;
-				chunk_ext.push_back(';');
-				++ext_count;
-				++it;
+				chunk_ext.insert(std::make_pair(temp_str_key, empty_str));
+				state = chunked_almost_done;
 				break;
 			case ';':
-				state = spx_semicolon;
-				chunk_ext.push_back(';');
-				++ext_count;
+				chunk_ext.insert(std::make_pair(temp_str_key, empty_str));
+				state = chunked_semicolon;
 				break;
 			default:
 				return error_("invalid chunked start line : ext_name : chunked_start");
@@ -195,24 +190,21 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_BWS_after_ext_name: {
-			switch (*it) {
-			case ' ':
+		case chunked_BWS_after_ext_name: {
+			while (*it == ' ') {
 				++it;
-				break;
+			}
+			switch (*it) {
 			case '=':
-				state = spx_equal;
+				state = chunked_equal;
 				break;
 			case ';':
-				state = spx_semicolon;
-				chunk_ext.push_back(';');
-				++ext_count;
+				chunk_ext.insert(std::make_pair(temp_str_key, empty_str));
+				state = chunked_semicolon;
 				break;
 			case '\r':
-				state = spx_almost_done;
-				chunk_ext.push_back(';');
-				++ext_count;
-				++it;
+				chunk_ext.insert(std::make_pair(temp_str_key, empty_str));
+				state = chunked_almost_done;
 				break;
 			default:
 				return error_("invalid chunked start line : BWS_after_ext_name : chunked_start");
@@ -220,84 +212,95 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_equal: {
-			chunk_ext.push_back('=');
+		case chunked_equal: {
 			++it;
-			state = spx_BWS_before_ext_value;
+			state = chunked_BWS_before_ext_value;
 			break;
 		}
 
-		case spx_BWS_before_ext_value: {
-			switch (*it) {
-			case ' ':
+		case chunked_BWS_before_ext_value: {
+			while (*it == ' ') {
 				++it;
-				break;
+			}
+			switch (*it) {
 			case '\r':
 				return error_("invalid chunked start line : BWS_before_ext_value : chunked_start");
 			case '"':
-				state = spx_ext_quoted_open;
+				state = chunked_ext_quoted_open;
 				break;
 			case '\'':
-				state = spx_ext_quoted_open;
+				state = chunked_ext_quoted_open;
 				break;
 			default:
-				state = spx_ext_value;
+				state = chunked_ext_value;
 			}
 			break;
 		}
 
-		case spx_ext_quoted_open: {
+		case chunked_ext_quoted_open: {
 			if (*it == '"') {
 				f_quoted_open |= 2;
 			} else if (*it == '\'') {
 				f_quoted_open |= 1;
 			}
 			++it;
-			state = spx_ext_value;
+			state = chunked_ext_value;
 			break;
 		}
 
-		case spx_ext_value: {
-			if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
+		case chunked_ext_value: {
+			while (syntax_(name_token_, static_cast<uint8_t>(*it))) {
 				if (*it == '\'' && f_quoted_open & 1) {
-					state = spx_ext_quoted_close;
+					state = chunked_ext_quoted_close;
 					break;
 				}
-				chunk_ext.push_back(*it);
+				temp_str_value.push_back(*it);
 				++it;
-				break;
 			}
 			switch (*it) {
 			case ' ':
-				state = spx_BWS_before_ext;
-				chunk_ext.push_back(';');
-				++ext_count;
+				state = chunked_BWS_before_ext;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			case ';':
-				state = spx_semicolon;
-				chunk_ext.push_back(*it);
-				++ext_count;
+				state = chunked_semicolon;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			case '\r':
-				state = spx_almost_done;
-				chunk_ext.push_back(';');
-				++ext_count;
-				++it;
+				state = chunked_almost_done;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
-			case '"':
-				if (f_quoted_open & 2) {
-					state = spx_ext_quoted_close;
+			case '"': {
+				if (f_quoted_open & 1) {
+					temp_str_value.push_back(*it);
+					++it;
+					break;
+				} else if (f_quoted_open & 2) {
+					state = chunked_ext_quoted_close;
 					break;
 				}
-				state = spx_ext_quoted_open;
+				state = chunked_ext_quoted_open;
 				break;
+			}
+			case '\'': {
+				if (f_quoted_open & 2) {
+					temp_str_value.push_back(*it);
+					++it;
+					break;
+				} else if (f_quoted_open & 1) {
+					state = chunked_ext_quoted_close;
+					break;
+				}
+				state = chunked_ext_quoted_open;
+				break;
+			}
 			default:
 				return error_("invalid chunked ext : ext_value : chunked_start");
 			}
 			break;
 		}
 
-		case spx_ext_quoted_close: {
+		case chunked_ext_quoted_close: {
 			if (*it == '"' && f_quoted_open & 2) {
 				f_quoted_open &= ~2;
 			} else if (*it == '\'' && f_quoted_open & 1) {
@@ -307,31 +310,27 @@ spx_chunked_syntax_start_line(std::string const& line,
 			}
 			++it;
 			if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
-				state = spx_ext_value;
+				state = chunked_ext_value;
 				break;
 			}
 			switch (*it) {
 			case '\'':
-				state = spx_ext_quoted_open;
+				state = chunked_ext_quoted_open;
 				break;
 			case '"':
-				state = spx_ext_quoted_open;
+				state = chunked_ext_quoted_open;
 				break;
 			case ';':
-				state = spx_semicolon;
-				chunk_ext.push_back(*it);
-				++ext_count;
+				state = chunked_semicolon;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			case ' ':
-				state = spx_BWS_before_ext;
-				chunk_ext.push_back(';');
-				++ext_count;
+				state = chunked_BWS_before_ext;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			case '\r':
-				state = spx_almost_done;
-				chunk_ext.push_back(';');
-				++ext_count;
-				++it;
+				state = chunked_almost_done;
+				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			default:
 				return error_("invalid chunked ext : ext_quoted_close : chunked_start");
@@ -339,11 +338,10 @@ spx_chunked_syntax_start_line(std::string const& line,
 			break;
 		}
 
-		case spx_almost_done: {
+		case chunked_almost_done: {
+			++it;
 			if (*it == '\n') {
-				state = spx_done;
-				// ss << std::hex << count_size;
-				// ss >> chunk_size;
+				state = chunked_done;
 				break;
 			}
 			return error_("invalid chunked end line : chunked_start");
@@ -357,38 +355,37 @@ spx_chunked_syntax_start_line(std::string const& line,
 }
 
 status
-spx_chunked_syntax_data_line(std::string const& line,
-							 uint16_t&			chunk_size,
-							 std::string&		data_store,
-							 std::string&		trailer_section,
-							 uint8_t&			trailer_count) {
+spx_chunked_syntax_data_line(std::string const&					 line,
+							 uint16_t&							 chunk_size,
+							 std::vector<char>&					 data_store,
+							 std::map<std::string, std::string>& trailer_section) {
+
 	std::string::const_iterator it = line.begin();
 
 	if (chunk_size == 0) {
+		std::string temp_str_key;
+		std::string temp_str_value;
+
 		enum {
 			last_start = 0,
 			last_trailer_start,
 			last_trailer_key,
 			last_OWS_before_value,
 			last_trailer_value,
-			last_OWS_after_value,
+			// last_OWS_after_value,
 			last_almost_done,
 			last_done
 		} state_last_chunk;
 
-		std::string temp_trailer;
-		std::string temp_OWS_after_value;
-
 		state_last_chunk = last_start;
 
 		while (state_last_chunk != last_done) {
-			// add field-line syntax check
-			// same as header field line = field-line
 			switch (state_last_chunk) {
 			case last_start: {
+				temp_str_key.clear();
+				temp_str_value.clear();
 				if (*it == '\r') {
 					state_last_chunk = last_almost_done;
-					++it;
 					break;
 				}
 				state_last_chunk = last_trailer_key;
@@ -396,14 +393,13 @@ spx_chunked_syntax_data_line(std::string const& line,
 			}
 
 			case last_trailer_key: {
-				if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
-					temp_trailer.push_back(*it);
+				while (syntax_(name_token_, static_cast<uint8_t>(*it))) {
+					temp_str_key.push_back(*it);
 					++it;
-					break;
 				}
+				spx_log_(temp_str_key);
 				if (*it == ':') {
 					state_last_chunk = last_OWS_before_value;
-					temp_trailer.push_back(*it);
 					++it;
 					break;
 				}
@@ -411,63 +407,40 @@ spx_chunked_syntax_data_line(std::string const& line,
 			}
 
 			case last_OWS_before_value: {
-				switch (*it) {
-				case ' ':
+				while (*it == ' ') {
 					++it;
-					break;
-				case '\r':
-					return error_("invalid last chunked value : trailer");
-				default:
-					temp_trailer.push_back(' ');
-					state_last_chunk = last_trailer_value;
 				}
+				if (*it == '\r') {
+					return error_("invalid last chunked value : \\r : trailer");
+				}
+				state_last_chunk = last_trailer_value;
 				break;
 			}
 
 			case last_trailer_value: {
-				if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
-					temp_trailer.push_back(*it);
+				while (syntax_(field_value_, static_cast<uint8_t>(*it))) {
+					temp_str_value.push_back(*it);
 					++it;
-					break;
 				}
-				switch (*it) {
-				case ' ':
-					state_last_chunk = last_OWS_after_value;
-					break;
-				case '\r':
-					++it;
+				spx_log_(temp_str_value);
+				if (*it == '\r') {
 					state_last_chunk = last_almost_done;
 					break;
-				case '\0':
-					return error_("invalid value NULL : header");
-				default:
-					++it;
 				}
-				break;
-			}
-
-			case last_OWS_after_value: {
-				switch (*it) {
-				case ' ':
-					++it;
-					temp_OWS_after_value.push_back(*it);
-					break;
-				case '\r':
-					++it;
-					state_last_chunk = last_almost_done;
-					break;
-				default:
-					temp_trailer.append(temp_OWS_after_value);
-					state_last_chunk = last_trailer_value;
-				}
-				break;
+				spx_log_(*it);
+				return error_("invalid last chunked value : unsupported char : trailer");
 			}
 
 			case last_almost_done: {
+				++it;
 				if (*it == '\n') {
-					state_last_chunk = last_done;
-					trailer_section.append(temp_trailer);
-					++trailer_count;
+					if (temp_str_key.empty() && temp_str_value.empty()) {
+						state_last_chunk = last_done;
+						break;
+					}
+					trailer_section.insert(std::make_pair(temp_str_key, temp_str_value));
+					++it;
+					state_last_chunk = last_start;
 					break;
 				}
 				return error_("invalid header end line : header");
@@ -478,7 +451,6 @@ spx_chunked_syntax_data_line(std::string const& line,
 			}
 		}
 		return spx_ok;
-
 	} else {
 		enum {
 			data_start = 0,
