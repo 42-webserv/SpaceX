@@ -287,12 +287,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				return error_("conf_waiting_default_value", "end of line ; - syntax error");
 			}
-			if (size_count == 0 && *it == '}' && flag_default_part == 6) {
-				prev_state = state;
-				state	   = conf_server_CB_close;
-				next_state = conf_start;
+			if (size_count == 0 && *it == '}' && (flag_default_part & flag_listen) && (flag_default_part & flag_server_name)) {
+				temp_basic_server_info.client_max_body_size = 8124;
+				prev_state									= state;
+				state										= conf_server_CB_close;
+				next_state									= conf_start;
 				break;
-			} else if (size_count == 0 && *it == '}' && flag_default_part == 0) {
+			} else if (size_count == 0 && *it == '}') {
 				return error_("conf_waiting_default_value", "empty server - syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
@@ -312,8 +313,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				case 8: {
 					if (temp_string.compare("location") == KSame) {
 						if (!(flag_default_part & flag_listen)
-							|| !(flag_default_part & flag_server_name)
-							|| !(flag_default_part & flag_client_max_body_size)) {
+							|| !(flag_default_part & flag_server_name)) {
 							return error_("conf_waiting_default_value",
 										  "need to set default value before location - syntax error");
 						}
