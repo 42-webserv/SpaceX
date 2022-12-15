@@ -1,3 +1,5 @@
+#pragma once
+
 /* Status Codes */
 #define HTTP_STATUS_MAP(XX)                                                   \
 	XX(100, CONTINUE, Continue)                                               \
