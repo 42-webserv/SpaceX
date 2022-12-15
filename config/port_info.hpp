@@ -33,8 +33,66 @@ typedef enum {
 	KOptions = 1 << 6
 } accepted_method_flag_e;
 
-typedef struct uri_location_for_copy_stage uri_location_for_copy_stage_t;
-typedef struct server_info_for_copy_stage  server_info_for_copy_stage_t;
+enum {
+	KSame = 0,
+	KDiff
+};
+
+typedef enum {
+	flag_listen				  = 1 << 1,
+	flag_server_name		  = 1 << 2,
+	flag_error_page			  = 1 << 3,
+	flag_client_max_body_size = 1 << 4
+} flag_config_parse_basic_part_e;
+
+typedef enum {
+	flag_accepted_methods = 1 << 0,
+	flag_root			  = 1 << 1,
+	flag_index			  = 1 << 2,
+	flag_autoindex		  = 1 << 3,
+	flag_redirect		  = 1 << 4,
+	flag_saved_path		  = 1 << 5,
+	flag_cgi_pass		  = 1 << 6,
+	flag_cgi_path_info	  = 1 << 7
+} flag_config_parse_location_part_e;
+
+/*
+ * --------------------
+ */
+typedef struct uri_location_for_copy_stage			uri_location_for_copy_stage_t;
+typedef struct server_info_for_copy_stage			server_info_for_copy_stage_t;
+typedef struct server_info							server_info_t;
+typedef struct uri_location							uri_location_t;
+typedef std::map<const std::string, server_info_t>	server_map_p;
+typedef std::map<const std::string, uri_location_t> uri_location_map_p;
+typedef std::map<const uint32_t, const std::string> error_page_map_p;
+typedef std::map<const uint32_t, server_map_p>		total_port_server_map_p;
+
+typedef struct uri_location_for_copy_stage {
+	std::string			uri;
+	module_case_state_e module_state;
+	uint8_t				accepted_methods_flag;
+	std::string			redirect;
+	std::string			root;
+	std::string			index;
+	autoindex_state_e	autoindex_flag;
+	std::string			saved_path;
+	std::string			cgi_pass;
+	std::string			cgi_path_info;
+	void				clear();
+} uri_location_for_copy_stage_t;
+
+typedef struct server_info_for_copy_stage {
+	std::string			   ip;
+	uint32_t			   port;
+	default_server_state_e default_server_flag;
+	std::string			   server_name;
+	uint64_t			   client_max_body_size;
+	std::string			   default_error_page;
+	error_page_map_p	   error_page_case;
+	uri_location_map_p	   uri_case;
+	void				   clear();
+} server_info_for_copy_stage_t;
 
 typedef struct uri_location {
 	const std::string		  uri;
@@ -55,8 +113,6 @@ typedef struct uri_location {
 
 } uri_location_t;
 
-typedef std::map<const std::string, uri_location_t> uri_location_map_p;
-typedef std::map<const uint32_t, const std::string> error_page_map_p;
 typedef struct server_info {
 	const std::string			 ip;
 	const uint32_t				 port;
@@ -83,12 +139,6 @@ typedef struct server_info {
 // typedef std::map<const std::uint32_t, server_map_p> total_port_server_map_p;
 // typedef std::map<const std::uint32_t, const server_map_p> const_total_port_server_map_p;
 
-// std::map<std::string, server_info_t> test_map;
-// test_map.insert(std::pair<std::string, server_info_t>(test.server_name, test));
-// test_map.insert(std::pair<std::string, server_info_t>(test2.server_name, test2));
-// server_info_copy.uri_case.insert(std::pair<const std::string, const uri_location_t>("/first", location));
-
-typedef std::map<const std::string, server_info_t> server_map_p;
 typedef struct target_port_server_info {
 	server_info_t* my_port_default_server_ptr;
 	server_map_p*  my_port_map;

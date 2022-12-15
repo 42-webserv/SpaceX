@@ -7,6 +7,32 @@ namespace {
 }
 
 void
+uri_location_for_copy_stage_t::clear(void) {
+	uri.clear();
+	module_state		  = module_none;
+	accepted_methods_flag = 0;
+	redirect.clear();
+	root.clear();
+	index.clear();
+	autoindex_flag = Kautoindex_off;
+	saved_path.clear();
+	cgi_pass.clear();
+	cgi_path_info.clear();
+}
+
+void
+server_info_for_copy_stage_t::clear(void) {
+	ip.clear();
+	port				= 0;
+	default_server_flag = other_server;
+	server_name.clear();
+	client_max_body_size = 0;
+	default_error_page.clear();
+	error_page_case.clear();
+	uri_case.clear();
+}
+
+void
 uri_location_t::print(void) const {
 #ifdef CONFIG_DEBUG
 	// std::cout << "uri_location_t: " << this << std::endl;

@@ -128,9 +128,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_zero = 0,
 		conf_start, // skip isspace
 		conf_endline,
-
 		conf_waiting_default_value,
-
 		conf_server,
 		conf_server_CB_open, // 5
 		conf_server_CB_close,
@@ -139,9 +137,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_server_name,
 		conf_error_page, // 10
 		conf_client_max_body_size,
-
 		conf_waiting_location_value,
-
 		conf_location_zero,
 		conf_location_uri,
 		conf_location_CB_open, // 15
@@ -155,7 +151,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_saved_path,
 		conf_cgi_pass,
 		conf_cgi_path_info,
-
 		conf_almost_done, // 25
 		conf_done,
 		conf_error_page_number
@@ -221,13 +216,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 				// server_info_for_copy_stage_t flush_server_info;
 				// temp_basic_server_info = flush_server_info;
 			}
-			temp_uri_location_info.accepted_methods_flag = 0;
-			temp_basic_server_info.default_server_flag	 = other_server;
-			flag_default_part							 = 0;
-			flag_location_part							 = 0;
-			flag_error_page_default						 = 0;
-			size_count									 = 0;
-			location_count								 = 0;
+			temp_uri_location_info.clear();
+			temp_basic_server_info.clear();
+			flag_default_part		= 0;
+			flag_location_part		= 0;
+			flag_error_page_default = 0;
+			size_count				= 0;
+			location_count			= 0;
 			temp_error_page_number.clear();
 			saved_error_page_map_0.clear();
 			saved_location_uri_map_1.clear();
@@ -292,12 +287,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				return error_("conf_waiting_default_value", "end of line ; - syntax error");
 			}
-			if (size_count == 0 && *it == '}' && flag_default_part == 30) {
+			if (size_count == 0 && *it == '}' && flag_default_part == 6) {
 				prev_state = state;
 				state	   = conf_server_CB_close;
 				next_state = conf_start;
 				break;
-			} else if (size_count == 0 && *it == '}' && flag_location_part == 0) {
+			} else if (size_count == 0 && *it == '}' && flag_default_part == 0) {
 				return error_("conf_waiting_default_value", "empty server - syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
@@ -307,55 +302,55 @@ spx_config_syntax_checker(std::string const&	   buf,
 				case 6: {
 					if (temp_string.compare("listen") == KSame) {
 						if (flag_default_part & flag_listen) {
-							return error_("conf_waiting_value", "listen is already set");
+							return error_("conf_waiting_default_value", "listen is already set");
 						}
 						next_state = conf_listen;
 						break;
 					}
-					return error_("conf_waiting_value", "6 - syntax error");
+					return error_("conf_waiting_default_value", "6 - syntax error");
 				}
 				case 8: {
 					if (temp_string.compare("location") == KSame) {
 						if (!(flag_default_part & flag_listen)
 							|| !(flag_default_part & flag_server_name)
 							|| !(flag_default_part & flag_client_max_body_size)) {
-							return error_("conf_waiting_value",
+							return error_("conf_waiting_default_value",
 										  "need to set default value before location - syntax error");
 						}
 						next_state = conf_location_uri;
 						break;
 					}
-					return error_("conf_waiting_value", "8 - syntax error");
+					return error_("conf_waiting_default_value", "8 - syntax error");
 				}
 				case 10: {
 					if (temp_string.compare("error_page") == KSame) {
 						next_state = conf_error_page_number;
 						break;
 					}
-					return error_("conf_waiting_value", "10 - syntax error");
+					return error_("conf_waiting_default_value", "10 - syntax error");
 				}
 				case 11: {
 					if (temp_string.compare("server_name") == KSame) {
 						if (flag_default_part & flag_server_name) {
-							return error_("conf_waiting_value", "server_name is already set");
+							return error_("conf_waiting_default_value", "server_name is already set");
 						}
 						next_state = conf_server_name;
 						break;
 					}
-					return error_("conf_waiting_value", "11 - syntax error");
+					return error_("conf_waiting_default_value", "11 - syntax error");
 				}
 				case 20: {
 					if (temp_string.compare("client_max_body_size") == KSame) {
 						if (flag_default_part & flag_client_max_body_size) {
-							return error_("conf_waiting_value", "client_max_body_size is already set");
+							return error_("conf_waiting_default_value", "client_max_body_size is already set");
 						}
 						next_state = conf_client_max_body_size;
 						break;
 					}
-					return error_("conf_waiting_value", "20 - syntax error");
+					return error_("conf_waiting_default_value", "20 - syntax error");
 				}
 				default:
-					return error_("conf_waiting_value", "not allowed default value - syntax error");
+					return error_("conf_waiting_default_value", "not allowed default value - syntax error");
 				}
 				temp_string.clear();
 				size_count = 0;
@@ -579,34 +574,36 @@ spx_config_syntax_checker(std::string const&	   buf,
 				++it;
 				break;
 			}
-			if ((*it == 'M' || *it == 'K') && (size_count && size_count <= 4)) {
+			if (0 < size_count && size_count <= 10) {
 				uint64_t check_body_size = std::atoi(temp_string.c_str());
 				if (check_body_size > 0) {
 					if (*it == 'M') {
 						check_body_size *= (1024 * 1024);
+						++it;
 					} else if (*it == 'K') {
 						check_body_size *= 1024;
+						++it;
 					}
 					if (check_body_size > 2147483647) {
 						return error_("conf_client_max_body_size : 255M or 262131K limited", "syntax error");
 					} else if (check_body_size <= 0) {
 						return error_("conf_client_max_body_size : 0 or - size not supported", "syntax error");
 					}
-					++it;
-					temp_basic_server_info.client_max_body_size = check_body_size;
-					prev_state									= state;
-					state										= conf_start;
-					next_state									= conf_waiting_default_value;
-					flag_default_part |= flag_client_max_body_size;
-					temp_string.clear();
-					size_count = 0;
-				} else {
-					return error_("conf_client_max_body_size - minus size", "syntax error");
+					if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+						temp_basic_server_info.client_max_body_size = check_body_size;
+						prev_state									= state;
+						state										= conf_start;
+						next_state									= conf_waiting_default_value;
+						flag_default_part |= flag_client_max_body_size;
+						temp_string.clear();
+						size_count = 0;
+						break;
+					}
+					return error_("conf_client_max_body_size : undefined character used", "syntax error");
 				}
-			} else {
-				return error_("conf_client_max_body_size", "syntax error");
+				return error_("conf_client_max_body_size - minus size", "syntax error");
 			}
-			break;
+			return error_("conf_client_max_body_size", "syntax error");
 		}
 
 		case conf_location_zero: {
@@ -622,11 +619,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				check_dup.first->second.print();
 #endif
 			}
-			// uri_location_for_copy_stage_t flush_uri_location_info;
-			// temp_uri_location_info						 = flush_uri_location_info;
-			temp_uri_location_info.accepted_methods_flag = 0;
-			flag_location_part							 = 0;
-			size_count									 = 0;
+			temp_uri_location_info.clear();
+			flag_location_part = 0;
+			size_count		   = 0;
 			temp_string.clear();
 			prev_state = state;
 			state	   = next_state;
