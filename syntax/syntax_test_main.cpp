@@ -8,11 +8,11 @@ main(int argc, char** argv) {
 	if (argc == 2 || argc == 3) {
 		std::string temp(argv[1]);
 
-		// {
-		// std::cout << spx_http_syntax_start_line(temp) << std::endl;
-		// std::cout << std::endl;
-		// std::cout << spx_http_syntax_header_line(temp) << std::endl;
-		// }
+		{
+			std::cout << spx_http_syntax_start_line(temp) << std::endl;
+			std::cout << std::endl;
+			std::cout << spx_http_syntax_header_line(temp) << std::endl;
+		}
 
 		// {
 		// 	temp.append("\r\n");

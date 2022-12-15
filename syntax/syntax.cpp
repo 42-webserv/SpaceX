@@ -130,7 +130,7 @@ spx_http_syntax_start_line(std::string const& line) {
 		}
 
 		case start_line__uri: {
-			while (syntax_(usual_, *it) && it != line.end()) {
+			while (syntax_(usual_, *it)) {
 				++it;
 			}
 			if (*it == ' ') {
@@ -138,7 +138,7 @@ spx_http_syntax_start_line(std::string const& line) {
 				state = start_line__h;
 				break;
 			}
-			return error_("invalid uri ' ' or syntax_usual_error : request line");
+			return error_("invalid uri : request line");
 		}
 
 		case start_line__h: {
