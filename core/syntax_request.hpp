@@ -1,8 +1,8 @@
 #pragma once
-#ifndef __SYNTAX_HPP__
-#define __SYNTAX_HPP__
+#ifndef __SYNTAX_REQUEST__HPP__
+#define __SYNTAX_REQUEST__HPP__
 
-#include "spacex_type.hpp"
+#include "core_type.hpp"
 #include <cstddef>
 #include <string>
 

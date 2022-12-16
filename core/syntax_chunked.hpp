@@ -1,8 +1,8 @@
 #pragma once
-#ifndef __SYNTAX_CHUNKED_HPP__
-#define __SYNTAX_CHUNKED_HPP__
+#ifndef __SYNTAX__CHUNKED_HPP__
+#define __SYNTAX__CHUNKED_HPP__
 
-#include "spacex_type.hpp"
+#include "core_type.hpp"
 #include <map>
 #include <string>
 #include <vector>
