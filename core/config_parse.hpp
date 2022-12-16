@@ -1,9 +1,9 @@
 #pragma once
-#ifndef __CONFIG__HPP__
-#define __CONFIG__HPP__
+#ifndef __CONFIG__PARSE__HPP__
+#define __CONFIG__PARSE__HPP__
 
+#include "core_type.hpp"
 #include "port_info.hpp"
-#include "spacex_type.hpp"
 #include <map>
 #include <string>
 

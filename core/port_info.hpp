@@ -2,7 +2,7 @@
 #ifndef __PORT__INFO__HPP__
 #define __PORT__INFO__HPP__
 
-#include "spacex_type.hpp"
+#include "core_type.hpp"
 #include <map>
 #include <string>
 
@@ -63,9 +63,9 @@ typedef struct uri_location_for_copy_stage			uri_location_for_copy_stage_t;
 typedef struct server_info_for_copy_stage			server_info_for_copy_stage_t;
 typedef struct server_info							server_info_t;
 typedef struct uri_location							uri_location_t;
-typedef std::map<const std::string, server_info_t>	server_map_p;
 typedef std::map<const std::string, uri_location_t> uri_location_map_p;
 typedef std::map<const uint32_t, const std::string> error_page_map_p;
+typedef std::map<const std::string, server_info_t>	server_map_p;
 typedef std::map<const uint32_t, server_map_p>		total_port_server_map_p;
 
 typedef struct uri_location_for_copy_stage {
@@ -138,7 +138,6 @@ typedef struct server_info {
 // typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
 // typedef std::map<const std::string, server_info_t>  server_map_p;
 // typedef std::map<const std::uint32_t, server_map_p> total_port_server_map_p;
-// typedef std::map<const std::uint32_t, const server_map_p> const_total_port_server_map_p;
 
 // < port_number , < server_name, serve_map_p> > my_config_map;
 // < port_number , < server_name, < uri_location, uri_location_t> > > my_config_map;

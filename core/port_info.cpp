@@ -1,5 +1,5 @@
 #include "port_info.hpp"
-#include "config.hpp"
+#include "config_parse.hpp"
 #include <iostream>
 
 namespace {
@@ -55,7 +55,6 @@ server_info_for_copy_stage_t::print() const {
 
 void
 uri_location_t::print(void) const {
-#ifdef CONFIG_DEBUG
 	// std::cout << "uri_location_t: " << this << std::endl;
 	std::cout << "module_state: " << module_state << std::endl;
 	std::cout << "accepted_methods_flag: ";
@@ -91,7 +90,6 @@ uri_location_t::print(void) const {
 		std::cout << "cgi_pass: " << cgi_pass << std::endl;
 	if (cgi_path_info != "")
 		std::cout << "cgi_path_info: " << cgi_path_info << std::endl;
-#endif
 }
 
 uri_location_t::uri_location(const uri_location_for_copy_stage_t from)
@@ -119,7 +117,6 @@ uri_location_t::~uri_location() {
 
 void
 server_info_t::print(void) const {
-#ifdef CONFIG_DEBUG
 	std::cout << "[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
@@ -149,7 +146,6 @@ server_info_t::print(void) const {
 		it++;
 	}
 	std::cout << std::endl;
-#endif
 }
 
 server_info_t::server_info(server_info_for_copy_stage_t const& from)

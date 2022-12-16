@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "config_parse.hpp"
 #include "port_info.hpp"
 #include <cctype>
 #include <cstring>
@@ -70,7 +70,6 @@ namespace {
 
 	inline status
 	error_(const char* msg, const char* msg2) {
-// throw(msg);
 #ifdef CONFIG_DEBUG
 		std::cout << "\033[1;31m" << msg << "\033[0m"
 				  << " : "

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __SPACEX_TYPE_HPP__
-#define __SPACEX_TYPE_HPP__
+#ifndef __CORE_TYPE_HPP__
+#define __CORE_TYPE_HPP__
 
 // #include <cstdint>
 typedef signed char		   int8_t;
