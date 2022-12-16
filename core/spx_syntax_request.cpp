@@ -1,5 +1,5 @@
-#include "syntax_request.hpp"
-#include "core_type.hpp"
+#include "spx_syntax_request.hpp"
+#include "spx_core_type.hpp"
 #include <iostream>
 #include <string>
 

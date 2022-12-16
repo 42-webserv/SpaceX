@@ -1,8 +1,8 @@
 #pragma once
-#ifndef __PORT__INFO__HPP__
-#define __PORT__INFO__HPP__
+#ifndef __SPX__PORT__INFO__HPP__
+#define __SPX__PORT__INFO__HPP__
 
-#include "core_type.hpp"
+#include "spx_core_type.hpp"
 #include <map>
 #include <string>
 

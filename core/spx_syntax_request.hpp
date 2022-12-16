@@ -1,8 +1,8 @@
 #pragma once
-#ifndef __SYNTAX_REQUEST__HPP__
-#define __SYNTAX_REQUEST__HPP__
+#ifndef __SPX__SYNTAX_REQUEST__HPP__
+#define __SPX__SYNTAX_REQUEST__HPP__
 
-#include "core_type.hpp"
+#include "spx_core_type.hpp"
 #include <cstddef>
 #include <string>
 

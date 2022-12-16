@@ -1,5 +1,5 @@
-#include "syntax_chunked.hpp"
-#include "core_type.hpp"
+#include "spx_syntax_chunked.hpp"
+#include "spx_core_type.hpp"
 #include <sstream>
 
 #ifdef SYNTAX_DEBUG

@@ -1,9 +1,9 @@
 #pragma once
-#ifndef __CONFIG__PARSE__HPP__
-#define __CONFIG__PARSE__HPP__
+#ifndef __SPX__CONFIG__PARSE__HPP__
+#define __SPX__CONFIG__PARSE__HPP__
 
-#include "core_type.hpp"
-#include "port_info.hpp"
+#include "spx_core_type.hpp"
+#include "spx_port_info.hpp"
 #include <map>
 #include <string>
 
