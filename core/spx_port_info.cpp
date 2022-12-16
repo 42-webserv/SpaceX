@@ -170,5 +170,31 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	}
 }
 
+server_info_t::server_info(server_info_t const& from)
+	: ip(from.ip)
+	, port(from.port)
+	, default_server_flag(from.default_server_flag)
+	, server_name(from.server_name)
+	, root(from.root)
+	, client_max_body_size(from.client_max_body_size)
+	, default_error_page(from.default_error_page) {
+#ifdef CONFIG_DEBUG
+
+	std::cout << "server_info copy construct" << std::endl;
+#endif
+	if (from.error_page_case.size() != 0) {
+		error_page_case.insert(from.error_page_case.begin(), from.error_page_case.end());
+	}
+	if (from.uri_case.size() != 0) {
+		uri_case.insert(from.uri_case.begin(), from.uri_case.end());
+	}
+}
+
+// server_info&
+// server_info::operator=(server_info_t const& from) {
+// 	server_info* tmp = new server_info_t(from);
+// 	return *tmp;
+// }
+
 server_info_t::~server_info() {
 }

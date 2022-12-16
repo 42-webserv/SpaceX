@@ -1,9 +1,5 @@
-#include "spx_config_parse.hpp"
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
+#include "spacex.hpp"
+#include "spx_socket_init.hpp"
 
 #ifdef LEAK
 void
@@ -30,7 +26,7 @@ namespace {
 		std::cout << "\033[1;31m[ " << msg << " ]\033[0m"
 				  << " : "
 				  << "\033[1;33m" << msg2 << "\033[0m" << std::endl;
-		exit(spx_error);
+		return spx_error;
 	}
 
 	inline status
@@ -46,17 +42,14 @@ config_file_open_(int argc, char const* argv[]) {
 
 	std::fstream file;
 	switch (argc) {
-	case 1: {
+	case 1:
 		file.open("./config/default.conf", std::ios_base::in);
 		break;
-	}
-	case 2: {
+	case 2:
 		file.open(argv[1], std::ios_base::in);
 		break;
-	}
-	default: {
-		error_("usage", "./spacex [config_file]");
-	}
+	default:
+		exit(error_("usage", "./spacex [config_file]"));
 	}
 
 	if (file.is_open() == false) {
@@ -66,7 +59,6 @@ config_file_open_(int argc, char const* argv[]) {
 	std::stringstream ss;
 	ss << file.rdbuf();
 	if (ss.fail()) {
-		error_("stringstream", "file read error");
 		file.close();
 		perror_("file read error");
 	}
@@ -78,7 +70,7 @@ config_file_open_(int argc, char const* argv[]) {
 
 	total_port_server_map_p temp_config;
 	if (spx_config_syntax_checker(ss.str(), temp_config) != spx_ok) {
-		error_("config", "syntax error");
+		exit(error_("config", "syntax error"));
 	}
 
 	return temp_config;
@@ -103,7 +95,19 @@ main(int argc, char const* argv[]) {
 		}
 #endif
 
-		// socket start
+		main_info_t spx;
+		socket_init_build_port_info(config_info, spx.port_info);
+		spx_log_("socket per port_info success");
+#ifdef SOCKET_DEBUG
+		for (port_info_map::const_iterator it = spx.port_info.begin(); it != spx.port_info.end(); ++it) {
+			std::cout << "port: " << it->first << std::endl;
+			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
+			std::cout << "my_port: " << it->second.my_port << std::endl;
+			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
+				it2->second.print();
+			}
+		}
+#endif
 
 	} else {
 		error_("usage", "./spacex [config_file]");

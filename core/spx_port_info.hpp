@@ -127,6 +127,8 @@ typedef struct server_info {
 	mutable uri_location_map_p	 uri_case;
 	//
 	server_info(server_info_for_copy_stage_t const& from);
+	server_info(server_info_t const& from);
+	// server_info& operator=(server_info_t const& from);
 	~server_info();
 	// add uri value get function
 	void print(void) const;
@@ -143,12 +145,5 @@ typedef struct server_info {
 
 // < port_number , < server_name, serve_map_p> > my_config_map;
 // < port_number , < server_name, < uri_location, uri_location_t> > > my_config_map;
-
-typedef struct target_port_server_info {
-	server_info_t* my_port_default_server_ptr;
-	server_map_p*  my_port_map;
-	// add handler function
-
-} target_port_server_info_t;
 
 #endif

@@ -14,6 +14,8 @@ namespace {
 				  << "\033[1;33m"
 				  << ""
 				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
 #endif
 		return spx_error;
 	}
