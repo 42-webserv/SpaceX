@@ -10,6 +10,20 @@ ft_handler_leak() {
 
 namespace {
 
+#ifdef SOCKET_DEBUG
+	inline void
+	port_info_print_(port_info_map const& port_info) {
+		for (port_info_map::const_iterator it = port_info.begin(); it != port_info.end(); ++it) {
+			std::cout << "port: " << it->first << std::endl;
+			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
+			std::cout << "my_port: " << it->second.my_port << std::endl;
+			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
+				it2->second.print();
+			}
+		}
+	}
+#endif
+
 	template <typename T>
 	inline void
 	spx_log_(T msg) {
@@ -84,31 +98,12 @@ main(int argc, char const* argv[]) {
 	if (argc <= 2) {
 		total_port_server_map_p config_info = config_file_open_(argc, argv);
 		spx_log_("config file open success");
-		// server_map_p&			test		= config_info.find(443)->second;
-
-#ifdef MAIN_DEBUG
-		for (total_port_server_map_p::iterator print = config_info.begin(); print != config_info.end(); ++print) {
-			std::cout << "port: " << print->first << std::endl;
-			for (server_map_p::iterator print2 = print->second.begin(); print2 != print->second.end(); ++print2) {
-				print2->second.print();
-			}
-		}
-#endif
-
 		main_info_t spx;
-		socket_init_build_port_info(config_info, spx.port_info);
+		socket_init_and_build_port_info(config_info, spx.port_info);
 		spx_log_("socket per port_info success");
 #ifdef SOCKET_DEBUG
-		for (port_info_map::const_iterator it = spx.port_info.begin(); it != spx.port_info.end(); ++it) {
-			std::cout << "port: " << it->first << std::endl;
-			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
-			std::cout << "my_port: " << it->second.my_port << std::endl;
-			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
-				it2->second.print();
-			}
-		}
+		port_info_print_(spx.port_info);
 #endif
-
 	} else {
 		error_("usage", "./spacex [config_file]");
 	}

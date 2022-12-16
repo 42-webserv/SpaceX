@@ -1,11 +1,24 @@
-NAME	= a.out
-SRC		=
-LOG		=
+#==============================================================================
+#	Default Setting
+#==============================================================================
 
-SRC_DIR		=
+NAME		= spacex
+
+# VPATH		:=	$(shell ls -R)
+
+SRC			=	spacex.cpp \
+				spx_config_parse.cpp \
+				spx_port_info.cpp \
+				spx_socket_init.cpp \
+				spx_syntax_chunked.cpp \
+				spx_syntax_request.cpp
+
+LOG			=
+
+SRC_DIR		=	core/
 OBJ_DIR		=	obj/
 OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
-INC_DIR		=
+INC_DIR		=	core/
 LIB_LNK		=	-I $(INC_DIR)
 
 #==============================================================================

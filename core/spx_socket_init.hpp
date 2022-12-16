@@ -20,8 +20,8 @@ typedef struct port_info {
 typedef std::map<const uint32_t, port_info_t> port_info_map;
 
 status
-socket_init_build_port_info(total_port_server_map_p& config_info,
-							port_info_map&			 port_info);
+socket_init_and_build_port_info(total_port_server_map_p& config_info,
+								port_info_map&			 port_info);
 
 int
 socket_init(total_port_server_map_p const& config_info);

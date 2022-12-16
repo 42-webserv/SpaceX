@@ -41,8 +41,8 @@ disconnect_client(int client_fd, std::map<int, std::string>& clients) {
 }
 
 status
-socket_init_build_port_info(total_port_server_map_p& config_info,
-							port_info_map&			 port_info) {
+socket_init_and_build_port_info(total_port_server_map_p& config_info,
+								port_info_map&			 port_info) {
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 		port_info_t temp_port_info;
