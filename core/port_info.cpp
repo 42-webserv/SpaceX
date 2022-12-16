@@ -26,6 +26,7 @@ server_info_for_copy_stage_t::clear(void) {
 	port				= 0;
 	default_server_flag = Kother_server;
 	server_name.clear();
+	root.clear();
 	client_max_body_size = 0;
 	default_error_page.clear();
 	error_page_case.clear();
@@ -120,6 +121,7 @@ server_info_t::print(void) const {
 	std::cout << "[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
+	std::cout << "root: " << root << std::endl;
 	if (default_server_flag == Kdefault_server)
 		std::cout << "default_server_flag: on" << std::endl;
 	else
@@ -153,6 +155,7 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	, port(from.port)
 	, default_server_flag(from.default_server_flag)
 	, server_name(from.server_name)
+	, root(from.root)
 	, client_max_body_size(from.client_max_body_size)
 	, default_error_page(from.default_error_page) {
 #ifdef CONFIG_DEBUG

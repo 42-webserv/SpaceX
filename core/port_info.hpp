@@ -42,18 +42,18 @@ typedef enum {
 	flag_listen				  = 1 << 1,
 	flag_server_name		  = 1 << 2,
 	flag_error_page			  = 1 << 3,
-	flag_client_max_body_size = 1 << 4
+	flag_client_max_body_size = 1 << 4,
+	flag_root				  = 1 << 5
 } flag_config_parse_basic_part_e;
 
 typedef enum {
-	flag_accepted_methods = 1 << 0,
-	flag_root			  = 1 << 1,
+	flag_accepted_methods = 1 << 1,
 	flag_index			  = 1 << 2,
 	flag_autoindex		  = 1 << 3,
 	flag_redirect		  = 1 << 4,
-	flag_saved_path		  = 1 << 5,
-	flag_cgi_pass		  = 1 << 6,
-	flag_cgi_path_info	  = 1 << 7
+	flag_saved_path		  = 1 << 6,
+	flag_cgi_pass		  = 1 << 7,
+	flag_cgi_path_info	  = 1 << 8,
 } flag_config_parse_location_part_e;
 
 /*
@@ -87,6 +87,7 @@ typedef struct server_info_for_copy_stage {
 	uint32_t			   port;
 	default_server_state_e default_server_flag;
 	std::string			   server_name;
+	std::string			   root;
 	uint64_t			   client_max_body_size;
 	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
@@ -119,6 +120,7 @@ typedef struct server_info {
 	const uint32_t				 port;
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
+	const std::string			 root;
 	const uint64_t				 client_max_body_size;
 	const std::string			 default_error_page;
 	mutable error_page_map_p	 error_page_case;

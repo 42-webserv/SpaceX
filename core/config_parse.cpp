@@ -46,7 +46,8 @@ namespace {
 	XX(24, CGI_PATH_INFO, cgi_path_info)                   \
 	XX(25, ALMOST_DONE, almost done)                       \
 	XX(26, DONE, done)                                     \
-	XX(27, ERROR_PAGE_NUMBER, error page number)
+	XX(27, ERROR_PAGE_NUMBER, error page number)           \
+	XX(28, MAIN_ROOT, main root dir)
 
 	typedef enum config_state {
 #define XX(num, name, string) CONFIG_STATE_##name = num,
@@ -100,8 +101,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 	std::string::const_iterator	  it = buf.begin();
 	std::string					  temp_string;
-	uint8_t						  flag_default_part;
-	uint8_t						  flag_location_part;
+	uint16_t					  flag_default_part;
+	uint16_t					  flag_location_part;
 	uint8_t						  size_count;
 	uint32_t					  server_count	 = 0;
 	uint32_t					  location_count = 0;
@@ -143,7 +144,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_cgi_path_info,
 		conf_almost_done, // 25
 		conf_done,
-		conf_error_page_number
+		conf_error_page_number,
+		conf_main_root
 	} state,
 		prev_state,
 		next_state;
@@ -267,19 +269,24 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				return error_("conf_waiting_default_value", "end of line ; - syntax error");
 			}
-			if (size_count == 0 && *it == '}' && (flag_default_part & flag_listen) && (flag_default_part & flag_server_name)) {
-				temp_basic_server_info.client_max_body_size = 8124;
-				prev_state									= state;
-				state										= conf_server_CB_close;
-				next_state									= conf_start;
+			if (size_count == 0 && *it == '}') {
+				prev_state = state;
+				state	   = conf_server_CB_close;
+				next_state = conf_start;
 				break;
-			} else if (size_count == 0 && *it == '}') {
-				return error_("conf_waiting_default_value", "empty server - syntax error");
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
-				prev_state = state;
-				state	   = conf_start;
 				switch (size_count) {
+				case 4: {
+					if (temp_string.compare("root") == KSame) {
+						if (flag_default_part & flag_root) {
+							return error_("conf_waiting_default_value", "root is already set");
+						}
+						next_state = conf_main_root;
+						break;
+					}
+					return error_("conf_waiting_default_value", "4 - syntax error");
+				}
 				case 6: {
 					if (temp_string.compare("listen") == KSame) {
 						if (flag_default_part & flag_listen) {
@@ -299,7 +306,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 #ifdef CONFIG_DEBUG
 						temp_basic_server_info.print();
-
 #endif
 						next_state = conf_location_uri;
 						break;
@@ -336,6 +342,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				default:
 					return error_("conf_waiting_default_value", "not allowed default value - syntax error");
 				}
+				prev_state = state;
+				state	   = conf_start;
 				temp_string.clear();
 				size_count = 0;
 				break;
@@ -383,9 +391,35 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (location_count == 0) {
 					return error_("conf_server_CB_close", "empty server block - syntax error");
 				}
+				if ((flag_default_part & flag_listen) && (flag_default_part & flag_server_name) && (flag_default_part & flag_root)) {
+					if (!(flag_default_part & flag_client_max_body_size)) {
+						temp_basic_server_info.client_max_body_size = 8124;
+					}
+				} else {
+					return error_("conf_server_CB_close", "missing must value set - syntax error");
+				}
 				break;
 			}
 			return error_("conf_server_CB_close", "syntax error");
+		}
+
+		case conf_main_root: {
+			while (syntax_(config_vchar_except_delimiter_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++it;
+			}
+			spx_log_(temp_string);
+			spx_log_(*it);
+			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+				temp_basic_server_info.root = temp_string;
+				temp_string.clear();
+				prev_state = state;
+				state	   = conf_start;
+				next_state = conf_waiting_default_value;
+				flag_default_part |= flag_root;
+				break;
+			}
+			return error_("conf_main_root", "syntax error");
 		}
 
 		case conf_listen: {
@@ -594,6 +628,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (check_dup.second == false) {
 					return error_("conf_location_zero", "duplicate location");
 				}
+				if (!(flag_location_part & flag_accepted_methods)) {
+					return error_("conf_location_zero", "accepted_methods not defined");
+				}
 				// check_dup.
 #ifdef CONFIG_DEBUG
 				std::cout << std::endl;
@@ -626,9 +663,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					next_state = conf_start;
 					break;
 				}
-				return error_("conf_waiting_default_value", "syntax error");
+				return error_("conf_waiting_location_value", "syntax error");
 			}
-			if (size_count == 0 && *it == '}' && flag_location_part != 0) {
+			if (size_count == 0 && *it == '}' && flag_location_part & flag_accepted_methods) {
 				prev_state = state;
 				state	   = conf_location_CB_close;
 				next_state = conf_start;
@@ -648,7 +685,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_root;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "4 - syntax error");
 				}
 				case 5: {
 					if (temp_string.compare("index") == KSame) {
@@ -658,7 +695,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_index;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "5 - syntax error");
 				}
 				case 8: {
 					if (temp_string.compare("cgi_pass") == KSame) {
@@ -687,7 +724,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_autoindex;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "9 - syntax error");
 				}
 				case 10: {
 					if (temp_string.compare("saved_path") == KSame) {
@@ -697,7 +734,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_saved_path;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "10 - syntax error");
 				}
 				case 13: {
 					if (temp_string.compare("cgi_path_info") == KSame) {
@@ -707,7 +744,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_cgi_path_info;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "13 - syntax error");
 				}
 				case 16: {
 					if (temp_string.compare("accepted_methods") == KSame) {
@@ -717,17 +754,17 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_accepted_methods;
 						break;
 					}
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "16 - syntax error");
 				}
 				default: {
-					return error_("conf_waiting_default_value", "syntax error");
+					return error_("conf_waiting_location_value", "syntax error");
 				}
 				}
 				temp_string.clear();
 				size_count = 0;
 				break;
 			}
-			return error_("conf_waiting_default_value", "syntax error");
+			return error_("conf_waiting_location_value", "end-line syntax error");
 		}
 
 		case conf_location_uri: {
