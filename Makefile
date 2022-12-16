@@ -13,7 +13,8 @@ SRC			=	spacex.cpp \
 				spx_port_info.cpp \
 				spx_socket_init.cpp \
 				spx_syntax_chunked.cpp \
-				spx_syntax_request.cpp
+				spx_syntax_request.cpp \
+				spx_util_box.cpp
 
 
 SRC_DIR		=	core/
@@ -50,7 +51,7 @@ clean		:	; $(RM) -r $(OBJ_DIR)
 fclean		:	clean ; $(RM) $(NAME)
 re			:
 		make fclean
-		make all
+		make all -j 8
 
 $(NAME)		:	$(OBJ)
 		$(CXX) $(CXXFLAGS) $^ -o $@

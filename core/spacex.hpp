@@ -4,6 +4,7 @@
 
 #include "spx_config_parse.hpp"
 #include "spx_socket_init.hpp"
+#include "spx_util_box.hpp"
 #include <cstdio>
 #include <fstream>
 #include <iostream>

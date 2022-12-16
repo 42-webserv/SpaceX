@@ -6,5 +6,9 @@
 
 **/a.out
 
+**/*.o
+
 spacex
+
+obj/*
 

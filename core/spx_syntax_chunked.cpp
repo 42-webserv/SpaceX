@@ -1,5 +1,6 @@
 #include "spx_syntax_chunked.hpp"
 #include "spx_core_type.hpp"
+#include "spx_util_box.hpp"
 #include <sstream>
 
 #ifdef SYNTAX_DEBUG
@@ -21,17 +22,6 @@ namespace {
 		(void)msg;
 #endif
 		return spx_error;
-	}
-
-	template <typename T>
-	inline void
-	spx_log_(T msg) {
-#ifdef SYNTAX_DEBUG
-		std::cout << "\033[1;32m" << msg << ";"
-				  << "\033[0m" << std::endl;
-#else
-		(void)msg;
-#endif
 	}
 
 } // namespace
