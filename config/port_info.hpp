@@ -7,8 +7,8 @@
 #include <string>
 
 typedef enum {
-	other_server = 0,
-	default_server
+	Kother_server = 0,
+	Kdefault_server
 } default_server_state_e;
 
 typedef enum {
@@ -139,6 +139,9 @@ typedef struct server_info {
 // typedef std::map<const std::string, server_info_t>  server_map_p;
 // typedef std::map<const std::uint32_t, server_map_p> total_port_server_map_p;
 // typedef std::map<const std::uint32_t, const server_map_p> const_total_port_server_map_p;
+
+// < port_number , < server_name, serve_map_p> > my_config_map;
+// < port_number , < server_name, < uri_location, uri_location_t> > > my_config_map;
 
 typedef struct target_port_server_info {
 	server_info_t* my_port_default_server_ptr;

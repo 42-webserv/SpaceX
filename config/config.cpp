@@ -179,9 +179,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					}
 				} else { // STEP3: saved map to total map (port exist case)
 					spx_log_("port exist case : add new server to port");
-					if (temp_basic_server_info.default_server_flag == default_server) { // check default server dup case
+					if (temp_basic_server_info.default_server_flag == Kdefault_server) { // check default server dup case
 						for (server_map_p::iterator it = check_port_map->second.begin(); it != check_port_map->second.end(); ++it) {
-							if (it->second.default_server_flag == default_server) {
+							if (it->second.default_server_flag == Kdefault_server) {
 								return error_("conf_zero", "default server is already exist");
 							}
 						}
@@ -449,7 +449,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_listen_default: {
 			if (buf.compare(it - buf.begin(), 14, "default_server") == KSame) {
-				temp_basic_server_info.default_server_flag = default_server;
+				temp_basic_server_info.default_server_flag = Kdefault_server;
 				it += 14;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {

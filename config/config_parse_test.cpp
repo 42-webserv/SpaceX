@@ -74,7 +74,7 @@ main() {
 
 // 	server_info_copy.ip					  = "127.0.0.1";
 // 	server_info_copy.port				  = 80;
-// 	server_info_copy.default_server_flag  = default_server;
+// 	server_info_copy.default_server_flag  = Kdefault_server;
 // 	server_info_copy.server_name		  = plus_name;
 // 	server_info_copy.error_page			  = "error_page.html";
 // 	server_info_copy.client_max_body_size = 1024;
@@ -146,7 +146,7 @@ main() {
 
 // 	it = test_map.begin();
 // 	while (it != test_map.end()) {
-// 		if (it->second.default_server_flag & default_server) {
+// 		if (it->second.default_server_flag & Kdefault_server) {
 // 			default_server_ptr = &it->second;
 // 			break;
 // 		}

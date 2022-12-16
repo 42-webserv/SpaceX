@@ -24,7 +24,7 @@ void
 server_info_for_copy_stage_t::clear(void) {
 	ip.clear();
 	port				= 0;
-	default_server_flag = other_server;
+	default_server_flag = Kother_server;
 	server_name.clear();
 	client_max_body_size = 0;
 	default_error_page.clear();
@@ -39,7 +39,7 @@ server_info_for_copy_stage_t::print() const {
 	std::cout << "\n[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
-	if (default_server_flag == default_server)
+	if (default_server_flag == Kdefault_server)
 		std::cout << "default_server_flag: on" << std::endl;
 	else
 		std::cout << "default_server_flag: off" << std::endl;
@@ -123,7 +123,7 @@ server_info_t::print(void) const {
 	std::cout << "[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
-	if (default_server_flag == default_server)
+	if (default_server_flag == Kdefault_server)
 		std::cout << "default_server_flag: on" << std::endl;
 	else
 		std::cout << "default_server_flag: off" << std::endl;
