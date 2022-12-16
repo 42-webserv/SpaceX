@@ -15,6 +15,6 @@ getLength(const std::string dir) {
 
 const char*
 fileToChar(const std::string dir) {
-	std::stringstream ss;
-	int				  fd = fileOpen(dir);
+	// std::stringstream ss;
+	int fd = fileOpen(dir);
 }

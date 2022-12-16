@@ -66,7 +66,11 @@ main(int argc, char* argv[]) {
 	addr.sin6_family = AF_INET6;
 	memcpy(&addr.sin6_addr, &in6addr_any, sizeof(in6addr_any));
 	addr.sin6_port = htons(SERVER_PORT);
+<<<<<<< HEAD:dev_folder/echo_server.cpp
 	rc			   = bind(listen_sd, (struct sockaddr*)&addr, sizeof(addr));
+=======
+	rc = bind(listen_sd, (struct sockaddr*)&addr, sizeof(addr));
+>>>>>>> master:echo_server.cpp
 	if (rc < 0) {
 		perror("bind() failed");
 		close(listen_sd);
