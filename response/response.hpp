@@ -97,9 +97,24 @@ public:
 	void
 	generateCommonHeader() {
 		headers_.push_back(header(SERVER_HEADER_KEY, SERVER_HEADER_VALUE));
+
 		// headers_.push_back(header());
 	};
 
+	// TODO : 분기 생성
+	/*
+	BAD REQUEST 이거나 config가 비었을경우 text/html
+
+	application/octet-stream => 기타 파일일경우 (8비트파일)
+
+	*/
+	// TODO : 문제가 없었다면 URI 의 . 확장자 확인
+	/*
+	mime_type 중 찾기 =>
+	이미지 png,jpg 등등
+	html
+	기타 => text
+	*/
 	void
 	setContentType(const char* content_type) {
 		if (content_type == NULL)
