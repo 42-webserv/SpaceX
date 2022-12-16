@@ -3,7 +3,9 @@
 #define __SPX__SYNTAX_REQUEST__HPP__
 
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 #include <cstddef>
+#include <iostream>
 #include <string>
 
 typedef class client_buf t_client_buf;

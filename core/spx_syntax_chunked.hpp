@@ -3,7 +3,9 @@
 #define __SPX__SYNTAX__CHUNKED_HPP__
 
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 

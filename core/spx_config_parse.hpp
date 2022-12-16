@@ -3,9 +3,13 @@
 #define __SPX__CONFIG__PARSE__HPP__
 
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 #include "spx_port_info.hpp"
+#include <cctype>
+#include <cstring>
 #include <map>
 #include <string>
+#include <vector>
 
 status
 spx_config_syntax_checker(std::string const&	   buf,

@@ -14,7 +14,7 @@ SRC			=	spacex.cpp \
 				spx_socket_init.cpp \
 				spx_syntax_chunked.cpp \
 				spx_syntax_request.cpp \
-				spx_util_box.cpp
+				spx_core_util_box.cpp
 
 
 SRC_DIR		=	core/

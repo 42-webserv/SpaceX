@@ -1,5 +1,4 @@
 #include "spacex.hpp"
-#include "spx_util_box.hpp"
 
 namespace {
 

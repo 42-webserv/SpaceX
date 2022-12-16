@@ -1,10 +1,4 @@
 #include "spx_config_parse.hpp"
-#include "spx_port_info.hpp"
-#include "spx_util_box.hpp"
-#include <cctype>
-#include <cstring>
-#include <string>
-#include <vector>
 
 #ifdef CONFIG_DEBUG
 #include <iostream>

@@ -1,6 +1,5 @@
 #include "spx_port_info.hpp"
 #include "spx_config_parse.hpp"
-#include <iostream>
 
 namespace {
 

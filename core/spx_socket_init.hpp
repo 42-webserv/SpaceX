@@ -2,10 +2,12 @@
 #ifndef __SPX_SOCKET_INIT_HPP__
 #define __SPX_SOCKET_INIT_HPP__
 
+#include "spx_core_util_box.hpp"
 #include "spx_port_info.hpp"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <iostream>
+#include <sstream>
 #include <sys/event.h>
 #include <sys/socket.h>
 #include <unistd.h>

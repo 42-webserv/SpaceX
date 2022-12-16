@@ -3,6 +3,7 @@
 #define __SPX__PORT__INFO__HPP__
 
 #include "spx_core_type.hpp"
+#include <iostream>
 #include <map>
 #include <string>
 

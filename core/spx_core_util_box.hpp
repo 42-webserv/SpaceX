@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __SPACEX_UTIL_BOX_HPP__
-#define __SPACEX_UTIL_BOX_HPP__
+#ifndef __SPACEX__CORE_UTIL_BOX_HPP__
+#define __SPACEX__CORE_UTIL_BOX_HPP__
 
 #include "spx_core_type.hpp"
 #include <cerrno>

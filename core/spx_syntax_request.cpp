@@ -1,8 +1,4 @@
 #include "spx_syntax_request.hpp"
-#include "spx_core_type.hpp"
-#include "spx_util_box.hpp"
-#include <iostream>
-#include <string>
 
 namespace {
 
