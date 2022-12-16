@@ -6,6 +6,8 @@ NAME		= spacex
 
 # VPATH		:=	$(shell ls -R)
 
+# LOG			=	-D DEBUG -D SOCKET_DEBUG
+
 SRC			=	spacex.cpp \
 				spx_config_parse.cpp \
 				spx_port_info.cpp \
@@ -13,7 +15,6 @@ SRC			=	spacex.cpp \
 				spx_syntax_chunked.cpp \
 				spx_syntax_request.cpp
 
-LOG			=
 
 SRC_DIR		=	core/
 OBJ_DIR		=	obj/

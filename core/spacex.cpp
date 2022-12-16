@@ -1,5 +1,4 @@
 #include "spacex.hpp"
-#include "spx_socket_init.hpp"
 
 #ifdef LEAK
 void
