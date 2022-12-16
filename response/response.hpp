@@ -13,6 +13,8 @@
 
 #include "client_buffer.hpp"
 #include "response_form.hpp"
+// tmp
+#include "tmp_kqueue_headers.hpp"
 
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
@@ -27,7 +29,6 @@ private:
 	int					version_minor_;
 	int					version_major_;
 	std::vector<char>	body_;
-	bool				keep_alive_;
 	unsigned int		status_code_;
 	std::string			status_;
 
@@ -72,6 +73,27 @@ public:
 		, status_code_(status) {
 		generateStatus_(status);
 	};
+
+	int
+	fileOpen(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
+		int fd = open(client_buffer.req_res_queue_.front().first.req_target_.c_str(), O_RDONLY);
+
+		// when URL file open failed
+		if (fd < 0) {
+			// TODO : load 404 file from confing
+			fd			 = open("html/error.html", O_RDONLY);
+			off_t length = lseek(fd, 0, SEEK_END);
+			lseek(fd, SEEK_CUR, SEEK_SET);
+
+			std::stringstream ss;
+			ss << length;
+
+			headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
+		}
+		// change_list, fd, EVFILT_READ OR WRITE<status>, EV_ADD | EV_ENABLE <actions>, 0, 0, t_client_buf<udata>
+		add_event_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
+	}
+
 	void
 	generateCommonHeader() {
 		headers_.push_back(header(SERVER_HEADER_KEY, SERVER_HEADER_VALUE));
@@ -88,32 +110,22 @@ public:
 
 // this define will be replace to config file settings input
 #define ERR_PAGE_URL "html/error.html"
-	std::string
-	make_error_response() {
-		std::ifstream err_page_file(ERR_PAGE_URL);
-	}
 
 	std::string
-	make(ClientBuffer client_buffer) {
+	make(ClientBuffer& client_buffer) {
 		t_req_field	 cur_req = client_buffer.req_res_queue_.front().first;
 		t_res_field& res	 = client_buffer.req_res_queue_.front().second;
 
 		// failed in parsing -> bad request or over 400
 		if (cur_req.body_flag_ >= HTTP_STATUS_BAD_REQUEST) {
 			// error handling
+
 			// return error response;
 			return;
 		}
 		// 파싱은 성공
 		// check URL & file open
 		// file read register a event
-		std::ifstream file(cur_req.req_target_.c_str());
-		if (!file) { // URL is not valid ( Can't open file )
-			std::cerr << "404" << std::endl;
-			// TODO : making 404 response and return;
-			return;
-		}
-		// TODO : 버퍼 만큼 읽기 + 버퍼 크기보다 읽을게 많다면, 후에 읽는 이벤트 등록
 	};
 
 	/*
