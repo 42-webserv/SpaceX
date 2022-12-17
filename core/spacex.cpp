@@ -13,9 +13,11 @@ namespace {
 	inline void
 	port_info_print_(port_info_map const& port_info) {
 		for (port_info_map::const_iterator it = port_info.begin(); it != port_info.end(); ++it) {
+			std::cout << "------------------------------------" << std::endl;
 			std::cout << "port: " << it->first << std::endl;
 			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
-			std::cout << "my_port: " << it->second.my_port << std::endl;
+			std::cout << "my_port: " << it->second.my_port << "\n"
+					  << std::endl;
 			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
 				it2->second.print();
 			}
