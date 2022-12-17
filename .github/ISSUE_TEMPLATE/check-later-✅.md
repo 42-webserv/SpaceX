@@ -1,0 +1,19 @@
+---
+name: Check Later ✅
+about: after check issue list ✅
+title: "[ ✅ ]"
+labels: "Priority: ⭑⭑, [Reason] Refactor: \U0001F6E0, Status: ▶"
+assignees: ''
+
+---
+
+**내용**
+* 여기다가 내용 쓰세용
+
+</br></br>
+
+**태스크**
+
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용
+- [ ] 태스크 여기다가 쓰세용
