@@ -156,14 +156,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 				saved_server_name_map_2.insert(std::make_pair(yoma.server_name, yoma)); // STEP2: saved server to map
 				check_port_map = saved_total_port_map_3.find(temp_basic_server_info.port);
 				if (check_port_map == saved_total_port_map_3.end()) { // STEP3: saved map to total map (port not exist case)
-					spx_log_("port not exist case : add new port to map");
 					std::pair<std::map<const uint32_t, server_map_p>::iterator, bool> check_dup; // check server name dup case
 					check_dup = saved_total_port_map_3.insert(std::make_pair(temp_basic_server_info.port, saved_server_name_map_2));
 					if (check_dup.second == false) {
 						return error_("conf_zero", "server_map_p insert fail");
 					}
 				} else { // STEP3: saved map to total map (port exist case)
-					spx_log_("port exist case : add new server to port");
 					if (temp_basic_server_info.default_server_flag == Kdefault_server) { // check default server dup case
 						for (server_map_p::iterator it = check_port_map->second.begin(); it != check_port_map->second.end(); ++it) {
 							if (it->second.default_server_flag == Kdefault_server) {
@@ -171,13 +169,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 							}
 						}
 					}
-					spx_log_("default_server dup check done");
 					std::pair<std::map<const std::string, server_info_t>::iterator, bool> check_dup; // check server name dup case
 					check_dup = check_port_map->second.insert(std::make_pair(temp_basic_server_info.server_name, temp_basic_server_info));
 					if (check_dup.second == false) {
 						return error_("conf_zero", "server name is already exist");
 					}
-					spx_log_("server name dup check done");
 				}
 #ifdef CONFIG_DEBUG
 #endif
@@ -392,8 +388,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.push_back(*it);
 				++it;
 			}
-			spx_log_(temp_string);
-			spx_log_(*it);
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_basic_server_info.root = temp_string;
 				temp_string.clear();

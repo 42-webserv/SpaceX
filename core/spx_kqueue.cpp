@@ -1,4 +1,4 @@
-#include "spx_port_info.hpp"
+#include "spx_config_port_info.hpp"
 #include "spx_socket_init.hpp"
 #include <arpa/inet.h>
 #include <errno.h>

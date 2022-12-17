@@ -2,9 +2,9 @@
 #ifndef __SPX__CONFIG__PARSE__HPP__
 #define __SPX__CONFIG__PARSE__HPP__
 
+#include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include "spx_port_info.hpp"
 #include <cctype>
 #include <cstring>
 #include <map>

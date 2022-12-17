@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __SPX__PORT__INFO__HPP__
-#define __SPX__PORT__INFO__HPP__
+#ifndef __SPX__CONFIG_PORT__INFO__HPP__
+#define __SPX__CONFIG_PORT__INFO__HPP__
 
 #include "spx_core_type.hpp"
 #include <iostream>
