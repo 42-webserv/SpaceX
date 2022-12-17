@@ -5,16 +5,19 @@
 NAME		= spacex
 
 # VPATH		:=	$(shell ls -R)
+# CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK
+DEBUG_FLAG	+=	DEBUG
+# DEBUG_FLAG	+=  SOCKET_DEBUG
+# DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
+# DEBUG_FLAG 	+= CONFIG_DEBUG
 
-# LOG			=	-D DEBUG -D SOCKET_DEBUG
-
+LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
 				spx_config_parse.cpp \
-				spx_port_info.cpp \
+				spx_config_port_info.cpp \
 				spx_socket_init.cpp \
 				spx_syntax_chunked.cpp \
-				spx_syntax_request.cpp \
-				spx_core_util_box.cpp
+				spx_syntax_request.cpp
 
 
 SRC_DIR		=	core/

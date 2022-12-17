@@ -1,4 +1,5 @@
 #include "spx_socket_init.hpp"
+#include "spx_core_util_box.hpp"
 
 namespace {
 
@@ -18,7 +19,6 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 		// 		break;
 		// 	}
 		// }
-
 		temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0);
 		if (temp_port_info.listen_sd < 0) {
 			error_exit("socket", NULL, 0);

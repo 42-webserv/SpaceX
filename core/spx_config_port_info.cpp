@@ -1,4 +1,4 @@
-#include "spx_port_info.hpp"
+#include "spx_config_port_info.hpp"
 #include "spx_config_parse.hpp"
 
 namespace {
@@ -80,9 +80,9 @@ uri_location_t::print(void) const {
 		std::cout << "index: " << index << std::endl;
 
 	if (autoindex_flag == Kautoindex_on)
-		std::cout << "autoindex: on" << std::endl;
+		std::cout << "autoindex: \033[1;32mon\033[0m" << std::endl;
 	else
-		std::cout << "autoindex: off" << std::endl;
+		std::cout << "autoindex: \033[1;31moff\033[0m" << std::endl;
 
 	if (saved_path != "")
 		std::cout << "saved_path: " << saved_path << std::endl;
@@ -117,14 +117,12 @@ uri_location_t::~uri_location() {
 
 void
 server_info_t::print(void) const {
-	std::cout << "[ server_name ] " << server_name << std::endl;
+	std::cout << "\033[1;32m [ server_name ] " << server_name << "\033[0m" << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
 	std::cout << "root: " << root << std::endl;
 	if (default_server_flag == Kdefault_server)
-		std::cout << "default_server_flag: on" << std::endl;
-	else
-		std::cout << "default_server_flag: off" << std::endl;
+		std::cout << "\033[1;31m default_server \033[0m" << std::endl;
 	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 
 	if (default_error_page != "")
