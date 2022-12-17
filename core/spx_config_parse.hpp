@@ -13,6 +13,7 @@
 
 status
 spx_config_syntax_checker(std::string const&	   buf,
-						  total_port_server_map_p& config_map);
+						  total_port_server_map_p& config_map,
+						  std::string const&	   cur_path);
 
 #endif

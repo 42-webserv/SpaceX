@@ -1,4 +1,6 @@
 #include "spx_config_parse.hpp"
+#include "spx_config_port_info.hpp"
+#include "spx_core_util_box.hpp"
 
 #ifdef CONFIG_DEBUG
 #include <iostream>
@@ -66,7 +68,7 @@ namespace {
 
 	inline status
 	error_(const char* msg, const char* msg2) {
-#ifdef CONFIG_DEBUG
+#ifdef DEBUG
 		std::cout << "\033[1;31m" << msg << "\033[0m"
 				  << " : "
 				  << "\033[1;33m" << msg2 << "\033[0m" << std::endl;
@@ -81,7 +83,8 @@ namespace {
 
 status
 spx_config_syntax_checker(std::string const&	   buf,
-						  total_port_server_map_p& config_map) {
+						  total_port_server_map_p& config_map,
+						  std::string const&	   cur_path) {
 
 	std::string::const_iterator	  it = buf.begin();
 	std::string					  temp_string;
@@ -148,11 +151,24 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_zero: {
 			if (server_count != 0) {
+				if (!(flag_default_part & Kflag_server_name)) {
+					temp_basic_server_info.server_name = "localhost";
+				}
+				if (!(flag_default_part & Kflag_root)) {
+					temp_basic_server_info.root = cur_path;
+				}
+				total_port_server_map_p::iterator check_default_server;
+				check_default_server = saved_total_port_map_3.find(temp_basic_server_info.port);
+				if (check_default_server == saved_total_port_map_3.end()) {
+					temp_basic_server_info.default_server_flag = Kdefault_server;
+				} else if (temp_basic_server_info.default_server_flag == Kdefault_server) {
+					return error_("conf_zero", "default server already exist");
+				}
+
 				temp_basic_server_info.uri_case		   = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
 				temp_basic_server_info.error_page_case = saved_error_page_map_0; // STEP 1: saved_error_page_ to server
 				server_info_t					  yoma(temp_basic_server_info);
 				total_port_server_map_p::iterator check_port_map;
-
 				saved_server_name_map_2.insert(std::make_pair(yoma.server_name, yoma)); // STEP2: saved server to map
 				check_port_map = saved_total_port_map_3.find(temp_basic_server_info.port);
 				if (check_port_map == saved_total_port_map_3.end()) { // STEP3: saved map to total map (port not exist case)
@@ -175,10 +191,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 						return error_("conf_zero", "server name is already exist");
 					}
 				}
+
 #ifdef CONFIG_DEBUG
 #endif
-				// server_info_for_copy_stage_t flush_server_info;
-				// temp_basic_server_info = flush_server_info;
 			}
 			temp_uri_location_info.clear();
 			temp_basic_server_info.clear();
@@ -221,7 +236,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		case conf_endline: {
 			if (*it == ';') {
 				++it;
-				if (prev_state == conf_waiting_default_value) {
+				if (prev_state == conf_waiting_default_value || prev_state == conf_listen_default) {
 					next_state = conf_waiting_default_value;
 				} else {
 					next_state = conf_waiting_location_value;
@@ -279,14 +294,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 8: {
 					if (temp_string.compare("location") == KSame) {
-						if (!(flag_default_part & Kflag_listen)
-							|| !(flag_default_part & Kflag_server_name)) {
+						if (!(flag_default_part & Kflag_listen)) {
 							return error_("conf_waiting_default_value",
 										  "need to set default value before location - syntax error");
 						}
-#ifdef CONFIG_DEBUG
-						temp_basic_server_info.print();
-#endif
 						next_state = conf_location_uri;
 						break;
 					}
@@ -371,7 +382,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (location_count == 0) {
 					return error_("conf_server_CB_close", "empty server block - syntax error");
 				}
-				if ((flag_default_part & Kflag_listen) && (flag_default_part & Kflag_server_name) && (flag_default_part & Kflag_root)) {
+				if ((flag_default_part & Kflag_listen)) {
 					if (!(flag_default_part & Kflag_client_max_body_size)) {
 						temp_basic_server_info.client_max_body_size = 8124;
 					}
@@ -419,7 +430,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 					}
 					temp_basic_server_info.port = std::atoi(temp_string.c_str());
-				} else if (10 < size_count && size_count <= 15) { // IP:PORT case / 127.0.0.1:80808 - 15 / localhost:80808 - 15
+				} else if (10 <= size_count && size_count <= 15) { // IP:PORT case / 127.0.0.1:80808 - 15 / localhost:80808 - 15
 					if (temp_string.compare(0, 10, "localhost:") == KSame
 						|| temp_string.compare(0, 10, "127.0.0.1:") == KSame) {
 						temp_it += 10;
@@ -434,8 +445,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 						temp_string.erase(0, 10);
 						temp_basic_server_info.port = std::atoi(temp_string.c_str());
-					} else {
-						return error_("conf_listen invalid IP:", "syntax error");
+					} else { // NOTE:: may need to parse the IP address
+						return error_("conf_listen we didn't supported specific IP:", "syntax error");
 					}
 				} else {
 					return error_("conf_listen invalid IP:PORT", "syntax error");

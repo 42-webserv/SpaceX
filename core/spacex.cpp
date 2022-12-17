@@ -26,7 +26,7 @@ namespace {
 #endif
 
 	inline total_port_server_map_p
-	config_file_open_(int argc, char const* argv[]) {
+	config_file_open_(int argc, char const* argv[], std::string const& cur_path) {
 		std::fstream file;
 		switch (argc) {
 		case 1:
@@ -52,10 +52,19 @@ namespace {
 		std::cout << ss.str() << std::endl;
 #endif
 		total_port_server_map_p temp_config;
-		if (spx_config_syntax_checker(ss.str(), temp_config) != spx_ok) {
+		if (spx_config_syntax_checker(ss.str(), temp_config, cur_path) != spx_ok) {
 			error_exit_msg("config syntax error");
 		}
 		return temp_config;
+	}
+
+	inline void
+	get_current_path_(std::string& cur_path) {
+		char buf[8192];
+		if (getcwd(buf, sizeof(buf)) == NULL) {
+			error_exit_msg_perror("getcwd error");
+		}
+		cur_path = buf;
 	}
 
 } // namespace
@@ -66,7 +75,11 @@ main(int argc, char const* argv[]) {
 	atexit(ft_handler_leak_);
 #endif
 	if (argc <= 2) {
-		total_port_server_map_p config_info = config_file_open_(argc, argv);
+		std::string cur_dir;
+		get_current_path_(cur_dir);
+		spx_log_(cur_dir);
+
+		total_port_server_map_p config_info = config_file_open_(argc, argv, cur_dir);
 		spx_log_("config file open success");
 
 		main_info_t spx;
@@ -76,8 +89,8 @@ main(int argc, char const* argv[]) {
 		port_info_print_(spx.port_info);
 #endif
 		// TODO:: add kqueue process here
-		while (1) {
-		}
+		// while (1) {
+		// }
 
 	} else {
 		error_exit_msg("usage: ./spacex [config_file]");
