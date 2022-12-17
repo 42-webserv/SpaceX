@@ -20,11 +20,10 @@ SRC			=	spacex.cpp \
 				spx_syntax_request.cpp
 
 
-SRC_DIR		=	core/
-OBJ_DIR		=	obj/
+SRC_DIR		=	source/
+OBJ_DIR		=	object/
+INC_DIR		=	include/
 OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
-INC_DIR		=	core/
-LIB_LNK		=	-I $(INC_DIR)
 
 #==============================================================================
 #	Compile Flags
@@ -65,4 +64,4 @@ $(OBJ_DIR)	:
 $(OBJ)		:	| $(OBJ_DIR)
 
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
-		$(CXX) $(CXXFLAGS) -o $@ -c $<
+		$(CXX) $(CXXFLAGS) -I $(INC_DIR) -o $@ -c $<
