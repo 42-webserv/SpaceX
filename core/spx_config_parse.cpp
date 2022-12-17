@@ -259,7 +259,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				switch (size_count) {
 				case 4: {
 					if (temp_string.compare("root") == KSame) {
-						if (flag_default_part & flag_root) {
+						if (flag_default_part & Kflag_root) {
 							return error_("conf_waiting_default_value", "root is already set");
 						}
 						next_state = conf_main_root;
@@ -269,7 +269,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 6: {
 					if (temp_string.compare("listen") == KSame) {
-						if (flag_default_part & flag_listen) {
+						if (flag_default_part & Kflag_listen) {
 							return error_("conf_waiting_default_value", "listen is already set");
 						}
 						next_state = conf_listen;
@@ -279,8 +279,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 8: {
 					if (temp_string.compare("location") == KSame) {
-						if (!(flag_default_part & flag_listen)
-							|| !(flag_default_part & flag_server_name)) {
+						if (!(flag_default_part & Kflag_listen)
+							|| !(flag_default_part & Kflag_server_name)) {
 							return error_("conf_waiting_default_value",
 										  "need to set default value before location - syntax error");
 						}
@@ -301,7 +301,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 11: {
 					if (temp_string.compare("server_name") == KSame) {
-						if (flag_default_part & flag_server_name) {
+						if (flag_default_part & Kflag_server_name) {
 							return error_("conf_waiting_default_value", "server_name is already set");
 						}
 						next_state = conf_server_name;
@@ -311,7 +311,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 20: {
 					if (temp_string.compare("client_max_body_size") == KSame) {
-						if (flag_default_part & flag_client_max_body_size) {
+						if (flag_default_part & Kflag_client_max_body_size) {
 							return error_("conf_waiting_default_value", "client_max_body_size is already set");
 						}
 						next_state = conf_client_max_body_size;
@@ -371,8 +371,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (location_count == 0) {
 					return error_("conf_server_CB_close", "empty server block - syntax error");
 				}
-				if ((flag_default_part & flag_listen) && (flag_default_part & flag_server_name) && (flag_default_part & flag_root)) {
-					if (!(flag_default_part & flag_client_max_body_size)) {
+				if ((flag_default_part & Kflag_listen) && (flag_default_part & Kflag_server_name) && (flag_default_part & Kflag_root)) {
+					if (!(flag_default_part & Kflag_client_max_body_size)) {
 						temp_basic_server_info.client_max_body_size = 8124;
 					}
 				} else {
@@ -394,7 +394,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state = state;
 				state	   = conf_start;
 				next_state = conf_waiting_default_value;
-				flag_default_part |= flag_root;
+				flag_default_part |= Kflag_root;
 				break;
 			}
 			return error_("conf_main_root", "syntax error");
@@ -452,7 +452,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state = conf_listen_default;
 			}
 			temp_basic_server_info.ip = "127.0.0.1";
-			flag_default_part |= flag_listen;
+			flag_default_part |= Kflag_listen;
 			temp_string.clear();
 			size_count = 0;
 			break;
@@ -482,7 +482,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state						   = state;
 				state							   = conf_start;
 				next_state						   = conf_waiting_default_value;
-				flag_default_part |= flag_server_name;
+				flag_default_part |= Kflag_server_name;
 				temp_string.clear();
 				break;
 			}
@@ -534,8 +534,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				if (flag_error_page_default) {
-					if (!(flag_default_part & flag_error_page)) {
-						flag_default_part |= flag_error_page;
+					if (!(flag_default_part & Kflag_error_page)) {
+						flag_default_part |= Kflag_error_page;
 						temp_basic_server_info.default_error_page = temp_string;
 						flag_error_page_default					  = 0;
 					} else {
@@ -587,7 +587,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						prev_state									= state;
 						state										= conf_start;
 						next_state									= conf_waiting_default_value;
-						flag_default_part |= flag_client_max_body_size;
+						flag_default_part |= Kflag_client_max_body_size;
 						temp_string.clear();
 						size_count = 0;
 						break;
@@ -606,7 +606,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (check_dup.second == false) {
 					return error_("conf_location_zero", "duplicate location");
 				}
-				if (!(flag_location_part & flag_accepted_methods)) {
+				if (!(flag_location_part & Kflag_accepted_methods)) {
 					return error_("conf_location_zero", "accepted_methods not defined");
 				}
 				// check_dup.
@@ -643,7 +643,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				return error_("conf_waiting_location_value", "syntax error");
 			}
-			if (size_count == 0 && *it == '}' && flag_location_part & flag_accepted_methods) {
+			if (size_count == 0 && *it == '}' && flag_location_part & Kflag_accepted_methods) {
 				prev_state = state;
 				state	   = conf_location_CB_close;
 				next_state = conf_start;
@@ -657,7 +657,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				switch (size_count) {
 				case 4: {
 					if (temp_string.compare("root") == KSame) {
-						if (flag_location_part & flag_root) {
+						if (flag_location_part & Kflag_root) {
 							return error_("conf_waiting_locaiton_value", "root is already set");
 						}
 						next_state = conf_root;
@@ -667,7 +667,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 5: {
 					if (temp_string.compare("index") == KSame) {
-						if (flag_location_part & flag_index) {
+						if (flag_location_part & Kflag_index) {
 							return error_("conf_waiting_locaiton_value", "index is already set");
 						}
 						next_state = conf_index;
@@ -677,14 +677,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 8: {
 					if (temp_string.compare("cgi_pass") == KSame) {
-						if (flag_location_part & flag_cgi_pass) {
+						if (flag_location_part & Kflag_cgi_pass) {
 							return error_("conf_waiting_locaiton_value", "cgi_pass is already set");
 						}
 						next_state = conf_cgi_pass;
 						break;
 					}
 					if (temp_string.compare("redirect") == KSame) {
-						if (flag_location_part & flag_redirect) {
+						if (flag_location_part & Kflag_redirect) {
 							return error_("conf_waiting_locaiton_value", "redirect is already set");
 						}
 						next_state = conf_redirect;
@@ -696,7 +696,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 9: {
 					if (temp_string.compare("autoindex") == KSame) {
-						if (flag_location_part & flag_autoindex) {
+						if (flag_location_part & Kflag_autoindex) {
 							return error_("conf_waiting_locaiton_value", "autoindex is already set");
 						}
 						next_state = conf_autoindex;
@@ -706,7 +706,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 10: {
 					if (temp_string.compare("saved_path") == KSame) {
-						if (flag_location_part & flag_saved_path) {
+						if (flag_location_part & Kflag_saved_path) {
 							return error_("conf_waiting_locaiton_value", "saved_path is already set");
 						}
 						next_state = conf_saved_path;
@@ -716,7 +716,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 13: {
 					if (temp_string.compare("cgi_path_info") == KSame) {
-						if (flag_location_part & flag_cgi_path_info) {
+						if (flag_location_part & Kflag_cgi_path_info) {
 							return error_("conf_waiting_locaiton_value", "cgi_path_info is already set");
 						}
 						next_state = conf_cgi_path_info;
@@ -726,7 +726,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 				case 16: {
 					if (temp_string.compare("accepted_methods") == KSame) {
-						if (flag_location_part & flag_accepted_methods) {
+						if (flag_location_part & Kflag_accepted_methods) {
 							return error_("conf_waiting_locaiton_value", "accepted_methods is already set");
 						}
 						next_state = conf_accepted_methods;
@@ -791,7 +791,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				++size_count;
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-				flag_location_part |= flag_accepted_methods;
+				flag_location_part |= Kflag_accepted_methods;
 				switch (size_count) {
 				case 3: {
 					if (temp_string.compare("GET") == KSame) {
@@ -860,7 +860,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state					= state;
 				state						= conf_start;
 				next_state					= conf_waiting_location_value;
-				flag_location_part |= flag_root;
+				flag_location_part |= Kflag_root;
 				temp_string.clear();
 				break;
 			}
@@ -877,7 +877,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state					 = state;
 				state						 = conf_start;
 				next_state					 = conf_waiting_location_value;
-				flag_location_part |= flag_index;
+				flag_location_part |= Kflag_index;
 				temp_string.clear();
 				break;
 			}
@@ -898,7 +898,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state = state;
 				state	   = conf_start;
 				next_state = conf_waiting_location_value;
-				flag_location_part |= flag_autoindex;
+				flag_location_part |= Kflag_autoindex;
 				break;
 			}
 			return error_("conf_autoindex", "syntax error");
@@ -914,7 +914,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state						= state;
 				state							= conf_start;
 				next_state						= conf_waiting_location_value;
-				flag_location_part |= flag_redirect;
+				flag_location_part |= Kflag_redirect;
 				temp_string.clear();
 				break;
 			}
@@ -931,7 +931,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state						  = state;
 				state							  = conf_start;
 				next_state						  = conf_waiting_location_value;
-				flag_location_part |= flag_saved_path;
+				flag_location_part |= Kflag_saved_path;
 				temp_string.clear();
 				break;
 			}
@@ -948,7 +948,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state						= state;
 				state							= conf_start;
 				next_state						= conf_waiting_location_value;
-				flag_location_part |= flag_cgi_pass;
+				flag_location_part |= Kflag_cgi_pass;
 				temp_string.clear();
 				break;
 			}
@@ -965,7 +965,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state							 = state;
 				state								 = conf_start;
 				next_state							 = conf_waiting_location_value;
-				flag_location_part |= flag_cgi_path_info;
+				flag_location_part |= Kflag_cgi_path_info;
 				temp_string.clear();
 				break;
 			}
