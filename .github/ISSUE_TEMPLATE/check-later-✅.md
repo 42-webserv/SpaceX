@@ -1,7 +1,7 @@
 ---
 name: Check Later ✅
 about: after check issue list ✅
-title: "[ ✅ ]"
+title: "[✅]"
 labels: "Priority: ⭑⭑, [Reason] Refactor: \U0001F6E0, Status: ▶"
 assignees: ''
 
