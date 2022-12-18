@@ -5,10 +5,12 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <iostream>
 
-#define BUFSIZE 1024
+#define BUFSIZE 10240
 #define SERV_IP "127.0.0.1"
-#define SERV_PORT 1234
+#define SERV_PORT 80
 
 void error_handling( char *message );
 
@@ -38,22 +40,47 @@ int main( int argc, char **argv ) {
 		error_handling( "connect() error" );
 	}
 
+	fcntl( sock, F_SETFL, O_NONBLOCK );
+
 	while ( 1 ) {
 		/* 메시지 입력 전송*/
-		fputs( "전송할 메시지를 입력하세요(q to quit) : ", stdout );
-		fgets( message, BUFSIZE, stdin );
-		if ( !strcmp( message, "q\n" ) ) {
-			break;
-		}
-		// char *message =
-		// 	"GET / HTTP/1.1\r\nHost: localhost:1234\r\nUser-Agent: "
-		// 	"Go-http-client/1.1\r\nAccept-Encoding: gzip\r\n\r\n";
-		write( sock, message, strlen( message ) );
+		// fputs( "전송할 메시지를 입력하세요(q to quit) : ", stdout );
+		// fgets( message, BUFSIZE, stdin );
+		// if ( !strcmp( message, "q\n" ) ) {
+		// 	break;
+		// }
+		// sleep( 1 );
+		char *message2 =
+			"GET / HTTP/1.9\r\nhOsT:localhost:1234\r\nUser-Agent: "
+			"Go-http-client/0.9\r\nasdfasdf\r\n"
+			"Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n"
+			"4\r\nWiki\r\n6\r\npedia \r\nE\r\nin \r\n\r\nchunks.\r\n0\r\n\r\n"
+			"POST / HTTP/1.1\r\nHost:localhost:1234\r\nUser-Agent: "
+			"Go-http-client/1.1\r\nContent-Type: "
+			"text/plain\r\nTransfer-Encoding: chunked\r\n\r\n"
+			"4\r\nWiki\r\n6\r\npedia \r\nE\r\nin \r\n\r\nchunks.\r\n0\r\n\r\n";
 
+		write( sock, message2, strlen( message2 ) );
+
+		std::cout << "print" << std::endl;
 		/* 메시지 수신 출력 */
+		sleep( 1 );
 		str_len = read( sock, message, BUFSIZE - 1 );
-		message[str_len] = 0;
-		printf( "서버로부터 전송된 메시지 : %s \n", message );
+		if ( str_len != -1 ) {
+			message[str_len] = 0;
+			printf( "서버로부터 전송된 메시지 : %s \n", message );
+		}
+		// message2 = "\r\n\r\n";
+		// sleep( 3 );
+		// write( sock, message2, strlen( message2 ) );
+		// /* 메시지 수신 출력 */
+		// std::cout << "print2" << std::endl;
+		// sleep( 1 );
+		// str_len = read( sock, message, BUFSIZE - 1 );
+		// if ( str_len != -1 ) {
+		// 	message[str_len] = 0;
+		// 	printf( "서버로부터 전송된 메시지 : %s \n", message );
+		// }
 	}
 	close( sock );
 	return 0;
