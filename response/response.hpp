@@ -21,6 +21,15 @@
 #define SERVER_HEADER_CONTENT_LENGTH "Content-Legnth"
 #define TEST_FILE "html/test.html"
 
+#define CONTENT_TYPE "Content-Type";
+
+#define MIME_TYPE_HTML "text/html"
+#define MIME_TYPE_JPG "image/jpg"
+#define MIME_TYPE_JPEG "image/jpeg"
+#define MIME_TYPE_PNG "image/png"
+#define MIME_TYPE_BMP "image/bmp"
+#define MIME_TYPE_TEXT "text"
+
 struct Response {
 	typedef std::pair<std::string, std::string> header;
 
@@ -75,7 +84,7 @@ public:
 	};
 
 	int
-	fileOpen(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
+	setContentLength_fileOpen(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
 		int fd = open(client_buffer.req_res_queue_.front().first.req_target_.c_str(), O_RDONLY);
 
 		// when URL file open failed
@@ -90,8 +99,9 @@ public:
 
 			headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
 		}
+		// 이벤트 등록을 여기서?
 		// change_list, fd, EVFILT_READ OR WRITE<status>, EV_ADD | EV_ENABLE <actions>, 0, 0, t_client_buf<udata>
-		add_event_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
+		// add_event_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
 	}
 
 	void
@@ -104,23 +114,35 @@ public:
 	// TODO : 분기 생성
 	/*
 	BAD REQUEST 이거나 config가 비었을경우 text/html
+	application/octet-stream => out 파일일경우 (8비트파일)
 
-	application/octet-stream => 기타 파일일경우 (8비트파일)
-
-	*/
-	// TODO : 문제가 없었다면 URI 의 . 확장자 확인
-	/*
-	mime_type 중 찾기 =>
-	이미지 png,jpg 등등
-	html
-	기타 => text
 	*/
 	void
-	setContentType(const char* content_type) {
-		if (content_type == NULL)
-			headers_.push_back(header("Content-Type", "text"));
+	setContentType(t_req_field& req) {
+
+		// bad request or errorpage exceptions
+		if (req.body_flag_ >= HTTP_STATUS_BAD_REQUEST) {
+			headers_.push_back(header("Content-Type", MIME_TYPE_HTML));
+			return;
+		}
+
+		// request extention checking
+		std::string			   uri			= req.req_target_;
+		std::string::size_type uri_ext_size = uri.find_last_of('.');
+		std::string			   ext;
+
+		if (uri_ext_size)
+			ext = uri.substr(uri_ext_size + 1);
+		if (ext == "png")
+			headers_.push_back(header("Content-Type", MIME_TYPE_PNG));
+		else if (ext == "bmp")
+			headers_.push_back(header("Content-Type", MIME_TYPE_BMP));
+		else if (ext == "jpg")
+			headers_.push_back(header("Content-Type", MIME_TYPE_JPG));
+		else if (ext == "jpeg")
+			headers_.push_back(header("Content-Type", MIME_TYPE_JPEG));
 		else
-			headers_.push_back(header("Content-Type", content_type));
+			headers_.push_back(header("Content-Type", MIME_TYPE_TEXT));
 	};
 
 // this define will be replace to config file settings input
@@ -131,16 +153,19 @@ public:
 		t_req_field	 cur_req = client_buffer.req_res_queue_.front().first;
 		t_res_field& res	 = client_buffer.req_res_queue_.front().second;
 
-		// failed in parsing -> bad request or over 400
-		if (cur_req.body_flag_ >= HTTP_STATUS_BAD_REQUEST) {
-			// error handling
+		setContentType(cur_req);
+		setContentLength_fileOpen(NULL, client_buffer);
 
-			// return error response;
-			return;
-		}
-		// 파싱은 성공
-		// check URL & file open
-		// file read register a event
+		std::stringstream stream;
+		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
+			   << "\r\n";
+		for (std::vector<Response::header>::const_iterator it = headers_.begin();
+			 it != headers_.end(); ++it)
+			stream << it->first << ": " << it->second << "\r\n";
+		stream << "\r\n";
+		// std::string data(body_.begin(), body_.end());
+		// stream << data << "\r\n";
+		return stream.str();
 	};
 
 	/*
