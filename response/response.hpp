@@ -11,9 +11,10 @@
 #include <unistd.h>
 #include <vector>
 
+#include "../dev_folder/ClientBuffer.hpp"
 #include "client_buffer.hpp"
 #include "response_form.hpp"
-// tmp
+// tmp for add_event_chagne
 #include "tmp_kqueue_headers.hpp"
 
 #define SERVER_HEADER_KEY "Server"
@@ -29,6 +30,7 @@
 #define MIME_TYPE_PNG "image/png"
 #define MIME_TYPE_BMP "image/bmp"
 #define MIME_TYPE_TEXT "text"
+#define MIME_TYPE_DEFUALT "application/octet-stream"
 
 struct Response {
 	typedef std::pair<std::string, std::string> header;
@@ -37,9 +39,9 @@ private:
 	std::vector<header> headers_;
 	int					version_minor_;
 	int					version_major_;
-	std::vector<char>	body_;
 	unsigned int		status_code_;
 	std::string			status_;
+	bool				keep_alive_ = true;
 
 	std::string
 	make() const {
@@ -49,8 +51,6 @@ private:
 		for (std::vector<Response::header>::const_iterator it = headers_.begin();
 			 it != headers_.end(); ++it)
 			stream << it->first << ": " << it->second << "\r\n";
-		std::string data(body_.begin(), body_.end());
-		stream << data << "\r\n";
 		return stream.str();
 	}
 	/*
@@ -99,9 +99,8 @@ public:
 
 			headers_.push_back(header(SERVER_HEADER_CONTENT_LENGTH, ss.str()));
 		}
-		// 이벤트 등록을 여기서?
 		// change_list, fd, EVFILT_READ OR WRITE<status>, EV_ADD | EV_ENABLE <actions>, 0, 0, t_client_buf<udata>
-		// add_event_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
+		add_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
 	}
 
 	void
@@ -123,6 +122,7 @@ public:
 		// bad request or errorpage exceptions
 		if (req.body_flag_ >= HTTP_STATUS_BAD_REQUEST) {
 			headers_.push_back(header("Content-Type", MIME_TYPE_HTML));
+			keep_alive_ = false;
 			return;
 		}
 
@@ -133,6 +133,7 @@ public:
 
 		if (uri_ext_size)
 			ext = uri.substr(uri_ext_size + 1);
+
 		if (ext == "png")
 			headers_.push_back(header("Content-Type", MIME_TYPE_PNG));
 		else if (ext == "bmp")
@@ -141,20 +142,21 @@ public:
 			headers_.push_back(header("Content-Type", MIME_TYPE_JPG));
 		else if (ext == "jpeg")
 			headers_.push_back(header("Content-Type", MIME_TYPE_JPEG));
-		else
+		else if (ext == "txt")
 			headers_.push_back(header("Content-Type", MIME_TYPE_TEXT));
+		else
+			headers_.push_back(header("Content-Type", MIME_TYPE_DEFUALT));
 	};
 
 // this define will be replace to config file settings input
 #define ERR_PAGE_URL "html/error.html"
 
 	std::string
-	make(ClientBuffer& client_buffer) {
-		t_req_field	 cur_req = client_buffer.req_res_queue_.front().first;
-		t_res_field& res	 = client_buffer.req_res_queue_.front().second;
+	make(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
+		t_req_field cur_req = client_buffer.req_res_queue_.front().first;
 
 		setContentType(cur_req);
-		setContentLength_fileOpen(NULL, client_buffer);
+		setContentLength_fileOpen(change_list, client_buffer);
 
 		std::stringstream stream;
 		stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
@@ -163,32 +165,13 @@ public:
 			 it != headers_.end(); ++it)
 			stream << it->first << ": " << it->second << "\r\n";
 		stream << "\r\n";
-		// std::string data(body_.begin(), body_.end());
-		// stream << data << "\r\n";
 		return stream.str();
 	};
 
-	/*
-		// make
-		std::string
-		make_test() {
-			std::stringstream stream;
-			// open some file for response
-			// content type check - extention check
-			setContentType(NULL);
-			setBody(TEST_FILE);
-			stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_
-				   << "\r\n";
-			for (std::vector<Response::header>::const_iterator it = headers_.begin();
-				 it != headers_.end(); ++it)
-				stream << it->first << ": " << it->second << "\r\n";
-			stream << "\r\n";
-			std::string data(body_.begin(), body_.end());
-			// std::cout << data << std::endl;
-			stream << data << "\r\n";
-			return stream.str();
-		}
-	*/
+	std::string
+	makeBadRequestResponse(ClientBuffer& client_buffer) {
+	}
+
 	// make 분리
 	//  TODO : 요청에 따라 BODY 여부 확인
 	//  TODO : 요청내용이 어떻게 들어오는지 확인
