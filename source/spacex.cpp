@@ -86,10 +86,11 @@ main(int argc, char const* argv[]) {
 		spx_log_("config file open success");
 
 		main_info_t spx;
-		socket_init_and_build_port_info(config_info, spx.port_info);
+		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
 		spx_log_("socket per port_info success");
 #ifdef SOCKET_DEBUG
 		port_info_print_(spx.port_info);
+		std::cout << "socket count:" << spx.socket_size << std::endl;
 #endif
 		// TODO:: add kqueue process here
 		// while (1) {

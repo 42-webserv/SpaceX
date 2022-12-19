@@ -1,4 +1,5 @@
 #pragma once
+#include <_types/_uint32_t.h>
 #ifndef __SPX_SOCKET_INIT_HPP__
 #define __SPX_SOCKET_INIT_HPP__
 
@@ -30,7 +31,8 @@ typedef std::map<const uint32_t, port_info_t> port_info_map;
 
 status
 socket_init_and_build_port_info(total_port_server_map_p& config_info,
-								port_info_map&			 port_info);
+								port_info_map&			 port_info,
+								uint32_t&				 socket_size);
 
 int
 socket_init(total_port_server_map_p const& config_info);

@@ -1,6 +1,7 @@
 #include "spx_socket_init.hpp"
 #include "spx_config_port_info.hpp"
 #include "spx_core_util_box.hpp"
+#include <_types/_uint32_t.h>
 
 namespace {
 
@@ -12,7 +13,8 @@ port_info_t::port_info(server_info_t const& from)
 
 status
 socket_init_and_build_port_info(total_port_server_map_p& config_info,
-								port_info_map&			 port_info) {
+								port_info_map&			 port_info,
+								uint32_t&				 socket_size) {
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 
@@ -24,6 +26,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.my_port_map = it->second;
 
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
+				socket_size				 = temp_port_info.listen_sd + 1;
 				spx_log_(temp_port_info.listen_sd);
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);

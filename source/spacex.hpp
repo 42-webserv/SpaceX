@@ -13,6 +13,7 @@
 
 typedef struct main_info {
 	port_info_map port_info;
+	uint32_t	  socket_size;
 	// add handler function
 } main_info_t;
 
