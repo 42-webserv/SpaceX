@@ -144,10 +144,9 @@ ClientBuffer::write_res_body(uintptr_t					 fd,
 							 std::vector<struct kevent>& change_list) {
 	t_res_field* res = &this->req_res_queue_.front().second;
 	// no chunked case.
-	int n_write;
-	n_write = write(fd, &res->body_buffer_[res->sent_pos_],
-					std::min((size_t)WRITE_BUFFER_MAX,
-							 res->body_buffer_.size() - res->sent_pos_));
+	int n_write = write(fd, &res->body_buffer_[res->sent_pos_],
+						std::min((size_t)WRITE_BUFFER_MAX,
+								 res->body_buffer_.size() - res->sent_pos_));
 	res->sent_pos_ += n_write;
 	res->content_length_ -= n_write;
 	if (res->body_buffer_.size() == res->sent_pos_) {
@@ -193,6 +192,22 @@ ClientBuffer::write_res_header(uintptr_t				   fd,
 	return n;
 }
 
+// skip content-length or transfer-encoding chunked.
+bool
+ClientBuffer::skip_body(ssize_t cont_len) {
+	if (cont_len < 0) {
+		// chunked case
+	} else {
+		int n = cont_len - this->req_res_queue_.back().first.body_recieved_;
+		if (n > this->rdsaved_.size()) {
+			this->req_res_queue_.back().first.body_recieved_ += this->rdsaved_.size();
+			this->rdsaved_.clear();
+		} else {
+			this->req_res_queue_.back().first.body_recieved_ += n;
+		}
+	}
+}
+
 bool
 ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								 struct kevent*				 cur_event) {
@@ -210,21 +225,28 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		}
 		switch (this->req_res_queue_.back().first.req_type_) {
 		case REQ_GET:
-			// set_get_res();
+			if (this->req_res_queue_.back().second.header_ready_ == 0) {
+				// set_get_res();
+			}
 			// server file descriptor will be added to kqueue
 			// if it has a body, status will be changed to RES_BODY
 			// plus, client fd EV_READ will be disabled.
-			if (this->req_res_queue_.back().first.content_length_ > 0
-				| this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
-				// skip body logic.
+
+			if (this->req_res_queue_.back().first.content_length_ > 0) {
+				this->skip_body(this->req_res_queue_.back().first.content_length_);
+			} else if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+				this->skip_body(-1);
 			}
 			return false;
 		case REQ_HEAD:
 			// same with REQ_GET without body.
-			// set_head_res();
-			if (this->req_res_queue_.back().first.content_length_ > 0
-				| this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
-				// skip body logic.
+			if (this->req_res_queue_.back().second.header_ready_ == 0) {
+				// set_head_res();
+			}
+			if (this->req_res_queue_.back().first.content_length_ > 0) {
+				this->skip_body(this->req_res_queue_.back().first.content_length_);
+			} else if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+				this->skip_body(-1);
 			}
 			break;
 		case REQ_POST:
@@ -242,8 +264,6 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
 				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
-			} else {
-				// maybe error?
 			}
 			break;
 		case REQ_PUT:
@@ -260,21 +280,23 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
 				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
-			} else {
-				// maybe error?
 			}
 			break;
 		case REQ_DELETE:
+			if (this->req_res_queue_.back().second.header_ready_ == 0) {
+			}
 			//  HEADER?
 			break;
 		case REQ_UNDEFINED:
-			// error occurred, but do not disconnect.
+			// error. disconnect client.
 			break;
 		}
 	case REQ_BODY:
 		// TODO: Body length check
 		// if body length is larger than client body limit, disconnect??
 		// if transfer encoding is chunked, keep checking it for the limit.
+		if (this->req_res_queue_.back().first.body_recieved_ < this->req_res_queue_.back().first.body_limit_) {
+		}
 	case RES_BODY:
 		// file end check.
 		if (lseek(cur_event->ident, 0, SEEK_CUR)
@@ -355,6 +377,33 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 }
 
 void
+ClientBuffer::client_buffer_read(struct kevent*				 cur_event,
+								 std::vector<struct kevent>& change_list) {
+	int n_read = read(this->client_fd, this->rdbuf_, BUFFER_SIZE);
+	if (n_read < 0) {
+		// TODO: error handle
+		return;
+	}
+	this->flag_ &= ~READ_READY;
+	if (this->state_ != RES_BODY) {
+		this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_,
+							  this->rdbuf_ + n_read);
+	} else {
+		this->req_res_queue_.back().second.body_buffer_.insert(
+			this->req_res_queue_.back().second.body_buffer_.end(),
+			this->rdbuf_, this->rdbuf_ + n_read);
+	}
+	while (this->flag_ & READ_READY == false) {
+		this->req_res_controller(change_list, cur_event);
+	}
+	if (this->req_res_queue_.size() != 0
+		&& this->req_res_queue_.front().second.body_flag_ & WRITE_READY == true) {
+		add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
+						EV_ENABLE, 0, 0, this);
+	}
+}
+
+void
 read_event_handler(uintptr_t serv_sd, struct kevent* cur_event,
 				   std::vector<struct kevent>& change_list) {
 	// server port will be updated.
@@ -363,30 +412,9 @@ read_event_handler(uintptr_t serv_sd, struct kevent* cur_event,
 			// TODO: error ???
 		}
 	} else {
-		t_client_buf* buf	 = static_cast<t_client_buf*>(cur_event->udata);
-		int			  n_read = read(cur_event->ident, buf->rdbuf_, BUFFER_SIZE);
+		t_client_buf* buf = static_cast<t_client_buf*>(cur_event->udata);
 
-		if (n_read < 0) {
-			// TODO: error handle
-			return;
-		}
-		buf->flag_ &= ~READ_READY;
-		if (buf->state_ != RES_BODY) {
-			buf->rdsaved_.insert(buf->rdsaved_.end(), buf->rdbuf_,
-								 buf->rdbuf_ + n_read);
-		} else {
-			buf->req_res_queue_.back().second.body_buffer_.insert(
-				buf->req_res_queue_.back().second.body_buffer_.end(),
-				buf->rdbuf_, buf->rdbuf_ + n_read);
-		}
-		while (buf->flag_ & READ_READY == false) {
-			if (buf->req_res_controller(change_list, cur_event) == false)
-				break;
-		}
-		if (buf->req_res_queue_.size() > 0) {
-			add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
-							EV_ENABLE, 0, 0, buf);
-		}
+		buf->client_buffer_read(cur_event, change_list);
 	}
 }
 
@@ -458,6 +486,8 @@ main(void) {
 				read_event_handler(serv_sd, cur_event, change_list);
 			} else if (cur_event->filter == EVFILT_WRITE) {
 				write_event_handler(serv_sd, cur_event, change_list);
+			} else if (cur_event->filter == EVFILT_PROC) {
+				// TODO: waitpid
 			}
 		}
 	}

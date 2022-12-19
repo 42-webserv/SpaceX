@@ -50,9 +50,9 @@ enum e_res_flag { FILE_OPEN	  = 1,
 				  WRITE_READY = 2 };
 
 // gzip & deflate are not implemented.
-enum { TE_CHUNKED = 0,
-	   TE_GZIP,
-	   TE_DEFLATE };
+enum e_transfer_encoding { TE_CHUNKED = 0,
+						   TE_GZIP,
+						   TE_DEFLATE };
 
 typedef std::vector<char> t_buffer;
 
@@ -89,17 +89,19 @@ typedef struct ReqField {
 typedef struct ResField {
 	t_buffer	body_buffer_;
 	std::string res_header_;
-	std::string file_path_;
-	size_t		content_length_;
-	int			sent_pos_;
-	int			body_flag_;
-	int			transfer_encoding_;
+	// std::string file_path_;
+	size_t content_length_;
+	int	   header_ready_;
+	int	   sent_pos_;
+	int	   body_flag_;
+	int	   transfer_encoding_;
 
 	ResField()
 		: body_buffer_()
 		, res_header_()
-		, file_path_()
+		// , file_path_()
 		, content_length_(0)
+		, header_ready_(0)
 		, sent_pos_(0)
 		, body_flag_(0)
 		, transfer_encoding_(0) {
@@ -135,4 +137,6 @@ public:
 	bool write_res_body(uintptr_t fd, std::vector<struct kevent>& change_list);
 	bool write_res_header(uintptr_t fd, std::vector<struct kevent>& change_list);
 	bool req_res_controller(std::vector<struct kevent>& change_list, struct kevent* cur_event);
+	bool skip_body(ssize_t cont_len);
+	void client_buffer_read(struct kevent* cur_event, std::vector<struct kevent>& change_list);
 };
