@@ -27,6 +27,7 @@
 	XX(401, UNAUTHORIZED, Unauthorized)                                       \
 	XX(402, PAYMENT_REQUIRED, Payment Required)                               \
 	XX(403, FORBIDDEN, Forbidden)                                             \
+	XX(404, NOT_FOUND, Not Found)                                             \
 	XX(405, METHOD_NOT_ALLOWED, Method Not Allowed)                           \
 	XX(406, NOT_ACCEPTABLE, Not Acceptable)                                   \
 	XX(407, PROXY_AUTHENTICATION_REQUIRED, Proxy Authentication Required)     \
