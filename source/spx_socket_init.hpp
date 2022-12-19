@@ -26,6 +26,7 @@ typedef struct port_info {
 } port_info_t;
 
 typedef std::map<const uint32_t, port_info_t> port_info_map;
+// TODO :: socket number, port_info_t // make to array
 
 status
 socket_init_and_build_port_info(total_port_server_map_p& config_info,

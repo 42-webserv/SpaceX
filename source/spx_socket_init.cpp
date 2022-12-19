@@ -23,7 +23,8 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.my_port	   = it->first;
 				temp_port_info.my_port_map = it->second;
 
-				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0);
+				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
+				spx_log_(temp_port_info.listen_sd);
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);
 				}
