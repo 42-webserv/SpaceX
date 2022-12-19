@@ -1,4 +1,5 @@
 #include "spx_syntax_request.hpp"
+#include "spx_core_type.hpp"
 
 namespace {
 
@@ -111,17 +112,32 @@ spx_http_syntax_start_line(std::string const& line) {
 				state = start_line__uri;
 				break;
 			}
-			return error_("invalid uri start : request line");
+			return error_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )");
 		}
 
 		case start_line__uri: {
 			while (syntax_(usual_, *it)) {
 				++it;
 			}
-			if (*it == ' ') {
+			switch (*it) {
+			case '%': {
+				if (syntax_(digit_alpha_, *(it + 1)) && syntax_(digit_alpha_, *(it + 2))) {
+					it += 3;
+					break;
+				}
+				return error_("invalid uri : request line : unmatched percent encoding");
+			}
+			case ' ': {
 				++it;
 				state = start_line__h;
 				break;
+			}
+			case '#': {
+				return error_("invalid uri : request line : we didn't support fragment");
+			}
+			case '?': {
+				return error_("invalid uri : request line : we didn't support query");
+			}
 			}
 			return error_("invalid uri : request line");
 		}
