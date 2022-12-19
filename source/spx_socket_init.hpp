@@ -15,13 +15,13 @@
 #define LISTEN_BACKLOG_SIZE 10
 
 typedef struct port_info {
-	int							 listen_sd;
-	struct sockaddr_in			 addr_server;
-	uint32_t					 my_port;
-	server_info_for_copy_stage_t my_port_default_server;
-	server_map_p				 my_port_map;
+	int				   listen_sd;
+	struct sockaddr_in addr_server;
+	uint32_t		   my_port;
+	server_info_t	   my_port_default_server;
+	server_map_p	   my_port_map;
+	port_info(server_info_t const& from);
 	// TODO: add search function
-	port_info(void);
 
 } port_info_t;
 
