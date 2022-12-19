@@ -16,8 +16,9 @@ namespace {
 			std::cout << "------------------------------------" << std::endl;
 			std::cout << "port: " << it->first << std::endl;
 			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
-			std::cout << "my_port: " << it->second.my_port << "\n"
-					  << std::endl;
+			std::cout << "my_port: " << it->second.my_port << std::endl;
+			std::cout << "default_server: ";
+			it->second.my_port_default_server.print();
 			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
 				it2->second.print();
 			}
