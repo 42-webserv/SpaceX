@@ -16,8 +16,7 @@ SRC			=	spacex.cpp \
 				spx_config_parse.cpp \
 				spx_config_port_info.cpp \
 				spx_socket_init.cpp \
-				spx_syntax_chunked.cpp \
-				spx_syntax_request.cpp \
+				spx_syntax_checker.cpp \
 				spx_path_resolver.cpp
 
 
