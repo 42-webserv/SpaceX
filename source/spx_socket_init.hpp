@@ -21,6 +21,7 @@ typedef struct port_info {
 	uint32_t		   my_port;
 	server_info_t	   my_port_default_server;
 	server_map_p	   my_port_map;
+	//---------------------
 	port_info(server_info_t const& from);
 	// TODO: add search function
 

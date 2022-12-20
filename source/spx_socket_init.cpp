@@ -27,7 +27,6 @@ socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 				temp_port_info.my_port_map = it->second;
 
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
-				// socket_size				 = temp_port_info.listen_sd + 1;
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);
 				}
@@ -51,10 +50,14 @@ socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 					error_exit("listen", close, temp_port_info.listen_sd);
 				}
 				if (socket_size == 0) {
-					port_info.push_back(temp_port_info);
-					port_info.push_back(temp_port_info);
-					port_info.push_back(temp_port_info);
-					socket_size += 3;
+					socket_size = temp_port_info.listen_sd;
+					{
+						uint32_t i = 0;
+						while (i < socket_size) {
+							port_info.push_back(temp_port_info);
+							++i;
+						}
+					}
 				}
 				port_info.push_back(temp_port_info);
 				++socket_size;
