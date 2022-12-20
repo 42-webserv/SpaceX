@@ -25,7 +25,7 @@ typedef struct port_info {
 	port_info(server_info_t const& from);
 	// TODO: add search function
 
-	std::string const&
+	std::string const
 	get_error_page_(uint32_t const& error_code);
 
 	std::string const&
