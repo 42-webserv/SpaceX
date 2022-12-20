@@ -1,4 +1,8 @@
 #include "spacex.hpp"
+#include "spx_config_port_info.hpp"
+#include "spx_core_type.hpp"
+#include "spx_socket_init.hpp"
+#include <vector>
 
 namespace {
 
@@ -11,19 +15,20 @@ namespace {
 
 #ifdef SOCKET_DEBUG
 	inline void
-	port_info_print_(port_info_map const& port_info) {
-		for (port_info_map::const_iterator it = port_info.begin(); it != port_info.end(); ++it) {
+	port_info_print_(std::vector<port_info_t> const& port_info, uint32_t const& socket_size) {
+		uint32_t i = 3;
+		while (i < socket_size) {
 			std::cout << "------------------------------------" << std::endl;
-			std::cout << "port: " << it->first << std::endl;
-			std::cout << "listen_sd: " << it->second.listen_sd << std::endl;
-			std::cout << "my_port: " << it->second.my_port << std::endl;
+			std::cout << "listen_sd: " << port_info[i].listen_sd << std::endl;
+			std::cout << "my_port: " << port_info[i].my_port << std::endl;
 			std::cout << "default_server info print: " << std::endl;
-			it->second.my_port_default_server.print();
-			for (server_map_p::const_iterator it2 = it->second.my_port_map.begin(); it2 != it->second.my_port_map.end(); ++it2) {
-				if (it2->second.default_server_flag == Kother_server) {
+			port_info[i].my_port_default_server.print();
+			for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
+				if ((it2->second.default_server_flag == Kother_server)) {
 					it2->second.print();
 				}
 			}
+			++i;
 		}
 	}
 #endif
@@ -87,11 +92,12 @@ main(int argc, char const* argv[]) {
 
 		main_info_t spx;
 		spx.socket_size = 0;
+
 		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
 		spx_log_("socket per port_info success");
 #ifdef SOCKET_DEBUG
-		port_info_print_(spx.port_info);
 		std::cout << "socket count:" << spx.socket_size << std::endl;
+		port_info_print_(spx.port_info, spx.socket_size);
 #endif
 		// TODO:: add kqueue process here
 		// while (1) {

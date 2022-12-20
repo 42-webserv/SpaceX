@@ -1,7 +1,8 @@
 #include "spx_socket_init.hpp"
 #include "spx_config_port_info.hpp"
+#include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include <_types/_uint32_t.h>
+#include <vector>
 
 namespace {
 
@@ -12,9 +13,9 @@ port_info_t::port_info(server_info_t const& from)
 }
 
 status
-socket_init_and_build_port_info(total_port_server_map_p& config_info,
-								port_info_map&			 port_info,
-								uint32_t&				 socket_size) {
+socket_init_and_build_port_info(total_port_server_map_p&  config_info,
+								std::vector<port_info_t>& port_info,
+								uint32_t&				  socket_size) {
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 
@@ -26,7 +27,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.my_port_map = it->second;
 
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
-				socket_size				 = temp_port_info.listen_sd + 1;
+				// socket_size				 = temp_port_info.listen_sd + 1;
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);
 				}
@@ -49,7 +50,14 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
 					error_exit("listen", close, temp_port_info.listen_sd);
 				}
-				port_info.insert(std::make_pair(temp_port_info.my_port, temp_port_info));
+				if (socket_size == 0) {
+					port_info.push_back(temp_port_info);
+					port_info.push_back(temp_port_info);
+					port_info.push_back(temp_port_info);
+					socket_size += 3;
+				}
+				port_info.push_back(temp_port_info);
+				++socket_size;
 				break;
 			}
 			++it2;

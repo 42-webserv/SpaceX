@@ -30,9 +30,9 @@ typedef std::map<const uint32_t, port_info_t> port_info_map;
 // TODO :: socket number, port_info_t // make to array
 
 status
-socket_init_and_build_port_info(total_port_server_map_p& config_info,
-								port_info_map&			 port_info,
-								uint32_t&				 socket_size);
+socket_init_and_build_port_info(total_port_server_map_p&  config_info,
+								std::vector<port_info_t>& port_info,
+								uint32_t&				  socket_size);
 
 int
 socket_init(total_port_server_map_p const& config_info);

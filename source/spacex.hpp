@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #ifndef __SPACEX_HPP__
 #define __SPACEX_HPP__
 
@@ -12,8 +13,8 @@
 #include <string>
 
 typedef struct main_info {
-	port_info_map port_info;
-	uint32_t	  socket_size;
+	uint32_t				 socket_size;
+	std::vector<port_info_t> port_info;
 	// add handler function
 } main_info_t;
 
