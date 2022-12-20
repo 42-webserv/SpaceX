@@ -2,6 +2,7 @@
 #include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
+#include <_types/_uint32_t.h>
 #include <vector>
 
 namespace {
@@ -16,11 +17,13 @@ status
 socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 								std::vector<port_info_t>& port_info,
 								uint32_t&				  socket_size) {
+	uint32_t prev_socket_size;
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 
 		server_map_p::const_iterator it2 = it->second.begin();
 		while (it2 != it->second.end()) {
+			prev_socket_size = socket_size;
 			if (it2->second.default_server_flag & Kdefault_server) {
 				port_info_t temp_port_info(it2->second);
 				temp_port_info.my_port	   = it->first;
@@ -59,7 +62,13 @@ socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 						}
 					}
 				}
-				port_info.push_back(temp_port_info);
+				{
+					uint32_t i = prev_socket_size;
+					while (i < socket_size) {
+						port_info.push_back(temp_port_info);
+						++i;
+					}
+				}
 				++socket_size;
 				break;
 			}
