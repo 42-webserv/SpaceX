@@ -1,15 +1,6 @@
 #include "spx_client_buffer.hpp"
 
 void
-error_exit(std::string err, int (*func)(int), int fd) {
-	std::cerr << strerror(errno) << std::endl;
-	if (func != NULL) {
-		func(fd);
-	}
-	exit(EXIT_FAILURE);
-}
-
-void
 add_change_list(std::vector<struct kevent>& change_list,
 				uintptr_t ident, int64_t filter, uint16_t flags,
 				uint32_t fflags, intptr_t data, void* udata) {
@@ -35,6 +26,10 @@ bool
 ClientBuffer::request_line_check(std::string& req_line) {
 	return true;
 }
+
+// #define LF "\n"
+// #define CR "\r"
+// #define CRLF "\r\n"
 
 bool
 ClientBuffer::request_line_parser() {
@@ -256,9 +251,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				if (fd < 0) {
 					// open error
 				}
-				add_change_list(change_list, cur_event->ident,
-								EVFILT_READ, EV_DISABLE, 0, 0,
-								this);
+				// add_change_list(change_list, cur_event->ident,
+				// 				EVFILT_READ, EV_DISABLE, 0, 0,
+				// 				this);
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
 				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
@@ -272,9 +267,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				if (fd < 0) {
 					// open error
 				}
-				add_change_list(change_list, cur_event->ident,
-								EVFILT_READ, EV_DISABLE, 0, 0,
-								this);
+				// add_change_list(change_list, cur_event->ident,
+				// 				EVFILT_READ, EV_DISABLE, 0, 0,
+				// 				this);
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
 				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
@@ -299,8 +294,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		// file end check.
 		if (lseek(cur_event->ident, 0, SEEK_CUR)
 			== this->req_res_queue_.back().second.content_length_ - 1) {
-			add_change_list(change_list, this->client_fd, EVFILT_READ,
-							EV_ENABLE, 0, 0, this);
+			// add_change_list(change_list, this->client_fd, EVFILT_READ,
+			// 				EV_ENABLE, 0, 0, this);
 			close(cur_event->ident);
 			add_change_list(change_list, cur_event->ident,
 							EVFILT_READ, EV_DELETE, 0, 0, this);
