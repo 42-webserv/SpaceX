@@ -68,12 +68,24 @@ Response::make_error_response(std::vector<struct kevent>& change_list, ClientBuf
 
 	// TODO : Connection Header settings
 	if (error_code == HTTP_STATUS_BAD_REQUEST)
-		keep_alive_ = false;
+		headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
+	else
+		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
 	int error_req_fd = open(ERR_PAGE_URL, O_RDONLY);
 	if (error_req_fd < 0)
 		return handle_static_error_page();
 	add_change_list(change_list, error_req_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
+}
+
+void
+Response::setDate(void) {
+	std::time_t now			 = std::time(nullptr);
+	std::tm*	current_time = std::gmtime(&now);
+
+	char date_buf[32];
+	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
+	headers_.push_back(header("Date", date_buf));
 }
 
 // this is main logic to make response
@@ -88,6 +100,7 @@ Response::setting_response_header(std::vector<struct kevent>& change_list, Clien
 		return make_error_response(change_list, client_buffer, HTTP_STATUS_NOT_FOUND);
 	setContentType(uri);
 	setContentLength(request_fd);
+	headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 	// body event register
 	add_change_list(change_list, request_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
 	return make_to_string();
