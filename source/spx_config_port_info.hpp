@@ -80,7 +80,7 @@ typedef struct uri_location_for_copy_stage {
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
-	void				clear();
+	void				clear_();
 } uri_location_for_copy_stage_t;
 
 typedef struct server_info_for_copy_stage {
@@ -93,8 +93,8 @@ typedef struct server_info_for_copy_stage {
 	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
-	void				   clear();
-	void				   print() const;
+	void				   clear_();
+	void				   print_() const;
 } server_info_for_copy_stage_t;
 
 typedef struct uri_location {
@@ -111,8 +111,7 @@ typedef struct uri_location {
 	//
 	uri_location(const uri_location_for_copy_stage_t from);
 	~uri_location();
-	//
-	void print(void) const;
+	void print_(void) const;
 
 } uri_location_t;
 
@@ -131,8 +130,10 @@ typedef struct server_info {
 	server_info(server_info_t const& from);
 	// server_info& operator=(server_info_t const& from);
 	~server_info();
-	// add uri value get function
-	void print(void) const;
+	std::string const		 get_error_page_(uint32_t const& error_code) const;
+	std::string const		 get_uri_location_(std::string const& uri) const;
+	static std::string const path_resolve_(std::string unvalid_path);
+	void					 print_(void) const;
 
 } server_info_t;
 
