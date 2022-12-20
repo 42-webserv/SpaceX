@@ -1,4 +1,5 @@
 #include "spacex.hpp"
+#include "spx_client_buffer.hpp"
 #include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_socket_init.hpp"
@@ -99,6 +100,8 @@ main(int argc, char const* argv[]) {
 		std::cout << "socket count:" << spx.socket_size << std::endl;
 		port_info_print_(spx.port_info, spx.socket_size);
 #endif
+		kqueue_main(spx.port_info);
+
 		// TODO:: add kqueue process here
 		// while (1) {
 		// }

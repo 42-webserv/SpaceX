@@ -144,3 +144,5 @@ public:
 	bool skip_body(ssize_t cont_len);
 	void client_buffer_read(struct kevent* cur_event, std::vector<struct kevent>& change_list);
 };
+
+typedef ClientBuffer client_buf_t;

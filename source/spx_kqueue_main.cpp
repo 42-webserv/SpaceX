@@ -1,6 +1,4 @@
-#include <ClientBuffer.hpp>
-
-typedef ClientBuffer t_client_buf;
+#include "spx_client_buffer.hpp"
 
 void
 error_exit(std::string err, int (*func)(int), int fd) {
@@ -357,7 +355,7 @@ server_init() {
 
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
-					std::vector<struct kevent>& change_list) {
+					std::vector<struct kevent>& change_list, port_info_t& serv_info) {
 	uintptr_t client_fd;
 	if ((client_fd = accept(serv_sd, NULL, NULL)) == -1) {
 		std::cerr << strerror(errno) << std::endl;
@@ -365,8 +363,9 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	} else {
 		std::cout << "accept new client: " << client_fd << std::endl;
 		fcntl(client_fd, F_SETFL, O_NONBLOCK);
-		t_client_buf* new_buf = new t_client_buf();
+		client_buf_t* new_buf = new client_buf_t();
 		new_buf->client_fd	  = client_fd;
+		new_buf->port_info	  = &serv_info;
 		// port info will be added.
 		add_change_list(change_list, client_fd, EVFILT_READ,
 						EV_ADD | EV_ENABLE, 0, 0, new_buf);
@@ -404,27 +403,32 @@ ClientBuffer::client_buffer_read(struct kevent*				 cur_event,
 }
 
 void
-read_event_handler(uintptr_t serv_sd, struct kevent* cur_event,
+read_event_handler(std::vector<port_info_t>& serv_info, struct kevent* cur_event,
 				   std::vector<struct kevent>& change_list) {
 	// server port will be updated.
-	if (cur_event->ident == serv_sd) {
-		if (create_client_event(serv_sd, cur_event, change_list) == false) {
+	if (cur_event->ident < serv_info.size()) {
+		if (create_client_event(cur_event->ident, cur_event, change_list, serv_info[cur_event->ident]) == false) {
 			// TODO: error ???
 		}
 	} else {
-		t_client_buf* buf = static_cast<t_client_buf*>(cur_event->udata);
+		client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 
 		buf->client_buffer_read(cur_event, change_list);
 	}
 }
 
 void
-kevnet_error_handler(uintptr_t serv_sd, struct kevent* cur_event,
+kevnet_error_handler(std::vector<port_info_t>& serv_info, struct kevent* cur_event,
 					 std::vector<struct kevent>& change_list) {
-	if (cur_event->ident == serv_sd) {
-		error_exit("server socket error", close, serv_sd);
+	if (cur_event->ident < serv_info.size()) {
+		for (int i = 0; i < serv_info.size(); i++) {
+			if (serv_info[i].listen_sd == i) {
+				close(i);
+			}
+		}
+		error_exit_msg("kevent()");
 	} else {
-		t_client_buf* buf = static_cast<t_client_buf*>(cur_event->udata);
+		client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 		std::cerr << "client socket error" << std::endl;
 		buf->disconnect_client(change_list);
 		delete buf;
@@ -432,9 +436,9 @@ kevnet_error_handler(uintptr_t serv_sd, struct kevent* cur_event,
 }
 
 void
-write_event_handler(uintptr_t serv_sd, struct kevent* cur_event,
+write_event_handler(std::vector<port_info_t>& serv_info, struct kevent* cur_event,
 					std::vector<struct kevent>& change_list) {
-	t_client_buf* buf = (t_client_buf*)cur_event->udata;
+	client_buf_t* buf = (client_buf_t*)cur_event->udata;
 
 	if (buf->flag_ & RES_BODY) {
 		buf->write_res_body(cur_event->ident, change_list);
@@ -449,21 +453,29 @@ write_event_handler(uintptr_t serv_sd, struct kevent* cur_event,
 	}
 }
 
-int
-main(void) {
-	uintptr_t						  serv_sd = server_init();
-	std::map<uintptr_t, t_client_buf> clients;
+void
+kqueue_main(std::vector<port_info_t>& serv_info) {
+	std::map<uintptr_t, client_buf_t> clients;
 	std::vector<struct kevent>		  change_list;
 	struct kevent					  event_list[8];
 	int								  kq;
 
 	kq = kqueue();
 	if (kq == -1) {
-		error_exit("kqueue()", close, serv_sd);
+		for (int i = 0; i < serv_info.size(); i++) {
+			if (serv_info[i].listen_sd == i) {
+				close(i);
+			}
+		}
+		error_exit_msg("kqueue()");
 	}
 
-	add_change_list(change_list, serv_sd, EVFILT_READ,
-					EV_ADD | EV_ENABLE, 0, 0, NULL);
+	for (int i = 0; i < serv_info.size(); i++) {
+		if (serv_info[i].listen_sd == i) {
+			add_change_list(change_list, i, EVFILT_READ,
+							EV_ADD | EV_ENABLE, 0, 0, NULL);
+		}
+	}
 
 	int			   event_len;
 	struct kevent* cur_event;
@@ -472,7 +484,12 @@ main(void) {
 		event_len = kevent(kq, change_list.begin().base(), change_list.size(),
 						   event_list, MAX_EVENT_LOOP, NULL);
 		if (event_len == -1) {
-			error_exit("kevent()", close, serv_sd);
+			for (int i = 0; i < serv_info.size(); i++) {
+				if (serv_info[i].listen_sd == i) {
+					close(i);
+				}
+			}
+			error_exit_msg("kevent()");
 		}
 		change_list.clear();
 
@@ -481,15 +498,15 @@ main(void) {
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i++];
 			if (cur_event->flags & EV_ERROR) {
-				kevnet_error_handler(serv_sd, cur_event, change_list);
+				kevnet_error_handler(serv_info, cur_event, change_list);
 			} else if (cur_event->filter == EVFILT_READ) {
-				read_event_handler(serv_sd, cur_event, change_list);
+				read_event_handler(serv_info, cur_event, change_list);
 			} else if (cur_event->filter == EVFILT_WRITE) {
-				write_event_handler(serv_sd, cur_event, change_list);
+				write_event_handler(serv_info, cur_event, change_list);
 			} else if (cur_event->filter == EVFILT_PROC) {
 				// TODO: waitpid
 			}
 		}
 	}
-	return 0;
+	return;
 }

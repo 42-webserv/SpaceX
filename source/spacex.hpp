@@ -18,4 +18,6 @@ typedef struct main_info {
 	// add handler function
 } main_info_t;
 
+void kqueue_main(std::vector<port_info_t>& serv_info);
+
 #endif

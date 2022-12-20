@@ -18,12 +18,13 @@ SRC			=	spacex.cpp \
 				spx_config_port_info.cpp \
 				spx_socket_init.cpp \
 				spx_syntax_checker.cpp \
-				spx_path_resolver.cpp
+				spx_path_resolver.cpp \
+				spx_kqueue_main.cpp
 
 
 SRC_DIR		=	source/
 OBJ_DIR		=	object/
-INC_DIR		=	include/
+INC_DIR		=	
 OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 
 #==============================================================================
@@ -65,4 +66,4 @@ $(OBJ_DIR)	:
 $(OBJ)		:	| $(OBJ_DIR)
 
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
-		$(CXX) $(CXXFLAGS) -I $(INC_DIR) -o $@ -c $<
+		$(CXX) $(CXXFLAGS) -o $@ -c $<
