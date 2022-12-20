@@ -124,12 +124,17 @@ private:
 
 	std::string
 	make_to_string() const;
+
 	int
-	file_open(const char* dir);
+	file_open(const char* dir) const;
+
 	void
+
 	setContentLength(int fd);
 	void
+
 	setContentType(std::string uri);
+
 	std::string
 	handle_static_error_page();
 
