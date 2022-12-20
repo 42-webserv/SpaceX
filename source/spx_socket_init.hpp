@@ -25,10 +25,15 @@ typedef struct port_info {
 	port_info(server_info_t const& from);
 	// TODO: add search function
 
+	std::string const&
+	get_error_page_(uint32_t const& error_code);
+
+	std::string const&
+	get_uri_location_(std::string const& uri);
+
 } port_info_t;
 
-typedef std::map<const uint32_t, port_info_t> port_info_map;
-// TODO :: socket number, port_info_t // make to array
+typedef std::vector<port_info_t> port_info_vector;
 
 status
 socket_init_and_build_port_info(total_port_server_map_p&  config_info,

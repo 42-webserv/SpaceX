@@ -1,5 +1,4 @@
 #pragma once
-#include <vector>
 #ifndef __SPACEX_HPP__
 #define __SPACEX_HPP__
 
@@ -11,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 typedef struct main_info {
 	uint32_t				 socket_size;
