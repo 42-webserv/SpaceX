@@ -26,10 +26,10 @@ typedef struct port_info {
 	// TODO: add search function
 
 	std::string const
-	get_error_page_(uint32_t const& error_code);
+	get_error_page_(uint32_t const& error_code); // TODO : move to server_info_t
 
 	std::string const&
-	get_uri_location_(std::string const& uri);
+	get_uri_location_(std::string const& uri); // TODO: move to server_info_t
 
 } port_info_t;
 
