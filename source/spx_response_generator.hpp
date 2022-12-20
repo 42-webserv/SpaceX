@@ -2,6 +2,7 @@
 #define __SPX_RESPONSE_GENERATOR_HPP__
 #pragma once
 
+#include <ctime>
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
@@ -22,7 +23,10 @@ namespace {
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
 #define CONTENT_LENGTH "Content-Legnth"
-#define CONTENT_TYPE "Content-Type";
+#define CONTENT_TYPE "Content-Type"
+#define CONNECTION "Connection"
+#define KEEP_ALIVE "keep-alive"
+#define CONNECTION_CLOSE "close"
 
 #define MIME_TYPE_HTML "text/html"
 #define MIME_TYPE_JPG "image/jpg"
@@ -137,6 +141,9 @@ private:
 
 	std::string
 	handle_static_error_page();
+
+	void
+	setDate(void);
 
 public:
 	std::string
