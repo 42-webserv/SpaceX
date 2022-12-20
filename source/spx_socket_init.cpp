@@ -27,7 +27,6 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
 				socket_size				 = temp_port_info.listen_sd + 1;
-				spx_log_(temp_port_info.listen_sd);
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);
 				}
@@ -59,6 +58,9 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 			std::cerr << "no default server in port " << it->first << std::endl;
 			error_exit_msg("");
 		}
+	}
+	if (socket_size == 0 || socket_size > 65535) {
+		error_exit_msg("socket size error");
 	}
 	config_info.clear();
 	return spx_ok;

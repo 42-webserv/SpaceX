@@ -1,9 +1,9 @@
 #pragma once
-#include <_types/_uint32_t.h>
 #ifndef __SPX_SOCKET_INIT_HPP__
 #define __SPX_SOCKET_INIT_HPP__
 
 #include "spx_config_port_info.hpp"
+#include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include <arpa/inet.h>
 #include <fcntl.h>

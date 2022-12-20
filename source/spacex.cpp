@@ -86,6 +86,7 @@ main(int argc, char const* argv[]) {
 		spx_log_("config file open success");
 
 		main_info_t spx;
+		spx.socket_size = 0;
 		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
 		spx_log_("socket per port_info success");
 #ifdef SOCKET_DEBUG
