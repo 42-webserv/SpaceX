@@ -2,34 +2,43 @@
 #include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include <_types/_uint32_t.h>
 #include <vector>
 
 namespace {
-
 } // namespace
 
 port_info_t::port_info(server_info_t const& from)
 	: my_port_default_server(from) {
 }
 
+server_info_t const&
+port_info_t::search_server_config_(std::string const& host_name) {
+	server_map_p::const_iterator it = my_port_map.find(host_name);
+	if (it != my_port_map.end()) {
+		return it->second;
+	}
+	return this->my_port_default_server;
+}
+
 status
-socket_init_and_build_port_info(total_port_server_map_p&  config_info,
-								std::vector<port_info_t>& port_info,
-								uint32_t&				  socket_size) {
+socket_init_and_build_port_info(total_port_server_map_p& config_info,
+								port_info_vec&			 port_info,
+								uint32_t&				 socket_size) {
 	uint32_t prev_socket_size;
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 
 		server_map_p::const_iterator it2 = it->second.begin();
 		while (it2 != it->second.end()) {
-			prev_socket_size = socket_size;
 			if (it2->second.default_server_flag & Kdefault_server) {
 				port_info_t temp_port_info(it2->second);
 				temp_port_info.my_port	   = it->first;
 				temp_port_info.my_port_map = it->second;
 
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
+				prev_socket_size		 = socket_size;
+				socket_size				 = temp_port_info.listen_sd;
+				spx_log_(temp_port_info.listen_sd);
 				if (temp_port_info.listen_sd < 0) {
 					error_exit("socket", NULL, 0);
 				}
@@ -52,24 +61,20 @@ socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
 					error_exit("listen", close, temp_port_info.listen_sd);
 				}
-				if (socket_size == 0) {
-					socket_size = temp_port_info.listen_sd;
-					{
-						uint32_t i = 0;
-						while (i < socket_size) {
-							port_info.push_back(temp_port_info);
-							++i;
-						}
+				if (prev_socket_size == 0) {
+					uint32_t i = 0;
+					while (i < socket_size) {
+						port_info.push_back(temp_port_info);
+						++i;
 					}
-				}
-				{
-					uint32_t i = prev_socket_size;
+				} else {
+					uint32_t i = prev_socket_size + 1;
 					while (i < socket_size) {
 						port_info.push_back(temp_port_info);
 						++i;
 					}
 				}
-				++socket_size;
+				port_info.push_back(temp_port_info);
 				break;
 			}
 			++it2;
@@ -79,9 +84,10 @@ socket_init_and_build_port_info(total_port_server_map_p&  config_info,
 			error_exit_msg("");
 		}
 	}
-	if (socket_size == 0 || socket_size > 65535) {
+	if (socket_size == 0) {
 		error_exit_msg("socket size error");
 	}
+	++socket_size;
 	config_info.clear();
 	return spx_ok;
 }

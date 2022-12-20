@@ -8,6 +8,7 @@ NAME		= spacex
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK
 # DEBUG_FLAG	+=	LEAK
 DEBUG_FLAG	+=	DEBUG
+# DEBUG_FLAG	+=	SEARCH_DEBUG
 # DEBUG_FLAG	+=  SOCKET_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 # DEBUG_FLAG 	+= CONFIG_DEBUG
@@ -18,13 +19,12 @@ SRC			=	spacex.cpp \
 				spx_config_port_info.cpp \
 				spx_socket_init.cpp \
 				spx_syntax_checker.cpp \
-				spx_path_resolver.cpp \
 				spx_kqueue_main.cpp
 
 
 SRC_DIR		=	source/
 OBJ_DIR		=	object/
-INC_DIR		=	
+INC_DIR		=
 OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 
 #==============================================================================

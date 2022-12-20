@@ -197,8 +197,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 #ifdef CONFIG_DEBUG
 #endif
 			}
-			temp_uri_location_info.clear();
-			temp_basic_server_info.clear();
+			temp_uri_location_info.clear_();
+			temp_basic_server_info.clear_();
 			flag_default_part		= 0;
 			flag_location_part		= 0;
 			flag_error_page_default = 0;
@@ -632,11 +632,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 #ifdef CONFIG_DEBUG
 				std::cout << std::endl;
 				spx_log_(check_dup.first->first.c_str());
-				check_dup.first->second.print();
+				check_dup.first->second.print_();
 				std::cout << std::endl;
 #endif
 			}
-			temp_uri_location_info.clear();
+			temp_uri_location_info.clear_();
 			flag_location_part = 0;
 			size_count		   = 0;
 			temp_string.clear();
@@ -1010,7 +1010,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 	for (total_port_server_map_p::iterator print = saved_total_port_map_3.begin(); print != saved_total_port_map_3.end(); ++print) {
 		std::cout << "port: " << print->first << std::endl;
 		for (server_map_p::iterator print2 = print->second.begin(); print2 != print->second.end(); ++print2) {
-			print2->second.print();
+			print2->second.print_();
 		}
 	}
 #endif

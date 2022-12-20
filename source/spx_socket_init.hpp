@@ -23,17 +23,16 @@ typedef struct port_info {
 	server_map_p	   my_port_map;
 	//---------------------
 	port_info(server_info_t const& from);
-	// TODO: add search function
+	server_info_t const& search_server_config_(std::string const& host_name);
 
 } port_info_t;
 
-typedef std::map<const uint32_t, port_info_t> port_info_map;
-// TODO :: socket number, port_info_t // make to array
+typedef std::vector<port_info_t> port_info_vec;
 
 status
-socket_init_and_build_port_info(total_port_server_map_p&  config_info,
-								std::vector<port_info_t>& port_info,
-								uint32_t&				  socket_size);
+socket_init_and_build_port_info(total_port_server_map_p& config_info,
+								port_info_vec&			 port_info,
+								uint32_t&				 socket_size);
 
 int
 socket_init(total_port_server_map_p const& config_info);
