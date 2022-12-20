@@ -47,10 +47,11 @@ enum e_read_status {
 	RES_BODY,
 };
 
-enum e_req_flag { FILE_OPEN = 1 };
+enum e_req_flag { REQ_FILE_OPEN = 1,
+				  CGI_READ		= 2 };
 
-enum e_res_flag { FILE_OPEN	  = 1,
-				  WRITE_READY = 2 };
+enum e_res_flag { RES_FILE_OPEN = 1,
+				  WRITE_READY	= 2 };
 
 // gzip & deflate are not implemented.
 enum e_transfer_encoding { TE_CHUNKED = 0,
@@ -124,7 +125,7 @@ public:
 	t_buffer										 rdsaved_;
 	timespec										 timeout_;
 	uintptr_t										 client_fd;
-	port_info_t*									 port_info;
+	port_info_t*									 serv_info;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;

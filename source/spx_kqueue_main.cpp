@@ -27,10 +27,6 @@ ClientBuffer::request_line_check(std::string& req_line) {
 	return true;
 }
 
-// #define LF "\n"
-// #define CR "\r"
-// #define CRLF "\r\n"
-
 bool
 ClientBuffer::request_line_parser() {
 	std::string		   req_line;
@@ -244,7 +240,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		case REQ_POST:
 			// set_post_res();
-			if (this->req_res_queue_.back().first.body_flag_ & FILE_OPEN == false) {
+			if (this->req_res_queue_.back().first.body_flag_ & REQ_FILE_OPEN == false) {
 				uintptr_t fd = open(
 					this->req_res_queue_.back().first.file_path_.c_str(),
 					O_RDONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
@@ -256,11 +252,11 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				// 				this);
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
-				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
+				this->req_res_queue_.back().first.body_flag_ |= REQ_FILE_OPEN;
 			}
 			break;
 		case REQ_PUT:
-			if (this->req_res_queue_.back().first.body_flag_ & FILE_OPEN == false) {
+			if (this->req_res_queue_.back().first.body_flag_ & REQ_FILE_OPEN == false) {
 				uintptr_t fd = open(
 					this->req_res_queue_.back().first.file_path_.c_str(),
 					O_RDONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
@@ -272,7 +268,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				// 				this);
 				add_change_list(change_list, fd, EVFILT_READ,
 								EV_ADD | EV_ENABLE, 0, 0, this);
-				this->req_res_queue_.back().first.body_flag_ |= FILE_OPEN;
+				this->req_res_queue_.back().first.body_flag_ |= REQ_FILE_OPEN;
 			}
 			break;
 		case REQ_DELETE:
@@ -290,20 +286,20 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		// if transfer encoding is chunked, keep checking it for the limit.
 		if (this->req_res_queue_.back().first.body_recieved_ < this->req_res_queue_.back().first.body_limit_) {
 		}
-	case RES_BODY:
-		// file end check.
-		if (lseek(cur_event->ident, 0, SEEK_CUR)
-			== this->req_res_queue_.back().second.content_length_ - 1) {
-			// add_change_list(change_list, this->client_fd, EVFILT_READ,
-			// 				EV_ENABLE, 0, 0, this);
-			close(cur_event->ident);
-			add_change_list(change_list, cur_event->ident,
-							EVFILT_READ, EV_DELETE, 0, 0, this);
-			// need to check _rdsaved buffer before read.
-			this->state_ = REQ_LINE_PARSING;
-		}
-		// keep reading form server file descriptor.
-		break;
+		// case RES_BODY:
+		// 	// file end check.
+		// 	if (lseek(cur_event->ident, 0, SEEK_CUR)
+		// 		== this->req_res_queue_.back().second.content_length_ - 1) {
+		// 		// add_change_list(change_list, this->client_fd, EVFILT_READ,
+		// 		// 				EV_ENABLE, 0, 0, this);
+		// 		close(cur_event->ident);
+		// 		add_change_list(change_list, cur_event->ident,
+		// 						EVFILT_READ, EV_DELETE, 0, 0, this);
+		// 		// need to check _rdsaved buffer before read.
+		// 		this->state_ = REQ_LINE_PARSING;
+		// 	}
+		// 	// keep reading form server file descriptor.
+		// 	break;
 	}
 	return true;
 }
@@ -358,9 +354,9 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	} else {
 		std::cout << "accept new client: " << client_fd << std::endl;
 		fcntl(client_fd, F_SETFL, O_NONBLOCK);
-		client_buf_t* new_buf = new client_buf_t();
+		client_buf_t* new_buf = new client_buf_t;
 		new_buf->client_fd	  = client_fd;
-		new_buf->port_info	  = &serv_info;
+		new_buf->serv_info	  = &serv_info;
 		// port info will be added.
 		add_change_list(change_list, client_fd, EVFILT_READ,
 						EV_ADD | EV_ENABLE, 0, 0, new_buf);
@@ -379,14 +375,14 @@ ClientBuffer::client_buffer_read(struct kevent*				 cur_event,
 		return;
 	}
 	this->flag_ &= ~READ_READY;
-	if (this->state_ != RES_BODY) {
-		this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_,
-							  this->rdbuf_ + n_read);
-	} else {
-		this->req_res_queue_.back().second.body_buffer_.insert(
-			this->req_res_queue_.back().second.body_buffer_.end(),
-			this->rdbuf_, this->rdbuf_ + n_read);
-	}
+	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_,
+						  this->rdbuf_ + n_read);
+	// if (this->state_ != RES_BODY) {
+	// } else {
+	// 	this->req_res_queue_.back().second.body_buffer_.insert(
+	// 		this->req_res_queue_.back().second.body_buffer_.end(),
+	// 		this->rdbuf_, this->rdbuf_ + n_read);
+	// }
 	while (this->flag_ & READ_READY == false) {
 		this->req_res_controller(change_list, cur_event);
 	}
@@ -405,10 +401,12 @@ read_event_handler(std::vector<port_info_t>& serv_info, struct kevent* cur_event
 		if (create_client_event(cur_event->ident, cur_event, change_list, serv_info[cur_event->ident]) == false) {
 			// TODO: error ???
 		}
-	} else {
-		client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
-
+	}
+	client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
+	if (cur_event->ident == buf->client_fd) {
 		buf->client_buffer_read(cur_event, change_list);
+	} else {
+		// server file read case for res_body.
 	}
 }
 
@@ -435,16 +433,20 @@ write_event_handler(std::vector<port_info_t>& serv_info, struct kevent* cur_even
 					std::vector<struct kevent>& change_list) {
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
 
-	if (buf->flag_ & RES_BODY) {
-		buf->write_res_body(cur_event->ident, change_list);
-	} else {
-		if (buf->write_res_header(cur_event->ident, change_list) == false) {
-			// error
+	if (cur_event->ident == buf->client_fd) {
+		if (buf->flag_ & RES_BODY) {
+			buf->write_res_body(cur_event->ident, change_list);
+		} else {
+			if (buf->write_res_header(cur_event->ident, change_list) == false) {
+				// error
+			}
 		}
-	}
-	if (buf->req_res_queue_.size() == 0 || buf->req_res_queue_.front().second.body_flag_ & WRITE_READY == false) {
-		add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
-						EV_DISABLE, 0, 0, buf);
+		if (buf->req_res_queue_.size() == 0 || buf->req_res_queue_.front().second.body_flag_ & WRITE_READY == false) {
+			add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
+							EV_DISABLE, 0, 0, buf);
+		}
+	} else {
+		// write to serv file descriptor.
 	}
 }
 
