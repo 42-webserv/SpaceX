@@ -30,7 +30,7 @@ ClientBuffer::request_line_check(std::string& req_line) {
 bool
 ClientBuffer::request_line_parser() {
 	std::string		   req_line;
-	t_buffer::iterator crlf_pos = this->rdsaved_.begin();
+	buffer_t::iterator crlf_pos = this->rdsaved_.begin();
 
 	while (true) {
 		crlf_pos = std::find(crlf_pos, this->rdsaved_.end(), '\n');
@@ -72,7 +72,7 @@ ClientBuffer::header_valid_check(std::string& key_val, size_t col_pos) {
 bool
 ClientBuffer::header_field_parser() {
 	std::string		   header_field_line;
-	t_buffer::iterator crlf_pos = this->rdsaved_.begin() + this->rdchecked_;
+	buffer_t::iterator crlf_pos = this->rdsaved_.begin() + this->rdchecked_;
 	int				   idx;
 
 	while (true) {
@@ -125,6 +125,7 @@ ClientBuffer::header_field_parser() {
 		this->req_res_queue_.back().first.transfer_encoding_ |= TE_CHUNKED;
 		this->state_ = REQ_BODY;
 	}
+	// uri_location_t
 	return true;
 }
 
@@ -347,8 +348,9 @@ server_init() {
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 					std::vector<struct kevent>& change_list, port_info_t& serv_info) {
-	uintptr_t client_fd;
-	if ((client_fd = accept(serv_sd, NULL, NULL)) == -1) {
+	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
+
+	if (client_fd == -1) {
 		std::cerr << strerror(errno) << std::endl;
 		return false;
 	} else {
@@ -366,6 +368,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	}
 }
 
+// read only request header & body message
 void
 ClientBuffer::client_buffer_read(struct kevent*				 cur_event,
 								 std::vector<struct kevent>& change_list) {

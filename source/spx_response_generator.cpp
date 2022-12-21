@@ -93,7 +93,7 @@ std::string
 Response::setting_response_header(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
 	t_req_field current_request = client_buffer.req_res_queue_.front().first;
 	std::string uri				= current_request.req_target_;
-	int			request_fd		= file_open(uri.c_str());
+	int			request_fd		= file_open(client_buffer.req_res_queue_.front().second.file_path_.c_str());
 
 	// File Not Found - URL
 	if (request_fd < 0)
@@ -102,6 +102,7 @@ Response::setting_response_header(std::vector<struct kevent>& change_list, Clien
 	setContentLength(request_fd);
 	headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 	// body event register
+
 	add_change_list(change_list, request_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
 	return make_to_string();
 }
