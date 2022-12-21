@@ -78,9 +78,11 @@ server_info_t::get_error_page_path_(uint32_t const& error_code) const {
 }
 
 uri_location_t const*
-server_info_t::get_uri_location_t_(std::string const& uri, std::string& out_put) const {
-	std::string basic_location, remain_uri, final_uri;
-	find_slash_then_divide_(uri, basic_location, remain_uri);
+server_info_t::get_uri_location_t_(std::string const& uri,
+								   std::string&		  output_resolved_uri) const {
+	std::string basic_location, remain_uri, final_uri, first_resolved_uri;
+	first_resolved_uri = path_resolve_(uri);
+	find_slash_then_divide_(first_resolved_uri, basic_location, remain_uri);
 
 	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
 	if (it != uri_case.end()) {
@@ -94,12 +96,12 @@ server_info_t::get_uri_location_t_(std::string const& uri, std::string& out_put)
 		} else {
 			final_uri += '/' + remain_uri;
 		}
-		out_put = final_uri;
+		output_resolved_uri = path_resolve_(final_uri);
 		return &it->second;
 	} else {
 		final_uri += '/' + this->root + '/' + uri;
 	}
-	out_put = final_uri;
+	output_resolved_uri = path_resolve_(final_uri);
 	return NULL;
 }
 
@@ -131,9 +133,9 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 			++it;
 		}
 	}
-	spx_log_("\nresolved_path : ");
-	spx_log_(resolved_path);
-	spx_log_("\n");
+#ifdef SEARCH_DEBUG
+	std::cout << "resolved_path : " << resolved_path << std::endl;
+#endif
 	return resolved_path;
 }
 

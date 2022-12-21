@@ -130,7 +130,7 @@ typedef struct server_info {
 	// server_info& operator=(server_info_t const& from);
 	~server_info();
 	std::string const		 get_error_page_path_(uint32_t const& error_code) const;
-	uri_location_t const*	 get_uri_location_t_(std::string const& uri, std::string& out_put) const;
+	uri_location_t const*	 get_uri_location_t_(std::string const& uri, std::string& output_resolved_uri) const;
 	static std::string const path_resolve_(std::string const& unvalid_path);
 	void					 print_(void) const;
 

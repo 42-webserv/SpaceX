@@ -1,9 +1,12 @@
 #include "spacex.hpp"
-#include "spx_client_buffer.hpp"
 #include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_socket_init.hpp"
 #include <vector>
+
+#ifndef SEARCH_DEBUG
+#include "spx_client_buffer.hpp"
+#endif
 
 namespace {
 
@@ -103,8 +106,11 @@ main(int argc, char const* argv[]) {
 		// how to use handler function
 		std::cout << "-------------------------------" << std::endl;
 		server_info_t const& temp_ = spx.port_info[3].search_server_config_("aoriestnaoiresnt");
-		spx_log_(temp_.get_error_page_(404));
-		spx_log_(temp_.get_uri_location_("////upload%20"));
+		spx_log_(temp_.get_error_page_path_(404));
+		spx_log_(temp_.get_error_page_path_(303));
+		std::string temp2;
+		spx_log_(temp_.get_uri_location_t_("////upload//", temp2));
+		spx_log_(temp2);
 #endif
 		// kqueue_main(spx.port_info);
 
