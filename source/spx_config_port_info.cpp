@@ -1,6 +1,7 @@
 #include "spx_config_port_info.hpp"
 #include "spx_config_parse.hpp"
 #include "spx_core_util_box.hpp"
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -76,30 +77,34 @@ server_info_t::get_error_page_path_(uint32_t const& error_code) const {
 	return path_resolve_(this->default_error_page);
 }
 
-std::string const
-server_info_t::get_uri_location_(std::string const& uri) const { // TODO :: check end slash value. is it dir? or file?
+uri_location_t const*
+server_info_t::get_uri_location_t_(std::string const& uri, std::string& out_put) const {
 	std::string basic_location, remain_uri, final_uri;
 	find_slash_then_divide_(uri, basic_location, remain_uri);
 
 	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
 	if (it != uri_case.end()) {
-		final_uri = path_resolve_(this->root + it->second.root + remain_uri);
-		// final_uri += "/";
-		// final_uri += it->second.index; // TODO: check to index is setted default value in config parse stage.
+		final_uri += '/' + it->second.root;
+		if (remain_uri.empty()) {
+			if (it->second.index.empty()) {
+				final_uri += "/index.html";
+			} else {
+				final_uri += '/' + it->second.index;
+			}
+		} else {
+			final_uri += '/' + remain_uri;
+		}
+		out_put = final_uri;
+		return &it->second;
 	} else {
-		final_uri = path_resolve_(this->root + uri);
-		// final_uri += "/";
-		// final_uri += "index.html";
+		final_uri += '/' + this->root + '/' + uri;
 	}
-	return final_uri;
-}
-
-uri_location_t const&
-get_uri_location_t_(std::string const& uri) const {
+	out_put = final_uri;
+	return NULL;
 }
 
 std::string const
-server_info_t::path_resolve_(std::string const unvalid_path) {
+server_info_t::path_resolve_(std::string const& unvalid_path) {
 	std::string resolved_path;
 
 	std::string::const_iterator it = unvalid_path.begin();
@@ -126,6 +131,9 @@ server_info_t::path_resolve_(std::string const unvalid_path) {
 			++it;
 		}
 	}
+	spx_log_("\nresolved_path : ");
+	spx_log_(resolved_path);
+	spx_log_("\n");
 	return resolved_path;
 }
 
