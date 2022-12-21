@@ -112,7 +112,10 @@ main(int argc, char const* argv[]) {
 		spx_log_(temp_.get_uri_location_t_("////upload//", temp2));
 		spx_log_(temp2);
 #endif
-		// kqueue_main(spx.port_info);
+
+#ifndef SEARCH_DEBUG
+		kqueue_main(spx.port_info);
+#endif
 
 		// TODO:: add kqueue process here
 		// while (1) {
