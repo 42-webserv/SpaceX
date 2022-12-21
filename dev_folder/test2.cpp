@@ -11,10 +11,16 @@
 int
 main(void) {
 	char buf[BUF_SIZE];
-	int	 fd = open("/Users/seseo/SpaceX", O_RDONLY);
+	int	 fd = open("/Users/seseo/SpaceX/dev_folder/tmp", O_RDONLY);
 
 	printf("%d\n", fd);
-	perror(strerror(errno));
+	int n;
+	do {
+		n = read(fd, buf, BUF_SIZE);
+		write(STDOUT_FILENO, buf, n);
+	} while (n > 0);
+
+	// perror(strerror(errno));
 	// int  fd = open( "asdf", O_RDONLY | O_CREAT | O_NONBLOCK, 0644 );
 	// int  fd2 = open( "asdf", O_RDONLY | O_CREAT | O_NONBLOCK, 0644 );
 	// int  fd3 = open( "asdf", O_RDONLY | O_CREAT | O_NONBLOCK, 0644 );
