@@ -83,12 +83,6 @@ spx_http_syntax_start_line(std::string const& line) {
 				}
 				return error_("invalid method : 6 - request line");
 			}
-			case 7: {
-				if (temp_str == "OPTIONS") {
-					break;
-				}
-				return error_("invalid method : 7 - request line");
-			}
 			default: {
 				return error_("invalid method : request line");
 			}
@@ -329,7 +323,7 @@ spx_http_syntax_header_line(std::string const& line) {
 
 status
 spx_chunked_syntax_start_line(std::string const&				  line,
-							  uint16_t&							  chunk_size,
+							  uint32_t&							  chunk_size,
 							  std::map<std::string, std::string>& chunk_ext) {
 	std::string::const_iterator it = line.begin();
 	std::string					temp_str_key;
@@ -649,7 +643,7 @@ spx_chunked_syntax_start_line(std::string const&				  line,
 
 status
 spx_chunked_syntax_data_line(std::string const&					 line,
-							 uint16_t&							 chunk_size,
+							 uint32_t&							 chunk_size,
 							 std::vector<char>&					 data_store,
 							 std::map<std::string, std::string>& trailer_section) {
 

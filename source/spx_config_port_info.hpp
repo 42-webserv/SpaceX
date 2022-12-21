@@ -18,20 +18,19 @@ typedef enum {
 } autoindex_state_e;
 
 typedef enum {
-	module_none = 0,
-	module_serve,
-	module_upload,
-	module_redirect,
-	module_cgi
+	Kmodule_none = 0,
+	Kmodule_serve,
+	Kmodule_upload,
+	Kmodule_redirect,
+	Kmodule_cgi
 } module_case_state_e;
 
 typedef enum {
-	KGet	 = 1 << 1,
-	KPost	 = 1 << 2,
-	KPut	 = 1 << 3,
-	KDelete	 = 1 << 4,
-	KHead	 = 1 << 5,
-	KOptions = 1 << 6
+	KGet	= 1 << 1,
+	KPost	= 1 << 2,
+	KPut	= 1 << 3,
+	KDelete = 1 << 4,
+	KHead	= 1 << 5
 } accepted_method_flag_e;
 
 enum {
@@ -130,8 +129,9 @@ typedef struct server_info {
 	server_info(server_info_t const& from);
 	// server_info& operator=(server_info_t const& from);
 	~server_info();
-	std::string const		 get_error_page_(uint32_t const& error_code) const;
+	std::string const		 get_error_page_path_(uint32_t const& error_code) const;
 	std::string const		 get_uri_location_(std::string const& uri) const;
+	uri_location_t const&	 get_uri_location_t_(std::string const& uri) const;
 	static std::string const path_resolve_(std::string unvalid_path);
 	void					 print_(void) const;
 

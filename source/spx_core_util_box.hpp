@@ -18,6 +18,8 @@ spx_log_(T msg) {
 #endif
 }
 
+std::string const generator_error_page_(uint32_t const& error_code);
+
 inline void
 error_exit(std::string err, int (*func)(int), int fd) {
 	if (func != NULL) {

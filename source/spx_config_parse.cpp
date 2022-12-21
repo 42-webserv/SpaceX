@@ -620,6 +620,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_location_zero: {
 			if (location_count != 0) {
+				if (!(flag_location_part & Kflag_root)) {
+					if (temp_basic_server_info.root.empty()) {
+						temp_uri_location_info.root = cur_path;
+					} else {
+						temp_uri_location_info.root = temp_basic_server_info.root;
+					}
+				}
 				std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 				check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 				if (check_dup.second == false) {
@@ -827,6 +834,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 						temp_uri_location_info.accepted_methods_flag |= KPut;
 						break;
 					}
+					if (temp_string.compare("ALL") == KSame) {
+						temp_uri_location_info.accepted_methods_flag |= KGet;
+						temp_uri_location_info.accepted_methods_flag |= KPut;
+						temp_uri_location_info.accepted_methods_flag |= KPost;
+						temp_uri_location_info.accepted_methods_flag |= KHead;
+						temp_uri_location_info.accepted_methods_flag |= KDelete;
+						break;
+					}
 					return error_("conf_accepted_methods", "syntax error", line_number_count);
 				}
 				case 4: {
@@ -934,6 +949,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				state							= conf_start;
 				next_state						= conf_waiting_location_value;
 				flag_location_part |= Kflag_redirect;
+				if (temp_uri_location_info.module_state == Kmodule_none) {
+					temp_uri_location_info.module_state = Kmodule_redirect;
+				}
 				temp_string.clear();
 				break;
 			}
