@@ -58,14 +58,15 @@ enum e_transfer_encoding { TE_CHUNKED = 0,
 						   TE_GZIP,
 						   TE_DEFLATE };
 
-typedef std::vector<char> t_buffer;
+typedef std::vector<char> buffer_t;
 
 typedef struct ReqField {
-	t_buffer						   body_buffer_;
+	buffer_t						   body_buffer_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
 	std::string						   http_ver_;
 	std::string						   file_path_;
+	uri_location_t*					   uri_loc_;
 	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
@@ -79,6 +80,7 @@ typedef struct ReqField {
 		, req_target_()
 		, http_ver_()
 		, file_path_()
+		, uri_loc_()
 		, body_recieved_(0)
 		, body_limit_(-1)
 		, content_length_(0)
@@ -91,19 +93,19 @@ typedef struct ReqField {
 } t_req_field;
 
 typedef struct ResField {
-	t_buffer	body_buffer_;
+	buffer_t	body_buffer_;
 	std::string res_header_;
-	// std::string file_path_;
-	size_t content_length_;
-	int	   header_ready_;
-	int	   sent_pos_;
-	int	   body_flag_;
-	int	   transfer_encoding_;
+	std::string file_path_;
+	size_t		content_length_;
+	int			header_ready_;
+	int			sent_pos_;
+	int			body_flag_;
+	int			transfer_encoding_;
 
 	ResField()
 		: body_buffer_()
 		, res_header_()
-		// , file_path_()
+		, file_path_()
 		, content_length_(0)
 		, header_ready_(0)
 		, sent_pos_(0)
@@ -122,7 +124,7 @@ private:
 
 public:
 	std::queue<std::pair<t_req_field, t_res_field> > req_res_queue_;
-	t_buffer										 rdsaved_;
+	buffer_t										 rdsaved_;
 	timespec										 timeout_;
 	uintptr_t										 client_fd;
 	port_info_t*									 serv_info;
