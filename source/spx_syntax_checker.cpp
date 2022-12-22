@@ -1,4 +1,5 @@
 #include "spx_syntax_checker.hpp"
+#include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 
 namespace {
@@ -21,8 +22,8 @@ namespace {
 } // namespace
 
 status
-spx_http_syntax_start_line(std::string const& line) {
-	// spx_http_syntax_start_line(std::string const& line, t_client_buf& buf) {
+spx_http_syntax_start_line(std::string const& line,
+						   int&				  req_type) {
 	std::string::const_iterator it		   = line.begin();
 	uint32_t					size_count = 0;
 	std::string					temp_str;
@@ -66,25 +67,37 @@ spx_http_syntax_start_line(std::string const& line) {
 			}
 			switch (size_count) {
 			case 3: {
-				if (temp_str == "GET" || temp_str == "PUT") {
+				if (temp_str == "GET") {
+					req_type = REQ_GET;
+					break;
+				} else if (temp_str == "PUT") {
+					req_type = REQ_PUT;
 					break;
 				}
-				return error_("invalid method : 3 - request line");
+				req_type = REQ_UNDEFINED;
+				break;
 			}
 			case 4: {
-				if (temp_str == "POST" || temp_str == "HEAD") {
+				if (temp_str == "POST") {
+					req_type = REQ_POST;
+					break;
+				} else if (temp_str == "HEAD") {
+					req_type = REQ_HEAD;
 					break;
 				}
-				return error_("invalid method : 4 - request line");
+				req_type = REQ_UNDEFINED;
+				break;
 			}
 			case 6: {
 				if (temp_str == "DELETE") {
+					req_type = REQ_DELETE;
 					break;
 				}
-				return error_("invalid method : 6 - request line");
+				req_type = REQ_UNDEFINED;
+				break;
 			}
 			default: {
-				return error_("invalid method : request line");
+				req_type = REQ_UNDEFINED;
 			}
 			}
 			state = start_line__sp_before_uri;
@@ -272,7 +285,7 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 
 		case spx_OWS_before_value: {
-			while (*it == ' ') {
+			while (syntax_(ows_, static_cast<uint8_t>(*it))) {
 				++it;
 			}
 			if (syntax_(vchar_, static_cast<uint8_t>(*it))) {
@@ -299,7 +312,7 @@ spx_http_syntax_header_line(std::string const& line) {
 		}
 
 		case spx_OWS_after_value: {
-			while (*it == ' ') {
+			while (syntax_(ows_, static_cast<uint8_t>(*it))) {
 				++it;
 			}
 			state = spx_value;

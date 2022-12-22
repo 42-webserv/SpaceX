@@ -133,7 +133,7 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 			++it;
 		}
 	}
-#ifdef SEARCH_DEBUG
+#ifdef YOMA_SEARCH_DEBUG
 	std::cout << "resolved_path : " << resolved_path << std::endl;
 #endif
 	return resolved_path;
