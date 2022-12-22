@@ -168,6 +168,12 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			this->flag_ |= RDBUF_CHECKED;
 			break;
 		}
+		req_field_t* req = &this->req_res_queue_.back().first;
+		// uri loc
+
+		req->serv_info_ = &this->serv_info_->search_server_config_(req->field_["host"]);
+		req->uri_loc_	= req->serv_info_->get_uri_location_t_(req->req_target_,
+															   this->req_res_queue_.back().second.file_path_);
 		switch (this->req_res_queue_.back().first.req_type_) {
 		case REQ_GET:
 			if (this->req_res_queue_.back().second.header_ready_ == 0) {

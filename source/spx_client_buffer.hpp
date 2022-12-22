@@ -69,7 +69,8 @@ public:
 	std::string						   req_target_;
 	std::string						   http_ver_;
 	std::string						   file_path_;
-	uri_location_t*					   uri_loc_;
+	const server_info_t*			   serv_info_;
+	const uri_location_t*			   uri_loc_;
 	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
@@ -97,27 +98,31 @@ public:
 
 class ResField {
 public:
-	buffer_t	body_buffer_;
-	std::string res_header_;
+	// res_header
+	buffer_t	res_buffer_;
 	std::string file_path_;
-	size_t		content_length_;
+	size_t		buf_size_;
+	int			body_fd_;
 	int			header_ready_;
 	int			sent_pos_;
-	int			body_flag_;
+	int			flag_;
 	int			transfer_encoding_;
 
 	ResField()
-		: body_buffer_()
-		, res_header_()
+		: res_buffer_()
 		, file_path_()
-		, content_length_(0)
+		, buf_size_(0)
+		, body_fd_(-1)
 		, header_ready_(0)
 		, sent_pos_(0)
-		, body_flag_(0)
+		, flag_(0)
 		, transfer_encoding_(0) {
 	}
+
 	~ResField() {
 	}
+
+	//
 };
 
 typedef ResField res_field_t;
