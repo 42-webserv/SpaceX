@@ -97,27 +97,29 @@ public:
 
 class ResField {
 public:
-	buffer_t	body_buffer_;
-	std::string res_header_;
-	std::string file_path_;
-	size_t		content_length_;
-	int			header_ready_;
-	int			sent_pos_;
-	int			body_flag_;
-	int			transfer_encoding_;
+	// res_header
+	buffer_t res_buffer_;
+	size_t	 buf_size_;
+	int		 body_fd_;
+	int		 header_ready_;
+	int		 sent_pos_;
+	int		 body_flag_;
+	int		 transfer_encoding_;
 
 	ResField()
-		: body_buffer_()
-		, res_header_()
-		, file_path_()
-		, content_length_(0)
+		: res_buffer_()
+		, buf_size_(0)
+		, body_fd_(-1)
 		, header_ready_(0)
 		, sent_pos_(0)
 		, body_flag_(0)
 		, transfer_encoding_(0) {
 	}
+
 	~ResField() {
 	}
+
+	//
 };
 
 typedef ResField res_field_t;
