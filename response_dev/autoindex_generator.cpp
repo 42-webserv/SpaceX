@@ -32,10 +32,12 @@ generate(const char* path) {
 	std::cout << "<table>";
 	if ((dir = opendir(path)) != NULL) {
 		/* print all the files and directories within directory */
+		entry = readdir(dir);
 		while ((entry = readdir(dir)) != NULL) {
 			// get the name of the file
 			std::string filename = entry->d_name;
-			if (filename.compare(".") == 0)
+			// TODO : optimize this if statement
+			if (filename.size() > 1 && filename[0] == '.' && filename[1] != '.')
 				continue;
 			std::cout << "<tr>";
 			// get the full path of the file
@@ -75,6 +77,6 @@ generate(const char* path) {
 
 int
 main(void) {
-	generate("/Users/spacechae/Desktop/webserv/wchae_practice/"
-			 "auto_index_feature_test/");
+	generate(
+		"/Users/wchae/webserv/SpaceX/response_dev/");
 }

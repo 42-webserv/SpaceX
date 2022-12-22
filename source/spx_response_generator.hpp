@@ -130,7 +130,7 @@ private:
 	make_to_string() const;
 
 	int
-	file_open(const char* dir) const;
+	file_open(const char* dir, int mode) const;
 
 	void
 
@@ -147,9 +147,9 @@ private:
 
 public:
 	std::string
-	make_error_response(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer, http_status error_code);
+	make_error_response(ClientBuffer& client_buffer, http_status error_code);
 	std::string
-	setting_response_header(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer);
+	setting_response_header(ClientBuffer& client_buffer);
 };
 
 #endif
