@@ -48,7 +48,7 @@ enum e_read_status {
 };
 
 enum e_req_flag { REQ_FILE_OPEN = 1,
-				  CGI_READ		= 2 };
+				  REQ_CGI		= 2 };
 
 enum e_res_flag { RES_FILE_OPEN = 1,
 				  WRITE_READY	= 2,
@@ -156,8 +156,10 @@ public:
 
 	void disconnect_client(event_list_t& change_list);
 
-	bool write_res_body(uintptr_t fd, event_list_t& change_list);
+	bool write_response(uintptr_t fd, event_list_t& change_list);
 	bool write_res_header(uintptr_t fd, event_list_t& change_list);
+
+	bool host_check(std::string& host);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);
