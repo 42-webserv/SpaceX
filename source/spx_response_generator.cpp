@@ -55,7 +55,7 @@ Response::setContentType(std::string uri) {
 
 std::string
 Response::handle_static_error_page() {
-	char* err = http_error_400_page;
+	// char* err = http_error_400_page;
 	// this will write to vector<char> response_body
 	return make_to_string();
 }
