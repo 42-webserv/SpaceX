@@ -109,7 +109,7 @@ main(int argc, char const* argv[]) {
 		spx_log_(temp_.get_error_page_path_(404));
 		spx_log_(temp_.get_error_page_path_(303));
 		std::string temp2;
-		spx_log_(temp_.get_uri_location_t_("////upload//", temp2));
+		spx_log_(temp_.get_uri_location_t_("////upload/", temp2));
 		spx_log_(temp2);
 #endif
 

@@ -9,7 +9,6 @@ namespace {
 
 	inline status
 	error_(const char* msg) {
-
 #ifdef SYNTAX_DEBUG
 		std::cout << "\033[1;31m" << msg << "\033[0m"
 				  << " : "
@@ -19,6 +18,21 @@ namespace {
 #else
 		(void)msg;
 #endif
+		return spx_error;
+	}
+
+	inline status
+	error_flag_(const char* msg, int& flag) {
+#ifdef SYNTAX_DEBUG
+		std::cout << "\033[1;31m" << msg << "\033[0m"
+				  << " : "
+				  << "\033[1;33m"
+				  << ""
+				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
+#endif
+		flag = REQ_UNDEFINED;
 		return spx_error;
 	}
 
@@ -38,14 +52,15 @@ spx_http_syntax_start_line(std::string const& line,
 		start_line__uri_start,
 		start_line__uri,
 		start_line__http_check,
-		start_line__h,
-		start_line__ht,
-		start_line__htt,
-		start_line__http,
-		start_line__http_slash,
-		start_line__http_major,
-		start_line__http_dot,
-		start_line__http_minor,
+		// start_line__h,
+		// start_line__ht,
+		// start_line__htt,
+		// start_line__http,
+		// start_line__http_slash,
+		// start_line__http_major,
+		// start_line__http_dot,
+		// start_line__http_minor,
+		start_line__http_protocol_version,
 		start_line__almost_done,
 		start_line__done
 	} state;
@@ -59,7 +74,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__method;
 				break;
 			}
-			return error_("invalid line start : request line");
+			return error_flag_("invalid line start : request line", req_type);
 		}
 
 		case start_line__method: {
@@ -77,8 +92,7 @@ spx_http_syntax_start_line(std::string const& line,
 					req_type = REQ_PUT;
 					break;
 				}
-				req_type = REQ_UNDEFINED;
-				break;
+				return error_flag_("invalid line start : METHOD - 3", req_type);
 			}
 			case 4: {
 				if (temp_str == "POST") {
@@ -88,19 +102,17 @@ spx_http_syntax_start_line(std::string const& line,
 					req_type = REQ_HEAD;
 					break;
 				}
-				req_type = REQ_UNDEFINED;
-				break;
+				return error_flag_("invalid line start : METHOD - 4", req_type);
 			}
 			case 6: {
 				if (temp_str == "DELETE") {
 					req_type = REQ_DELETE;
 					break;
 				}
-				req_type = REQ_UNDEFINED;
-				break;
+				return error_flag_("invalid line start : METHOD - 6", req_type);
 			}
 			default: {
-				req_type = REQ_UNDEFINED;
+				return error_flag_("invalid line start : METHOD", req_type);
 			}
 			}
 			state = start_line__sp_before_uri;
@@ -113,7 +125,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__uri_start;
 				break;
 			}
-			return error_("invalid uri or method : request line");
+			return error_flag_("invalid uri or method : request line", req_type);
 		}
 
 		case start_line__uri_start: {
@@ -122,7 +134,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__uri;
 				break;
 			}
-			return error_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )");
+			return error_flag_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
 		}
 
 		case start_line__uri: {
@@ -130,116 +142,126 @@ spx_http_syntax_start_line(std::string const& line,
 				++it;
 			}
 			switch (*it) {
-			case '%': {
+			case '%': { // % HEXDIG HEXDIG process
 				if (syntax_(digit_alpha_, *(it + 1)) && syntax_(digit_alpha_, *(it + 2))) {
 					it += 3;
 					break;
 				}
-				return error_("invalid uri : request line : unmatched percent encoding");
+				return error_flag_("invalid uri : request line : unmatched percent encoding", req_type);
 			}
 			case ' ': {
 				++it;
-				state = start_line__h;
+				// state = start_line__h;
+				state = start_line__http_protocol_version;
 				break;
 			}
 			case '#': {
-				return error_("invalid uri : request line : we didn't support fragment");
+				return error_flag_("invalid uri : request line : we didn't support fragment", req_type);
 			}
 			case '?': {
-				return error_("invalid uri : request line : we didn't support query");
+				return error_flag_("invalid uri : request line : we didn't support query", req_type);
 			}
 			}
-			return error_("invalid uri : request line");
+			return error_flag_("invalid uri : request line", req_type);
 		}
 
-		case start_line__h: {
-			if (*it == 'H') {
-				++it;
-				state = start_line__ht;
+		case start_line__http_protocol_version: {
+			if (line.compare(it - line.begin(), 8, "HTTP/1.1") == 0) {
+				it += 8;
+				state = start_line__almost_done;
 				break;
 			}
-			return error_("invalid http version or end line : request line");
+			return error_flag_("invalid http version or end line : request line", req_type);
 		}
 
-		case start_line__ht: {
-			if (*it == 'T') {
-				++it;
-				state = start_line__htt;
-				break;
-			}
-			return error_("invalid http version or end line : request line");
-		}
+			// case start_line__h: {
+			// 	if (*it == 'H') {
+			// 		++it;
+			// 		state = start_line__ht;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
 
-		case start_line__htt: {
-			if (*it == 'T') {
-				++it;
-				state = start_line__http;
-				break;
-			}
-			return error_("invalid http version or end line : request line");
-		}
+			// case start_line__ht: {
+			// 	if (*it == 'T') {
+			// 		++it;
+			// 		state = start_line__htt;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
 
-		case start_line__http: {
-			if (*it == 'P') {
-				++it;
-				state = start_line__http_slash;
-				break;
-			}
-			return error_("invalid http version or end line : request line");
-		}
+			// case start_line__htt: {
+			// 	if (*it == 'T') {
+			// 		++it;
+			// 		state = start_line__http;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
 
-		case start_line__http_slash: {
-			if (*it == '/') {
-				++it;
-				state = start_line__http_major;
-				break;
-			}
-			return error_("invalid http version or end line : request line");
-		}
+			// case start_line__http: {
+			// 	if (*it == 'P') {
+			// 		++it;
+			// 		state = start_line__http_slash;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
 
-		case start_line__http_major: {
-			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
-				if (*it == '1') {
-					++it;
-					state = start_line__http_dot;
-					break;
-				}
-				return error_("invalid http major version : request line");
-			}
-			return error_("invalid http major version : not number : request line");
-		}
+			// case start_line__http_slash: {
+			// 	if (*it == '/') {
+			// 		++it;
+			// 		state = start_line__http_major;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
 
-		case start_line__http_dot: {
-			if (*it == '.') {
-				++it;
-				state = start_line__http_minor;
-				break;
-			}
-			return error_("invalid http version or end line : request line");
-		}
+			// case start_line__http_major: {
+			// 	if (syntax_(digit_, static_cast<uint8_t>(*it))) {
+			// 		if (*it == '1') {
+			// 			++it;
+			// 			state = start_line__http_dot;
+			// 			break;
+			// 		}
+			// 		return error_("invalid http major version : request line");
+			// 	}
+			// 	return error_("invalid http major version : not number : request line");
+			// }
 
-		case start_line__http_minor: {
-			if (syntax_(digit_, static_cast<uint8_t>(*it))) {
-				if (*it == '0' || *it == '1') {
-					++it;
-					state = start_line__almost_done;
-					break;
-				}
-				return error_("invalid http minor version : request line");
-			}
-			return error_("invalid http minor version : not number : request line");
-		}
+			// case start_line__http_dot: {
+			// 	if (*it == '.') {
+			// 		++it;
+			// 		state = start_line__http_minor;
+			// 		break;
+			// 	}
+			// 	return error_("invalid http version or end line : request line");
+			// }
+
+			// case start_line__http_minor: {
+			// 	if (syntax_(digit_, static_cast<uint8_t>(*it))) {
+			// 		if (*it == '1') {
+			// 			++it;
+			// 			state = start_line__almost_done;
+			// 			break;
+			// 		}
+			// 		return error_("invalid http minor version : request line");
+			// 	}
+			// 	return error_("invalid http minor version : not number : request line");
+			// }
 
 		case start_line__almost_done: {
 			if (it == line.end()) {
 				state = start_line__done;
 				break;
 			}
-			return error_("invalid request end line : request line");
+			return error_flag_("invalid request end line : request line", req_type);
 		}
 
 		default: {
-			return error_("invalid request : request line");
+			return error_flag_("invalid request : request line", req_type);
 		}
 		}
 	}
