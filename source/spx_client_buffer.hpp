@@ -51,16 +51,19 @@ enum e_req_flag { REQ_FILE_OPEN = 1,
 				  CGI_READ		= 2 };
 
 enum e_res_flag { RES_FILE_OPEN = 1,
-				  WRITE_READY	= 2 };
+				  WRITE_READY	= 2,
+				  RES_CGI		= 4 };
 
 // gzip & deflate are not implemented.
 enum e_transfer_encoding { TE_CHUNKED = 0,
 						   TE_GZIP,
 						   TE_DEFLATE };
 
-typedef std::vector<char> buffer_t;
+typedef std::vector<char>		   buffer_t;
+typedef std::vector<struct kevent> event_list_t;
 
-typedef struct ReqField {
+class ReqField {
+public:
 	buffer_t						   body_buffer_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
@@ -90,9 +93,10 @@ typedef struct ReqField {
 	}
 	~ReqField() {
 	}
-} t_req_field;
+};
 
-typedef struct ResField {
+class ResField {
+public:
 	buffer_t	body_buffer_;
 	std::string res_header_;
 	std::string file_path_;
@@ -114,20 +118,22 @@ typedef struct ResField {
 	}
 	~ResField() {
 	}
-} t_res_field;
+};
+
+typedef ResField res_field_t;
+typedef ReqField req_field_t;
 
 class ClientBuffer {
-
 private:
 	ClientBuffer(const ClientBuffer& buf);
 	ClientBuffer& operator=(const ClientBuffer& buf);
 
 public:
-	std::queue<std::pair<t_req_field, t_res_field> > req_res_queue_;
+	std::queue<std::pair<req_field_t, res_field_t> > req_res_queue_;
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
-	uintptr_t										 client_fd;
-	port_info_t*									 serv_info;
+	uintptr_t										 client_fd_;
+	port_info_t*									 serv_info_;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;
@@ -136,16 +142,23 @@ public:
 	ClientBuffer();
 	~ClientBuffer();
 
+	void write_filter_enable(event_list_t& change_list, struct kevent* cur_event);
+
 	bool request_line_check(std::string& req_line);
 	bool request_line_parser();
-	bool header_valid_check(std::string& key_val, size_t col_pos);
+
 	bool header_field_parser();
-	void disconnect_client(std::vector<struct kevent>& change_list);
-	bool write_res_body(uintptr_t fd, std::vector<struct kevent>& change_list);
-	bool write_res_header(uintptr_t fd, std::vector<struct kevent>& change_list);
-	bool req_res_controller(std::vector<struct kevent>& change_list, struct kevent* cur_event);
+
+	void disconnect_client(event_list_t& change_list);
+
+	bool write_res_body(uintptr_t fd, event_list_t& change_list);
+	bool write_res_header(uintptr_t fd, event_list_t& change_list);
+
+	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);
-	void client_buffer_read(struct kevent* cur_event, std::vector<struct kevent>& change_list);
+
+	void read_to_client_buffer(event_list_t& change_list, struct kevent* cur_event);
+	void read_to_res_buffer(event_list_t& change_list, struct kevent* cur_event);
 };
 
 typedef ClientBuffer client_buf_t;
