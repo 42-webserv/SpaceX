@@ -174,7 +174,6 @@ server_info_for_copy_stage_t::print_() const {
 		std::cout << "default_server_flag: on" << std::endl;
 	else
 		std::cout << "default_server_flag: off" << std::endl;
-	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 
 	if (default_error_page != "")
 		std::cout << "default_error_page: " << default_error_page << std::endl;
@@ -192,7 +191,6 @@ server_info_t::print_(void) const {
 	std::cout << "root: " << root << std::endl;
 	if (default_server_flag == Kdefault_server)
 		std::cout << "\033[1;31m default_server \033[0m" << std::endl;
-	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 
 	if (default_error_page != "")
 		std::cout << "\ndefault_error_page: " << default_error_page << std::endl;
@@ -230,7 +228,8 @@ uri_location_t::uri_location(const uri_location_for_copy_stage_t from)
 	, autoindex_flag(from.autoindex_flag)
 	, saved_path(from.saved_path)
 	, cgi_pass(from.cgi_pass)
-	, cgi_path_info(from.cgi_path_info) {
+	, cgi_path_info(from.cgi_path_info)
+	, client_max_body_size(from.client_max_body_size) {
 #ifdef CONFIG_DEBUG
 	std::cout << "uri_location copy construct" << std::endl;
 #endif
@@ -274,4 +273,6 @@ uri_location_t::print_(void) const {
 		std::cout << "cgi_pass: " << cgi_pass << std::endl;
 	if (cgi_path_info != "")
 		std::cout << "cgi_path_info: " << cgi_path_info << std::endl;
+
+	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 }

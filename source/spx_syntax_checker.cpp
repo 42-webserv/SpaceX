@@ -1,6 +1,9 @@
 #include "spx_syntax_checker.hpp"
-#include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
+
+#ifndef YOMA_SEARCH_DEBUG
+#include "spx_client_buffer.hpp"
+#endif
 
 namespace {
 

@@ -10,16 +10,17 @@ NAME		= spacex
 DEBUG_FLAG	+=	DEBUG
 # DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
 # DEBUG_FLAG	+=  SOCKET_DEBUG
-# DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 # DEBUG_FLAG 	+= CONFIG_DEBUG
+# DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 
 LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
 				spx_config_parse.cpp \
 				spx_config_port_info.cpp \
 				spx_core_util_box.cpp\
-				spx_socket_init.cpp \
-				spx_syntax_checker.cpp
+				spx_socket_init.cpp
+
+# spx_syntax_checker.cpp
 # spx_kqueue_main.cpp
 
 

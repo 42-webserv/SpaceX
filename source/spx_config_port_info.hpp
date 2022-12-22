@@ -39,21 +39,21 @@ enum {
 };
 
 typedef enum {
-	Kflag_listen			   = 1 << 1,
-	Kflag_server_name		   = 1 << 2,
-	Kflag_error_page		   = 1 << 3,
-	Kflag_client_max_body_size = 1 << 4,
-	Kflag_root				   = 1 << 5
+	Kflag_root		  = 1 << 0,
+	Kflag_listen	  = 1 << 1,
+	Kflag_server_name = 1 << 2,
+	Kflag_error_page  = 1 << 3
 } flag_config_parse_basic_part_e;
 
 typedef enum {
-	Kflag_accepted_methods = 1 << 1,
-	Kflag_index			   = 1 << 2,
-	Kflag_autoindex		   = 1 << 3,
-	Kflag_redirect		   = 1 << 4,
-	Kflag_saved_path	   = 1 << 6,
-	Kflag_cgi_pass		   = 1 << 7,
-	Kflag_cgi_path_info	   = 1 << 8,
+	Kflag_accepted_methods	   = 1 << 1,
+	Kflag_index				   = 1 << 2,
+	Kflag_autoindex			   = 1 << 3,
+	Kflag_redirect			   = 1 << 4,
+	Kflag_saved_path		   = 1 << 5,
+	Kflag_cgi_pass			   = 1 << 6,
+	Kflag_cgi_path_info		   = 1 << 7,
+	Kflag_client_max_body_size = 1 << 8
 } flag_config_parse_location_part_e;
 
 /*
