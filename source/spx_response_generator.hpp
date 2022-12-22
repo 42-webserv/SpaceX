@@ -15,11 +15,9 @@
 #include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 
-// This must change to file that loaded from CONFIG file
-#define ERR_PAGE_URL "html/404error.html"
-
 /* Status Codes */
 namespace {
+
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
 #define CONTENT_LENGTH "Content-Legnth"
@@ -116,6 +114,7 @@ namespace {
 		}
 	};
 }
+
 struct Response {
 private:
 	typedef std::pair<std::string, std::string> header;
@@ -132,24 +131,30 @@ private:
 	int
 	file_open(const char* dir) const;
 
-	void
-
+	off_t
 	setContentLength(int fd);
-	void
 
+	void
 	setContentType(std::string uri);
 
 	std::string
 	handle_static_error_page();
 
 	void
-	setDate(void);
+	setDate();
+
+	void
+	set_response_header_vector(res_field_t& cur_res);
 
 public:
-	std::string
-	make_error_response(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer, http_status error_code);
-	std::string
-	setting_response_header(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer);
+	void
+	make_error_response(ClientBuffer& client_buffer, http_status error_code);
+
+	void
+	make_response_header(ClientBuffer& client_buffer);
+
+	void
+	set_res_field_header(res_field_t& cur_res);
 };
 
 #endif

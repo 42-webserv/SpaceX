@@ -4,7 +4,7 @@
 #include "spx_socket_init.hpp"
 #include <vector>
 
-#ifndef SEARCH_DEBUG
+#ifndef YOMA_SEARCH_DEBUG
 #include "spx_client_buffer.hpp"
 #endif
 
@@ -102,24 +102,23 @@ main(int argc, char const* argv[]) {
 		spx.port_info_print_();
 #endif
 
-#ifdef SEARCH_DEBUG
+#ifdef YOMA_SEARCH_DEBUG
 		// how to use handler function
 		std::cout << "-------------------------------" << std::endl;
 		server_info_t const& temp_ = spx.port_info[3].search_server_config_("aoriestnaoiresnt");
 		spx_log_(temp_.get_error_page_path_(404));
 		spx_log_(temp_.get_error_page_path_(303));
 		std::string temp2;
-		spx_log_(temp_.get_uri_location_t_("////upload//", temp2));
+		spx_log_(temp_.get_uri_location_t_("////upload/", temp2));
 		spx_log_(temp2);
 #endif
 
-#ifndef SEARCH_DEBUG
+#ifdef YOMA_SEARCH_DEBUG
+		while (1) {
+		}
+#else
 		kqueue_main(spx.port_info);
 #endif
-
-		// TODO:: add kqueue process here
-		// while (1) {
-		// }
 
 	} else {
 		error_exit_msg("usage: ./spacex [config_file]");

@@ -14,12 +14,13 @@ Response::make_to_string() const {
 int
 Response::file_open(const char* dir) const {
 	int fd = open(dir, O_RDONLY);
-	if (fd < 0)
-		return open(ERR_PAGE_URL, O_RDONLY); // config
+
+	if (fd < 0 && errno == EACCES)
+		return 0;
 	return fd;
 }
 
-void
+off_t
 Response::setContentLength(int fd) {
 	off_t length = lseek(fd, 0, SEEK_END);
 	lseek(fd, SEEK_CUR, SEEK_SET);
@@ -33,49 +34,44 @@ Response::setContentLength(int fd) {
 void
 Response::setContentType(std::string uri) {
 
-	// request extention checking
 	std::string::size_type uri_ext_size = uri.find_last_of('.');
 	std::string			   ext;
 
 	if (uri_ext_size)
 		ext = uri.substr(uri_ext_size + 1);
 	if (ext == "html" || ext == "htm")
-		headers_.push_back(header("Content-Type", MIME_TYPE_HTML));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 	else if (ext == "png")
-		headers_.push_back(header("Content-Type", MIME_TYPE_PNG));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_PNG));
 	else if (ext == "jpg")
-		headers_.push_back(header("Content-Type", MIME_TYPE_JPG));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_JPG));
 	else if (ext == "jpeg")
-		headers_.push_back(header("Content-Type", MIME_TYPE_JPEG));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_JPEG));
 	else if (ext == "txt")
-		headers_.push_back(header("Content-Type", MIME_TYPE_TEXT));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_TEXT));
 	else
-		headers_.push_back(header("Content-Type", MIME_TYPE_DEFUALT));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_DEFUALT));
 };
 
-std::string
-Response::handle_static_error_page() {
-	// char* err = http_error_400_page;
-	// this will write to vector<char> response_body
-	return make_to_string();
-}
-
-std::string
-Response::make_error_response(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer, http_status error_code) {
-
+void
+Response::make_error_response(ClientBuffer& client_buffer, http_status error_code) {
 	status_		 = http_status_str(error_code);
 	status_code_ = error_code;
 
-	// TODO : Connection Header settings
 	if (error_code == HTTP_STATUS_BAD_REQUEST)
 		headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
 	else
 		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
-	int error_req_fd = open(ERR_PAGE_URL, O_RDONLY);
-	if (error_req_fd < 0)
-		return handle_static_error_page();
-	add_change_list(change_list, error_req_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
+	std::string page_path	 = client_buffer.req_res_queue_.front().first.serv_info_->get_error_page_path_(error_code);
+	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
+	if (error_req_fd < 0) {
+		std::stringstream  ss;
+		const std::string& error_page = generator_error_page_(error_code);
+		ss << error_page.length();
+		headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+	}
 }
 
 void
@@ -88,23 +84,44 @@ Response::setDate(void) {
 	headers_.push_back(header("Date", date_buf));
 }
 
+void
+Response::set_res_field_header(res_field_t& cur_res) {
+	std::string header_contents = make_to_string();
+	for (std::string::iterator it = header_contents.begin(); it != header_contents.end(); ++it)
+		cur_res.res_buffer_.push_back(*it);
+	cur_res.buf_size_ += cur_res.res_buffer_.size();
+}
+
 // this is main logic to make response
-std::string
-Response::setting_response_header(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
-	t_req_field current_request = client_buffer.req_res_queue_.front().first;
-	std::string uri				= current_request.req_target_;
-	int			request_fd		= file_open(client_buffer.req_res_queue_.front().second.file_path_.c_str());
+void
+Response::make_response_header(ClientBuffer& client_buffer) {
+	const req_field_t& cur_req
+		= client_buffer.req_res_queue_.front().first;
+	res_field_t& cur_res
+		= client_buffer.req_res_queue_.front().second;
 
-	// File Not Found - URL
-	if (request_fd < 0)
-		return make_error_response(change_list, client_buffer, HTTP_STATUS_NOT_FOUND);
-	setContentType(uri);
-	setContentLength(request_fd);
-	headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-	// body event register
+	const std::string& uri = cur_req.file_path_;
+	int				   req_fd;
+	int				   req_method = cur_req.req_type_;
 
-	add_change_list(change_list, request_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &client_buffer);
-	return make_to_string();
+	setDate();
+	if (req_method & (REQ_GET | REQ_HEAD) == true) {
+		req_fd			 = file_open(uri.c_str());
+		cur_res.body_fd_ = req_fd;
+
+		if (req_fd == 0)
+			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
+		else if (req_fd < 0)
+			make_error_response(client_buffer, HTTP_STATUS_NOT_FOUND);
+
+		cur_res.buf_size_ += setContentLength(req_fd);
+		setContentType(uri);
+		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+
+		cur_res.body_fd_  = req_fd;
+		cur_res.buf_size_ = 0;
+	}
+	set_res_field_header(cur_res);
 }
 
 // TODO : Redirection 300

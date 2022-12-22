@@ -44,7 +44,7 @@ enum e_read_status {
 	REQ_LINE_PARSING = 0,
 	REQ_HEADER_PARSING,
 	REQ_BODY,
-	RES_BODY,
+	RES_BODY
 };
 
 enum e_req_flag { REQ_FILE_OPEN = 1,

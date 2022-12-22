@@ -39,21 +39,21 @@ enum {
 };
 
 typedef enum {
-	Kflag_listen			   = 1 << 1,
-	Kflag_server_name		   = 1 << 2,
-	Kflag_error_page		   = 1 << 3,
-	Kflag_client_max_body_size = 1 << 4,
-	Kflag_root				   = 1 << 5
+	Kflag_root		  = 1 << 0,
+	Kflag_listen	  = 1 << 1,
+	Kflag_server_name = 1 << 2,
+	Kflag_error_page  = 1 << 3
 } flag_config_parse_basic_part_e;
 
 typedef enum {
-	Kflag_accepted_methods = 1 << 1,
-	Kflag_index			   = 1 << 2,
-	Kflag_autoindex		   = 1 << 3,
-	Kflag_redirect		   = 1 << 4,
-	Kflag_saved_path	   = 1 << 6,
-	Kflag_cgi_pass		   = 1 << 7,
-	Kflag_cgi_path_info	   = 1 << 8,
+	Kflag_accepted_methods	   = 1 << 1,
+	Kflag_index				   = 1 << 2,
+	Kflag_autoindex			   = 1 << 3,
+	Kflag_redirect			   = 1 << 4,
+	Kflag_saved_path		   = 1 << 5,
+	Kflag_cgi_pass			   = 1 << 6,
+	Kflag_cgi_path_info		   = 1 << 7,
+	Kflag_client_max_body_size = 1 << 8
 } flag_config_parse_location_part_e;
 
 /*
@@ -79,7 +79,11 @@ typedef struct uri_location_for_copy_stage {
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
-	void				clear_();
+	uint64_t			client_max_body_size;
+	// std::string			main_root;
+	// std::string			default_error_page;
+	// error_page_map_p	error_page_case;
+	void clear_();
 } uri_location_for_copy_stage_t;
 
 typedef struct server_info_for_copy_stage {
@@ -88,7 +92,6 @@ typedef struct server_info_for_copy_stage {
 	default_server_state_e default_server_flag;
 	std::string			   server_name;
 	std::string			   root;
-	uint64_t			   client_max_body_size;
 	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
@@ -107,6 +110,10 @@ typedef struct uri_location {
 	const std::string		  saved_path;
 	const std::string		  cgi_pass;
 	const std::string		  cgi_path_info;
+	const uint64_t			  client_max_body_size;
+	// const std::string		  main_root;
+	// const std::string		  default_error_page;
+	// mutable error_page_map_p  error_page_case;
 	//
 	uri_location(const uri_location_for_copy_stage_t from);
 	~uri_location();
@@ -120,7 +127,6 @@ typedef struct server_info {
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
 	const std::string			 root;
-	const uint64_t				 client_max_body_size;
 	const std::string			 default_error_page;
 	mutable error_page_map_p	 error_page_case;
 	mutable uri_location_map_p	 uri_case;
