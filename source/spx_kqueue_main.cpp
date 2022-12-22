@@ -29,10 +29,12 @@ ClientBuffer::request_line_check(std::string& req_line) {
 	if (spx_http_syntax_start_line(req_line,
 								   this->req_res_queue_.back().first.req_type_)
 		== 0) {
-		// this->req_res_queue_.back().first.req_target_ = req_line.substr();
+		std::string::size_type r_pos				  = req_line.find_last_of(' ');
+		std::string::size_type l_pos				  = req_line.find_first_of(' ');
+		this->req_res_queue_.back().first.req_target_ = req_line.substr(
+			l_pos + 1, r_pos - l_pos - 1);
+		this->req_res_queue_.back().first.http_ver_ = "HTTP/1.1";
 		// TODO : need to parse the query string into map
-		// this->req_res_queue_.back().first.http_ver_ = req_line.substr();
-
 		return true;
 	}
 	return false;
