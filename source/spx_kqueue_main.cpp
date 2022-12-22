@@ -37,7 +37,7 @@ ClientBuffer::request_line_check(std::string& req_line) {
 		// TODO : need to parse the query string into map
 		return true;
 	}
-	å return false;
+	return false;
 }
 
 bool
