@@ -949,9 +949,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				state							= conf_start;
 				next_state						= conf_waiting_location_value;
 				flag_location_part |= Kflag_redirect;
-				if (temp_uri_location_info.module_state == Kmodule_none) {
-					temp_uri_location_info.module_state = Kmodule_redirect;
-				}
+				// if (temp_uri_location_info.module_state == Kmodule_none) {
+				// 	temp_uri_location_info.module_state = Kmodule_redirect;
+				// }
 				temp_string.clear();
 				break;
 			}
