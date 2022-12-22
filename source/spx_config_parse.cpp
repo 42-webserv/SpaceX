@@ -325,16 +325,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 					}
 					return error_("conf_waiting_default_value", "11 - syntax error", line_number_count);
 				}
-				case 20: {
-					if (temp_string.compare("client_max_body_size") == KSame) {
-						if (flag_default_part & Kflag_client_max_body_size) {
-							return error_("conf_waiting_default_value", "client_max_body_size is already set", line_number_count);
-						}
-						next_state = conf_client_max_body_size;
-						break;
-					}
-					return error_("conf_waiting_default_value", "20 - syntax error", line_number_count);
-				}
 				default:
 					return error_("conf_waiting_default_value", "not allowed default value - syntax error", line_number_count);
 				}
@@ -387,11 +377,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (location_count == 0) {
 					return error_("conf_server_CB_close", "empty server block - syntax error", line_number_count);
 				}
-				if ((flag_default_part & Kflag_listen)) {
-					if (!(flag_default_part & Kflag_client_max_body_size)) {
-						temp_basic_server_info.client_max_body_size = 8124;
-					}
-				} else {
+				if (!(flag_default_part & Kflag_listen)) {
 					return error_("conf_server_CB_close", "missing must value set - syntax error", line_number_count);
 				}
 				break;
@@ -580,44 +566,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 			return error_("conf_error_page", "syntax error", line_number_count);
 		}
 
-		case conf_client_max_body_size: {
-			while (syntax_(digit_, static_cast<uint8_t>(*it))) {
-				temp_string.push_back(*it);
-				++size_count;
-				++it;
-			}
-			if (0 < size_count && size_count <= 10) {
-				uint64_t check_body_size = std::atoi(temp_string.c_str());
-				if (check_body_size > 0) {
-					if (*it == 'M') {
-						check_body_size *= (1024 * 1024);
-						++it;
-					} else if (*it == 'K') {
-						check_body_size *= 1024;
-						++it;
-					}
-					if (check_body_size > 2147483647) {
-						return error_("conf_client_max_body_size : 255M or 262131K limited", "syntax error", line_number_count);
-					} else if (check_body_size <= 0) {
-						return error_("conf_client_max_body_size : 0 or - size not supported", "syntax error", line_number_count);
-					}
-					if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
-						temp_basic_server_info.client_max_body_size = check_body_size;
-						prev_state									= state;
-						state										= conf_start;
-						next_state									= conf_waiting_default_value;
-						flag_default_part |= Kflag_client_max_body_size;
-						temp_string.clear();
-						size_count = 0;
-						break;
-					}
-					return error_("conf_client_max_body_size : undefined character used", "syntax error", line_number_count);
-				}
-				return error_("conf_client_max_body_size - minus size", "syntax error", line_number_count);
-			}
-			return error_("conf_client_max_body_size", "syntax error", line_number_count);
-		}
-
 		case conf_location_zero: {
 			if (location_count != 0) {
 				if (!(flag_location_part & Kflag_root)) {
@@ -626,6 +574,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					} else {
 						temp_uri_location_info.root = temp_basic_server_info.root;
 					}
+				}
+				if (!(flag_location_part & Kflag_client_max_body_size)) {
+					temp_uri_location_info.client_max_body_size = 8124;
 				}
 				std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 				check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
@@ -760,6 +711,16 @@ spx_config_syntax_checker(std::string const&	   buf,
 					}
 					return error_("conf_waiting_location_value", "16 - syntax error", line_number_count);
 				}
+				case 20: {
+					if (temp_string.compare("client_max_body_size") == KSame) {
+						if (flag_location_part & Kflag_client_max_body_size) {
+							return error_("conf_waiting_location_value", "client_max_body_size is already set", line_number_count);
+						}
+						next_state = conf_client_max_body_size;
+						break;
+					}
+					return error_("conf_waiting_location_value", "20 - syntax error", line_number_count);
+				}
 				default: {
 					return error_("conf_waiting_location_value", "syntax error", line_number_count);
 				}
@@ -808,6 +769,44 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			return error_("conf_location_CB_close", "syntax error", line_number_count);
+		}
+
+		case conf_client_max_body_size: {
+			while (syntax_(digit_, static_cast<uint8_t>(*it))) {
+				temp_string.push_back(*it);
+				++size_count;
+				++it;
+			}
+			if (0 < size_count && size_count <= 10) {
+				uint64_t check_body_size = std::atoi(temp_string.c_str());
+				if (check_body_size > 0) {
+					if (*it == 'M') {
+						check_body_size *= (1024 * 1024);
+						++it;
+					} else if (*it == 'K') {
+						check_body_size *= 1024;
+						++it;
+					}
+					if (check_body_size > 2147483647) {
+						return error_("conf_client_max_body_size : 255M or 262131K limited", "syntax error", line_number_count);
+					} else if (check_body_size <= 0) {
+						return error_("conf_client_max_body_size : 0 or - size not supported", "syntax error", line_number_count);
+					}
+					if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
+						temp_uri_location_info.client_max_body_size = check_body_size;
+						prev_state									= state;
+						state										= conf_start;
+						next_state									= conf_waiting_location_value;
+						flag_location_part |= Kflag_client_max_body_size;
+						temp_string.clear();
+						size_count = 0;
+						break;
+					}
+					return error_("conf_client_max_body_size : undefined character used", "syntax error", line_number_count);
+				}
+				return error_("conf_client_max_body_size - minus size", "syntax error", line_number_count);
+			}
+			return error_("conf_client_max_body_size", "syntax error", line_number_count);
 		}
 
 		case conf_accepted_methods: {

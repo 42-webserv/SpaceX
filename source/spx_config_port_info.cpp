@@ -30,7 +30,6 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	, default_server_flag(from.default_server_flag)
 	, server_name(from.server_name)
 	, root(from.root)
-	, client_max_body_size(from.client_max_body_size)
 	, default_error_page(from.default_error_page) {
 #ifdef CONFIG_DEBUG
 
@@ -50,7 +49,6 @@ server_info_t::server_info(server_info_t const& from)
 	, default_server_flag(from.default_server_flag)
 	, server_name(from.server_name)
 	, root(from.root)
-	, client_max_body_size(from.client_max_body_size)
 	, default_error_page(from.default_error_page) {
 #ifdef CONFIG_DEBUG
 
@@ -88,11 +86,12 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	if (it != uri_case.end()) {
 		final_uri += '/' + it->second.root;
 		if (remain_uri.empty()) {
-			if (it->second.index.empty()) {
-				final_uri += "/index.html";
-			} else {
+			if (!it->second.index.empty()) {
 				final_uri += '/' + it->second.index;
 			}
+			//  else {
+			// 	final_uri += "/index.html"; // NOTE : is it need to check get or post case?
+			// }
 		} else {
 			final_uri += '/' + remain_uri;
 		}
@@ -133,7 +132,7 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 			++it;
 		}
 	}
-#ifdef SEARCH_DEBUG
+#ifdef YOMA_SEARCH_DEBUG
 	std::cout << "resolved_path : " << resolved_path << std::endl;
 #endif
 	return resolved_path;
@@ -151,6 +150,7 @@ uri_location_for_copy_stage_t::clear_(void) {
 	saved_path.clear();
 	cgi_pass.clear();
 	cgi_path_info.clear();
+	client_max_body_size = 0;
 }
 
 void
@@ -160,7 +160,6 @@ server_info_for_copy_stage_t::clear_(void) {
 	default_server_flag = Kother_server;
 	server_name.clear();
 	root.clear();
-	client_max_body_size = 0;
 	default_error_page.clear();
 	error_page_case.clear();
 	uri_case.clear();
@@ -176,7 +175,6 @@ server_info_for_copy_stage_t::print_() const {
 		std::cout << "default_server_flag: on" << std::endl;
 	else
 		std::cout << "default_server_flag: off" << std::endl;
-	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 
 	if (default_error_page != "")
 		std::cout << "default_error_page: " << default_error_page << std::endl;
@@ -194,7 +192,6 @@ server_info_t::print_(void) const {
 	std::cout << "root: " << root << std::endl;
 	if (default_server_flag == Kdefault_server)
 		std::cout << "\033[1;31m default_server \033[0m" << std::endl;
-	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 
 	if (default_error_page != "")
 		std::cout << "\ndefault_error_page: " << default_error_page << std::endl;
@@ -232,7 +229,8 @@ uri_location_t::uri_location(const uri_location_for_copy_stage_t from)
 	, autoindex_flag(from.autoindex_flag)
 	, saved_path(from.saved_path)
 	, cgi_pass(from.cgi_pass)
-	, cgi_path_info(from.cgi_path_info) {
+	, cgi_path_info(from.cgi_path_info)
+	, client_max_body_size(from.client_max_body_size) {
 #ifdef CONFIG_DEBUG
 	std::cout << "uri_location copy construct" << std::endl;
 #endif
@@ -276,4 +274,6 @@ uri_location_t::print_(void) const {
 		std::cout << "cgi_pass: " << cgi_pass << std::endl;
 	if (cgi_path_info != "")
 		std::cout << "cgi_path_info: " << cgi_path_info << std::endl;
+
+	std::cout << "client_max_body_size: " << client_max_body_size << std::endl;
 }

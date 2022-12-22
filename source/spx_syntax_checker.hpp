@@ -14,8 +14,8 @@
 typedef class client_buf t_client_buf;
 
 status
-spx_http_syntax_start_line(std::string const& line);
-// spx_http_syntax_start_line(std::string const& line, t_client_buf& buf);
+spx_http_syntax_start_line(std::string const& line,
+						   int&				  req_type);
 
 status
 spx_http_syntax_header_line(std::string const& line);

@@ -4,8 +4,11 @@
 
 #include "spx_core_type.hpp"
 #include <cerrno>
+#include <fstream>
 #include <iostream>
 #include <string>
+
+std::string const generator_error_page_(uint32_t const& error_code);
 
 template <typename T>
 inline void
@@ -18,7 +21,18 @@ spx_log_(T msg) {
 #endif
 }
 
-std::string const generator_error_page_(uint32_t const& error_code);
+inline void
+spx_log_check_(std::string const& msg) {
+#ifdef DEBUG_LOG
+	static std::fstream file;
+	file.open("./log/request.log", std::ios::out | std::ios::ate);
+	if (file.is_open()) {
+		file << msg << std::endl;
+	}
+#else
+	(void)msg;
+#endif
+}
 
 inline void
 error_exit(std::string err, int (*func)(int), int fd) {
