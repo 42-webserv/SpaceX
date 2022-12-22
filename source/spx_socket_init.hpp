@@ -25,7 +25,7 @@ typedef struct port_info {
 	port_info(server_info_t const& from);
 	server_info_t const& search_server_config_(std::string const& host_name);
 
-} port_info_t;
+} port_info_t; // NOTE : specific socket's whole info
 
 typedef std::vector<port_info_t> port_info_vec;
 

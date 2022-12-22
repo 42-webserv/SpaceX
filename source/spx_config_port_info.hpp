@@ -79,6 +79,7 @@ typedef struct uri_location_for_copy_stage {
 	std::string			saved_path;
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
+	uint64_t			client_max_body_size;
 	void				clear_();
 } uri_location_for_copy_stage_t;
 
@@ -88,7 +89,6 @@ typedef struct server_info_for_copy_stage {
 	default_server_state_e default_server_flag;
 	std::string			   server_name;
 	std::string			   root;
-	uint64_t			   client_max_body_size;
 	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
@@ -107,6 +107,7 @@ typedef struct uri_location {
 	const std::string		  saved_path;
 	const std::string		  cgi_pass;
 	const std::string		  cgi_path_info;
+	const uint64_t			  client_max_body_size;
 	//
 	uri_location(const uri_location_for_copy_stage_t from);
 	~uri_location();
@@ -120,7 +121,6 @@ typedef struct server_info {
 	const default_server_state_e default_server_flag;
 	const std::string			 server_name;
 	const std::string			 root;
-	const uint64_t				 client_max_body_size;
 	const std::string			 default_error_page;
 	mutable error_page_map_p	 error_page_case;
 	mutable uri_location_map_p	 uri_case;
