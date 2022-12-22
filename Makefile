@@ -17,8 +17,7 @@ LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
 				spx_config_parse.cpp \
 				spx_config_port_info.cpp \
-				spx_core_util_box.cpp\
-				spx_socket_init.cpp
+				spx_core_util_box.cpp
 # spx_syntax_checker.cpp
 # spx_kqueue_main.cpp
 

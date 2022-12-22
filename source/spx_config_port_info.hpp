@@ -2,10 +2,18 @@
 #ifndef __SPX__CONFIG_PORT__INFO__HPP__
 #define __SPX__CONFIG_PORT__INFO__HPP__
 
+#include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
+#include <arpa/inet.h>
+#include <fcntl.h>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
+#include <sys/event.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 typedef enum {
 	Kother_server = 0,
@@ -56,7 +64,7 @@ typedef enum {
 	Kflag_client_max_body_size = 1 << 8
 } flag_config_parse_location_part_e;
 
-/*
+/* NOTE : typedef
  * --------------------
  */
 typedef struct uri_location_for_copy_stage			uri_location_for_copy_stage_t;
@@ -99,6 +107,10 @@ typedef struct server_info_for_copy_stage {
 	void				   print_() const;
 } server_info_for_copy_stage_t;
 
+/* NOTE: location_info_t
+ * --------------------
+ */
+
 typedef struct uri_location {
 	const std::string		  uri;
 	const module_case_state_e module_state;
@@ -121,6 +133,10 @@ typedef struct uri_location {
 
 } uri_location_t;
 
+/* NOTE: server_info_t
+ * --------------------
+ */
+
 typedef struct server_info {
 	const std::string			 ip;
 	const uint32_t				 port;
@@ -142,9 +158,33 @@ typedef struct server_info {
 
 } server_info_t;
 
-/*
+/* NOTE: port_info_t
  * --------------------
  */
+
+#define LISTEN_BACKLOG_SIZE 10
+
+typedef struct port_info {
+	int				   listen_sd;
+	struct sockaddr_in addr_server;
+	uint32_t		   my_port;
+	server_info_t	   my_port_default_server;
+	server_map_p	   my_port_map;
+	//---------------------
+	port_info(server_info_t const& from);
+	server_info_t const& search_server_config_(std::string const& host_name);
+
+} port_info_t; // NOTE : specific socket's whole info
+
+typedef std::vector<port_info_t> port_info_vec;
+
+status
+socket_init_and_build_port_info(total_port_server_map_p& config_info,
+								port_info_vec&			 port_info,
+								uint32_t&				 socket_size);
+
+int
+socket_init(total_port_server_map_p const& config_info);
 
 // typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
 // typedef std::map<const std::string, server_info_t>  server_map_p;
