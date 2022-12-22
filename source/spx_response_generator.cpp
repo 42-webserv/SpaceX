@@ -91,7 +91,7 @@ Response::setDate(void) {
 // this is main logic to make response
 std::string
 Response::setting_response_header(std::vector<struct kevent>& change_list, ClientBuffer& client_buffer) {
-	t_req_field current_request = client_buffer.req_res_queue_.front().first;
+	req_field_t current_request = client_buffer.req_res_queue_.front().first;
 	std::string uri				= current_request.req_target_;
 	int			request_fd		= file_open(uri.c_str());
 
