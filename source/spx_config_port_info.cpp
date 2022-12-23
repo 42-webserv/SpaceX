@@ -11,20 +11,6 @@
 
 namespace {
 
-	inline void
-	find_slash_then_divide_(std::string const& origin_uri,
-							std::string&	   basic_location,
-							std::string&	   remain_uri) {
-		std::string::size_type slash_pos = origin_uri.find_first_of('/', 1);
-		if (slash_pos == std::string::npos) {
-			basic_location = origin_uri;
-			remain_uri	   = "";
-		} else {
-			basic_location = origin_uri.substr(0, slash_pos);
-			remain_uri	   = origin_uri.substr(slash_pos + 1);
-		}
-	}
-
 } // namespace
 
 server_info_t::server_info(server_info_for_copy_stage_t const& from)
@@ -86,29 +72,43 @@ server_info_t::get_error_page_path_(uint32_t const& error_code) const {
 
 uri_location_t const*
 server_info_t::get_uri_location_t_(std::string const& uri,
-								   std::string&		  output_resolved_uri) const {
-	std::string basic_location, remain_uri, final_uri, first_resolved_uri;
-	first_resolved_uri = path_resolve_(uri);
-	find_slash_then_divide_(first_resolved_uri, basic_location, remain_uri);
+								   uri_resolved_t&	  uri_resolved_sets) const {
+	uri_resolved_sets;
 
-	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
+	// uri_location_map_p::const_iterator it = uri_case.find();
 	if (it != uri_case.end()) {
-		final_uri += it->second.root;
-		if (remain_uri.empty()) {
-			if (!it->second.index.empty()) {
-				final_uri += '/' + it->second.index;
-			}
-		} else {
-			final_uri += '/' + remain_uri;
-		}
-		output_resolved_uri = path_resolve_(final_uri);
+
 		return &it->second;
 	} else {
-		final_uri += this->root + '/' + uri;
 	}
-	output_resolved_uri = path_resolve_(final_uri);
 	return NULL;
 }
+
+// uri_location_t const*
+// server_info_t::get_uri_location_t_(std::string const& uri,
+// 								   std::string&		  output_resolved_uri) const {
+// 	std::string basic_location, remain_uri, final_uri, first_resolved_uri;
+// 	first_resolved_uri = path_resolve_(uri);
+// 	find_slash_then_divide_(first_resolved_uri, basic_location, remain_uri);
+
+// 	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
+// 	if (it != uri_case.end()) {
+// 		final_uri += it->second.root;
+// 		if (remain_uri.empty()) {
+// 			if (!it->second.index.empty()) {
+// 				final_uri += '/' + it->second.index;
+// 			}
+// 		} else {
+// 			final_uri += '/' + remain_uri;
+// 		}
+// 		output_resolved_uri = path_resolve_(final_uri);
+// 		return &it->second;
+// 	} else {
+// 		final_uri += this->root + '/' + uri;
+// 	}
+// 	output_resolved_uri = path_resolve_(final_uri);
+// 	return NULL;
+// }
 
 std::string const
 server_info_t::path_resolve_(std::string const& unvalid_path) {
@@ -142,21 +142,6 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 	std::cout << "resolved_path : " << resolved_path << std::endl;
 #endif
 	return resolved_path;
-}
-
-void
-uri_location_for_copy_stage_t::clear_(void) {
-	uri.clear();
-	module_state		  = Kmodule_none;
-	accepted_methods_flag = 0;
-	redirect.clear();
-	root.clear();
-	index.clear();
-	autoindex_flag = Kautoindex_off;
-	saved_path.clear();
-	cgi_pass.clear();
-	cgi_path_info.clear();
-	client_max_body_size = 0;
 }
 
 void
@@ -234,6 +219,21 @@ server_info_t::print_(void) const {
 /* NOTE: uri_location_t
 ********************************************************************************
 */
+
+void
+uri_location_for_copy_stage_t::clear_(void) {
+	uri.clear();
+	module_state		  = Kmodule_none;
+	accepted_methods_flag = 0;
+	redirect.clear();
+	root.clear();
+	index.clear();
+	autoindex_flag = Kautoindex_off;
+	saved_path.clear();
+	cgi_pass.clear();
+	cgi_path_info.clear();
+	client_max_body_size = 0;
+}
 
 uri_location_t::uri_location(const uri_location_for_copy_stage_t from)
 	: uri(from.uri)

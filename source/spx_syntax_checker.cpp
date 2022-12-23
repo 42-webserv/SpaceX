@@ -158,12 +158,12 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__http_protocol_version;
 				break;
 			}
-			case '#': {
-				return error_flag_("invalid uri : request line : we didn't support fragment", req_type);
-			}
-			case '?': {
-				return error_flag_("invalid uri : request line : we didn't support query", req_type);
-			}
+				// case '#': {
+				// 	return error_flag_("invalid uri : request line : we didn't support fragment", req_type);
+				// }
+				// case '?': {
+				// 	return error_flag_("invalid uri : request line : we didn't support query", req_type);
+				// }
 			}
 			return error_flag_("invalid uri : request line", req_type);
 		}
