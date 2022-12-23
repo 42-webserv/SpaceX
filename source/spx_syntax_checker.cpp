@@ -1,5 +1,6 @@
 #include "spx_syntax_checker.hpp"
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 
 #ifndef YOMA_SEARCH_DEBUG
 #include "spx_client_buffer.hpp"
@@ -66,6 +67,8 @@ spx_http_syntax_start_line(std::string const& line,
 	} state;
 
 	state = start_line__start;
+
+	spx_log_check_(line);
 
 	while (state != start_line__done) {
 		switch (state) {
@@ -282,6 +285,8 @@ spx_http_syntax_header_line(std::string const& line) {
 	} state;
 
 	state = spx_start;
+
+	spx_log_check_(line);
 
 	while (state != spx_done) {
 		switch (state) {

@@ -23,7 +23,7 @@ spx_log_(T msg) {
 
 inline void
 spx_log_check_(std::string const& msg) {
-#ifdef DEBUG_LOG
+#ifdef LOG_MODE
 	static std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::ate);
 	if (file.is_open()) {
