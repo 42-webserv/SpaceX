@@ -571,10 +571,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_location_zero: {
 			if (location_count != 0) {
-				if ((flag_location_part & Kflag_cgi_pass && !(flag_location_part & Kflag_cgi_path_info))
-					|| (flag_location_part & Kflag_cgi_path_info && !(flag_location_part & Kflag_cgi_pass))) {
-					return error_("conf_location_zero", "cgi setting need to more info", line_number_count);
-				}
 				if (!(flag_location_part & Kflag_root)) {
 					if (temp_basic_server_info.root.empty()) {
 						temp_uri_location_info.root = cur_path;
