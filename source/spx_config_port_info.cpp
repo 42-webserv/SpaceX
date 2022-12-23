@@ -87,7 +87,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 
 	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
 	if (it != uri_case.end()) {
-		final_uri += '/' + it->second.root;
+		final_uri += it->second.root;
 		if (remain_uri.empty()) {
 			if (!it->second.index.empty()) {
 				final_uri += '/' + it->second.index;
@@ -101,7 +101,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		output_resolved_uri = path_resolve_(final_uri);
 		return &it->second;
 	} else {
-		final_uri += '/' + this->root + '/' + uri;
+		final_uri += this->root + '/' + uri;
 	}
 	output_resolved_uri = path_resolve_(final_uri);
 	return NULL;
