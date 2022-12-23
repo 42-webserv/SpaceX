@@ -71,6 +71,7 @@ typedef struct uri_location_for_copy_stage			uri_location_for_copy_stage_t;
 typedef struct server_info_for_copy_stage			server_info_for_copy_stage_t;
 typedef struct server_info							server_info_t;
 typedef struct uri_location							uri_location_t;
+typedef std::map<const std::string, uri_location_t> cgi_list_map_p;
 typedef std::map<const std::string, uri_location_t> uri_location_map_p;
 typedef std::map<const uint32_t, const std::string> error_page_map_p;
 typedef std::map<const std::string, server_info_t>	server_map_p;
@@ -103,6 +104,7 @@ typedef struct server_info_for_copy_stage {
 	std::string			   default_error_page;
 	error_page_map_p	   error_page_case;
 	uri_location_map_p	   uri_case;
+	cgi_list_map_p		   cgi_case;
 	void				   clear_();
 	void				   print_() const;
 } server_info_for_copy_stage_t;
@@ -146,6 +148,7 @@ typedef struct server_info {
 	const std::string			 default_error_page;
 	mutable error_page_map_p	 error_page_case;
 	mutable uri_location_map_p	 uri_case;
+	mutable cgi_list_map_p		 cgi_case;
 	//
 	server_info(server_info_for_copy_stage_t const& from);
 	server_info(server_info_t const& from);
