@@ -92,9 +92,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			if (!it->second.index.empty()) {
 				final_uri += '/' + it->second.index;
 			}
-			//  else {
-			// 	final_uri += "/index.html"; // NOTE : is it need to check get or post case?
-			// }
 		} else {
 			final_uri += '/' + remain_uri;
 		}
