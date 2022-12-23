@@ -44,6 +44,9 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	if (from.uri_case.size() != 0) {
 		uri_case.insert(from.uri_case.begin(), from.uri_case.end());
 	}
+	if (from.cgi_case.size() != 0) {
+		cgi_case.insert(from.cgi_case.begin(), from.cgi_case.end());
+	}
 }
 
 server_info_t::server_info(server_info_t const& from)
@@ -62,6 +65,9 @@ server_info_t::server_info(server_info_t const& from)
 	}
 	if (from.uri_case.size() != 0) {
 		uri_case.insert(from.uri_case.begin(), from.uri_case.end());
+	}
+	if (from.cgi_case.size() != 0) {
+		cgi_case.insert(from.cgi_case.begin(), from.cgi_case.end());
 	}
 }
 
@@ -163,6 +169,7 @@ server_info_for_copy_stage_t::clear_(void) {
 	default_error_page.clear();
 	error_page_case.clear();
 	uri_case.clear();
+	cgi_case.clear();
 }
 
 void
@@ -211,6 +218,15 @@ server_info_t::print_(void) const {
 		std::cout << "\n[ uri ] " << it->first << std::endl;
 		it->second.print_();
 		it++;
+	}
+	std::cout << std::endl;
+
+	std::cout << "cgi_case: " << cgi_case.size() << std::endl;
+	cgi_list_map_p::const_iterator it_cgi = cgi_case.begin();
+	while (it_cgi != cgi_case.end()) {
+		std::cout << "\n[ cgi ] " << it_cgi->first << std::endl;
+		it_cgi->second.print_();
+		it_cgi++;
 	}
 	std::cout << std::endl;
 }

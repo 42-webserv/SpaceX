@@ -101,6 +101,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 	uint8_t						  flag_error_page_default = 0;
 	error_page_map_p			  saved_error_page_map_0;
 	uri_location_map_p			  saved_location_uri_map_1;
+	cgi_list_map_p				  saved_cgi_list_map_1;
 	server_map_p				  saved_server_name_map_2;
 	total_port_server_map_p&	  saved_total_port_map_3 = config_map;
 
@@ -168,6 +169,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				}
 
 				temp_basic_server_info.uri_case		   = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
+				temp_basic_server_info.cgi_case		   = saved_cgi_list_map_1; // STEP 1: saved_cgi_ to server
 				temp_basic_server_info.error_page_case = saved_error_page_map_0; // STEP 1: saved_error_page_ to server
 				server_info_t					  yoma(temp_basic_server_info);
 				total_port_server_map_p::iterator check_port_map;
@@ -207,6 +209,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 			temp_error_page_number.clear();
 			saved_error_page_map_0.clear();
 			saved_location_uri_map_1.clear();
+			saved_cgi_list_map_1.clear();
 			saved_server_name_map_2.clear();
 			temp_string.clear();
 			prev_state = state;
@@ -582,13 +585,23 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (!(flag_location_part & Kflag_client_max_body_size)) {
 					temp_uri_location_info.client_max_body_size = 8124;
 				}
-				std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
-				check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
-				if (check_dup.second == false) {
-					return error_("conf_location_zero", "duplicate location", line_number_count);
-				}
 				if (!(flag_location_part & Kflag_accepted_methods)) {
 					return error_("conf_location_zero", "accepted_methods not defined", line_number_count);
+				}
+				if (temp_uri_location_info.uri.at(0) == '.') { // cgi_case
+					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
+					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
+					if (check_dup.second == false) {
+						return error_("conf_location_zero", "duplicate cgi location", line_number_count);
+					}
+				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
+					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
+					check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
+					if (check_dup.second == false) {
+						return error_("conf_location_zero", "duplicate location", line_number_count);
+					}
+				} else {
+					return error_("conf_location_zero", "location uri syntax error", line_number_count);
 				}
 				// check_dup.
 #ifdef CONFIG_DEBUG
