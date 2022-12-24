@@ -1,4 +1,6 @@
 #include "spx_cgi_module.hpp"
+#include "spx_core_type.hpp"
+#include <cstring>
 #include <vector>
 
 CgiModule::CgiModule(uri_location_t const& uri_loc, header_field_map const& req_header)
@@ -20,6 +22,7 @@ CgiModule::made_env_for_cgi_(void) {
 		vec_env_.push_back("SERVER_SOFTWARE=SPX/1.0");
 		vec_env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	}
+
 	{ // variable part
 		vec_env_.push_back("SCRIPT_NAME=" +); // /blah/blah/blah.cgi
 		vec_env_.push_back("PATH_INFO=" +); // remain /blah/blah
@@ -217,5 +220,10 @@ CgiModule::made_env_for_cgi_(void) {
 		}
 	}
 
-	// set_env --------------
+	env_for_cgi_ = new (std::nothrow) char*[vec_env_.size() + 1];
+	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
+		env_for_cgi_[i] = new char[vec_env_[i].size() + 1];
+		strcpy(env_for_cgi_[i], vec_env_[i].c_str());
+	}
+	env_for_cgi_[vec_env_.size()] = NULL;
 }
