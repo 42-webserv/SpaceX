@@ -1,8 +1,7 @@
-#include "spx_config_port_info.hpp"
-#include "spx_config_parse.hpp"
-#include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
+#include "spx_parse_config.hpp"
+#include "spx_port_info.hpp"
 #include <cstddef>
 #include <fstream>
 #include <sstream>

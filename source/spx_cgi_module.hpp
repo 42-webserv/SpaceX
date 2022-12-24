@@ -1,5 +1,5 @@
 #pragma once
-#include "spx_config_port_info.hpp"
+#include "spx_port_info.hpp"
 #ifndef __SPX__CGI__MODULE__HPP
 #define __SPX__CGI__MODULE__HPP
 
