@@ -14,6 +14,21 @@ CgiModule::made_env_for_cgi_(void) {
 
 	std::vector<std::string> vec_env_;
 
+	{ // pixed part
+		vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
+		vec_env_.push_back("REMOTE_ADDR=127.0.0.1");
+		vec_env_.push_back("SERVER_SOFTWARE=SPX/1.0");
+		vec_env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	}
+	{ // variable part
+		vec_env_.push_back("SCRIPT_NAME=" +);
+		vec_env_.push_back("PATH_INFO=" +);
+		vec_env_.push_back("QUERY_STRING=" +);
+		vec_env_.push_back("REQUEST_METHOD=" +);
+		vec_env_.push_back("SERVER_NAME=" +);
+		vec_env_.push_back("SERVER_PORT=" +);
+	}
+
 	for (header_field_map::const_iterator it = header_map_.begin(); it != header_map_.end(); ++it) {
 		switch (it->first.at(0)) {
 		case 'a': {
@@ -200,20 +215,6 @@ CgiModule::made_env_for_cgi_(void) {
 			vec_env_.push_back("X_" + it->first + "=" + it->second);
 		}
 		}
-	}
-	{ // pixed part
-		vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
-		vec_env_.push_back("REMOTE_ADDR=127.0.0.1");
-		vec_env_.push_back("SERVER_SOFTWARE=SPX/1.0");
-		vec_env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	}
-	{ // variable part
-		vec_env_.push_back("SCRIPT_NAME=" +);
-		vec_env_.push_back("PATH_INFO=" +);
-		vec_env_.push_back("QUERY_STRING=" +);
-		vec_env_.push_back("REQUEST_METHOD=" +);
-		vec_env_.push_back("SERVER_NAME=" +);
-		vec_env_.push_back("SERVER_PORT=" +);
 	}
 
 	// set_env --------------
