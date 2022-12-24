@@ -64,7 +64,7 @@ typedef std::vector<struct kevent> event_list_t;
 
 class ReqField {
 public:
-	buffer_t						   body_buffer_;
+	buffer_t						   cgi_buffer_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
 	std::string						   http_ver_;
@@ -74,12 +74,12 @@ public:
 	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
-	int								   body_flag_;
+	int								   flag_;
 	int								   req_type_;
 	int								   transfer_encoding_;
 
 	ReqField()
-		: body_buffer_()
+		: cgi_buffer_()
 		, field_()
 		, req_target_()
 		, http_ver_()
@@ -88,7 +88,7 @@ public:
 		, body_recieved_(0)
 		, body_limit_(-1)
 		, content_length_(0)
-		, body_flag_(0)
+		, flag_(0)
 		, req_type_(0)
 		, transfer_encoding_(0) {
 	}
@@ -138,7 +138,7 @@ public:
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
 	uintptr_t										 client_fd_;
-	port_info_t*									 serv_info_;
+	port_info_t*									 port_info_;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;
