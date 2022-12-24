@@ -10,43 +10,211 @@ CgiModule::CgiModule(uri_location_t const& uri_loc, header_field_map const& req_
 }
 
 void
-CgiModule::made_env_for_cgi_(void) const {
-	uint32_t count_for_env_size = 17;
+CgiModule::made_env_for_cgi_(void) {
 
 	std::vector<std::string> vec_env_;
-	vec_env_.push_back("AUTH_TYPE=");
-	// AUTH_TYPE identification type, if applicable. 'auth-scheme' token in the request Authorization header field. 서블릿을 보호하는 데 사용되는 인증 스키마의 이름입니다. 예를 들면 BASIC, SSL 또는 서블릿이 보호되지 않는 경우 null입니다.
-	vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	// GATEWAY_INTERFACE CGI/1.1
 
-	// mandatory_env[1] = "CONTENT_LENGTH=          ";
-	// // CONTENT_LENGTH similarly, size of input data (decimal, in octets) if provided via HTTP header.
-	// mandatory_env[2] = "CONTENT_TYPE=application/x-www-form-urlencoded";
-	// // CONTENT_TYPE Internet media type of input data if PUT or POST method are used, as provided via HTTP header.
-	// mandatory_env[4] = "PATH_INFO=" + cgi_path_info_;
-	// // PATH_INFO URI which request arrived? or substitution path
-	// mandatory_env[5] = "PATH_TRANSLATED=" + saved_path_ + cgi_path_info_;
-	// // PATH_TRANSLATED PWD/PATH_INFO
-	// mandatory_env[6] = "QUERY_STRING=";
-	// // QUERY_STRING (ex: var1=value1&var2=with%20percent%20encoding )
-	// mandatory_env[7] = "REMOTE_ADDR=";
-	// // REMOTE_ADDR IP address of the client (dot-decimal) (ex: "127.0.0.1" )
-	// mandatory_env[8] = "REMOTE_IDENT=";
-	// // REMOTE_IDENT see ident, only if server performed such lookup.
-	// mandatory_env[9] = "REMOTE_USER=";
-	// // REMOTE_USER used for certain AUTH_TYPEs.
-	// mandatory_env[10] = "REQUEST_METHOD=GET";
-	// // REQUEST_METHOD METHOD(upper case) which request arrived
-	// mandatory_env[11] = "REMOTE_HOST=";
-	// // REMOTE_HOST host ( host name of the client, unset if server did not perform such lookup. )
-	// mandatory_env[12] = "SCRIPT_NAME=" + cgi_pass_;
-	// // SCRIPT_NAME CGI_PASS ( like /cgi-bin/script.cgi )
-	// mandatory_env[13] = "SERVER_NAME=";
-	// // SERVER_NAME 127.0.0.1
-	// mandatory_env[14] = "SERVER_PORT=80";
-	// // SERVER_PORT PORT_NUMBER which request arrived
-	// mandatory_env[15] = "SERVER_PROTOCOL=HTTP/1.1";
-	// // SERVER_PROTOCOL HTTP/1.1
-	// mandatory_env[16] = "SERVER_SOFTWARE=SPX/1.0";
-	// // SERVER_SOFTWARE argv[0]/version 1.1
+	for (header_field_map::const_iterator it = header_map_.begin(); it != header_map_.end(); ++it) {
+		switch (it->first.at(0)) {
+		case 'a': {
+			if (it->first == "a-im") {
+				vec_env_.push_back("HTTP_A_IM=" + it->second);
+			} else if (it->first.at(1) == 'c') {
+				if (it->first == "accept") {
+					vec_env_.push_back("HTTP_ACCEPT=" + it->second);
+				} else if (it->first == "accept-charset") {
+					vec_env_.push_back("HTTP_ACCEPT_CHARSET=" + it->second);
+				} else if (it->first == "accept-datatime") {
+					vec_env_.push_back("HTTP_ACCEPT_DATATIME=" + it->second);
+				} else if (it->first == "accept-encoding") {
+					vec_env_.push_back("HTTP_ACCEPT_ENCODING=" + it->second);
+				} else if (it->first == "accept-language") {
+					vec_env_.push_back("HTTP_ACCEPT_LANGUAGE=" + it->second);
+				} else {
+					vec_env_.push_back("X_" + it->first + "=" + it->second);
+				}
+			} else if (it->first == "authorization") {
+				vec_env_.push_back("HTTP_AUTHORIZATION=" + it->second);
+				// } else if (it->first == "auth-scheme") {
+				// 	vec_env_.push_back("AUTH_TYPE=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'c': {
+			if (it->first == "cache-control") {
+				vec_env_.push_back("HTTP_CACHE_CONTROL=" + it->second);
+			} else if (it->first == "connection") {
+				vec_env_.push_back("HTTP_CONNECTION=" + it->second);
+			} else if (it->first == "content-endcoding") {
+				vec_env_.push_back("HTTP_CONTENT_ENDCODING=" + it->second);
+			} else if (it->first == "content-length") {
+				vec_env_.push_back("HTTP_CONTENT_LENGTH=" + it->second);
+				vec_env_.push_back("CONTENT_LENGTH=" + it->second);
+			} else if (it->first == "content-md5") {
+				vec_env_.push_back("HTTP_CONTENT_MD5=" + it->second);
+			} else if (it->first == "content-type") {
+				vec_env_.push_back("HTTP_CONTENT_TYPE=" + it->second);
+				vec_env_.push_back("CONTENT_TYPE=" + it->second);
+			} else if (it->first == "cookie") {
+				vec_env_.push_back("HTTP_COOKIE=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'd': {
+			if (it->first == "date") {
+				vec_env_.push_back("HTTP_DATE=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'e': {
+			if (it->first == "expect") {
+				vec_env_.push_back("HTTP_EXPECT=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'f': {
+			if (it->first == "from") {
+				vec_env_.push_back("HTTP_FROM=" + it->second);
+			} else if (it->first == "forwarded") {
+				vec_env_.push_back("HTTP_FORWARDED=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'h': {
+			if (it->first == "host") {
+				vec_env_.push_back("HTTP_HOST=" + it->second);
+			} else if (it->first == "host2-settings") {
+				vec_env_.push_back("HTTP_HOST2_SETTINGS=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'i': {
+			if (it->first.at(1) == 'f') {
+				if (it->first == "if-match") {
+					vec_env_.push_back("HTTP_IF_MATCH=" + it->second);
+				} else if (it->first == "if-modified-since") {
+					vec_env_.push_back("HTTP_IF_MODIFIED_SINCE=" + it->second);
+				} else if (it->first == "if-none-match") {
+					vec_env_.push_back("HTTP_IF_NONE_MATCH=" + it->second);
+				} else if (it->first == "if-range") {
+					vec_env_.push_back("HTTP_IF_RANGE=" + it->second);
+				} else if (it->first == "if-unmodified-since") {
+					vec_env_.push_back("HTTP_IF_UNMODIFIED_SINCE=" + it->second);
+				} else {
+					vec_env_.push_back("X_" + it->first + "=" + it->second);
+				}
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'm': {
+			if (it->first == "max-forwards") {
+				vec_env_.push_back("HTTP_MAX_FORWARDS=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'o': {
+			if (it->first == "origin") {
+				vec_env_.push_back("HTTP_ORIGIN=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'p': {
+			if (it->first == "pragma") {
+				vec_env_.push_back("HTTP_PRAGMA=" + it->second);
+			} else if (it->first == "prefer") {
+				vec_env_.push_back("HTTP_PREFER=" + it->second);
+			} else if (it->first == "proxy-authorization") {
+				vec_env_.push_back("HTTP_PROXY_AUTHORIZATION=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'r': {
+			if (it->first == "range") {
+				vec_env_.push_back("HTTP_RANGE=" + it->second);
+			} else if (it->first == "referer") {
+				vec_env_.push_back("HTTP_REFERER=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 't': {
+			if (it->first == "te") {
+				vec_env_.push_back("HTTP_TE=" + it->second);
+			} else if (it->first == "trailer") {
+				vec_env_.push_back("HTTP_TRAILER=" + it->second);
+			} else if (it->first == "transfer-encoding") {
+				vec_env_.push_back("HTTP_TRANSFER_ENCODING=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'u': {
+			if (it->first == "upgrade") {
+				vec_env_.push_back("HTTP_UPGRADE=" + it->second);
+			} else if (it->first == "user-agent") {
+				vec_env_.push_back("HTTP_USER_AGENT=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'v': {
+			if (it->first == "via") {
+				vec_env_.push_back("HTTP_VIA=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		case 'w': {
+			if (it->first == "warning") {
+				vec_env_.push_back("HTTP_WARNING=" + it->second);
+			} else {
+				vec_env_.push_back("X_" + it->first + "=" + it->second);
+			}
+			break;
+		}
+		default: {
+			vec_env_.push_back("X_" + it->first + "=" + it->second);
+		}
+		}
+	}
+	{ // pixed part
+		vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
+		vec_env_.push_back("REMOTE_ADDR=127.0.0.1");
+		vec_env_.push_back("SERVER_SOFTWARE=SPX/1.0");
+		vec_env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	}
+	{ // variable part
+		vec_env_.push_back("SCRIPT_NAME=" +);
+		vec_env_.push_back("PATH_INFO=" +);
+		vec_env_.push_back("QUERY_STRING=" +);
+		vec_env_.push_back("REQUEST_METHOD=" +);
+		vec_env_.push_back("SERVER_NAME=" +);
+		vec_env_.push_back("SERVER_PORT=" +);
+	}
+
+	// set_env --------------
 }
