@@ -21,12 +21,12 @@ CgiModule::made_env_for_cgi_(void) {
 		vec_env_.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	}
 	{ // variable part
-		vec_env_.push_back("SCRIPT_NAME=" +);
-		vec_env_.push_back("PATH_INFO=" +);
-		vec_env_.push_back("QUERY_STRING=" +);
-		vec_env_.push_back("REQUEST_METHOD=" +);
-		vec_env_.push_back("SERVER_NAME=" +);
-		vec_env_.push_back("SERVER_PORT=" +);
+		vec_env_.push_back("SCRIPT_NAME=" +); // /blah/blah/blah.cgi
+		vec_env_.push_back("PATH_INFO=" +); // remain /blah/blah
+		vec_env_.push_back("QUERY_STRING=" +); // key=value&key=value&key=value
+		vec_env_.push_back("REQUEST_METHOD=" +); // GET|POST|...
+		vec_env_.push_back("SERVER_NAME=" +); // server name from server_info_t
+		vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
 	}
 
 	for (header_field_map::const_iterator it = header_map_.begin(); it != header_map_.end(); ++it) {
