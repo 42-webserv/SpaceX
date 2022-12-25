@@ -1,4 +1,5 @@
 #pragma once
+#include <_types/_uint16_t.h>
 #ifndef __SPX__PORT__INFO__HPP__
 #define __SPX__PORT__INFO__HPP__
 
@@ -139,18 +140,19 @@ typedef struct uri_location {
  * --------------------
  */
 
-typedef struct uri_resolved {
-	std::string script_filename_; // manda
+typedef enum {
+	Kuri_cgi = 1 << 1,
+} uri_flag_e;
 
+typedef struct uri_resolved {
+	uint16_t	setting_flag_;
 	std::string request_uri_;
 	std::string script_name_;
+	std::string script_filename_; // full path
 	std::string path_info_;
-	std::string path_translated_;
+	std::string path_translated_; // if path_info is not empty
 	std::string query_;
 	std::string fragment_;
-
-	// static std::string const path_resolve_(std::string const& unvalid_path);
-
 } uri_resolved_t;
 
 typedef struct server_info {

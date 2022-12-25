@@ -1,7 +1,7 @@
+#include "spx_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
-#include "spx_port_info.hpp"
 #include <cstddef>
 #include <fstream>
 #include <sstream>
@@ -72,7 +72,111 @@ server_info_t::get_error_page_path_(uint32_t const& error_code) const {
 uri_location_t const*
 server_info_t::get_uri_location_t_(std::string const& uri,
 								   uri_resolved_t&	  uri_resolved_sets) const {
-	uri_resolved_sets;
+	uri_location_t* return_location = NULL;
+	std::string		temp;
+	std::string		temp_extension;
+
+	enum {
+		uri_slash,
+		uri_check_pos,
+		uri_main,
+		uri_cgi,
+		uri_remain,
+		uri_query,
+		uri_fragment,
+		uri_done
+	} state,
+		next_state;
+
+	state	   = uri_slash;
+	next_state = uri_main;
+
+	std::string::const_iterator it = uri.begin();
+
+	switch (state) {
+	case uri_slash: {
+		while (*it == '/') {
+			++it;
+		}
+		temp += '/';
+		state = next_state;
+		break;
+	}
+
+	case uri_main: {
+		while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+			temp += *it;
+			++it;
+		}
+		uri_resolved_sets.script_name_ = temp;
+		{
+			uri_location_map_p::iterator it_ = uri_case.find(temp);
+			if (it_ != uri_case.end()) {
+				return_location = &it_->second;
+			} else {
+				return_location = NULL;
+			}
+		}
+		temp.clear();
+		state = uri_check_pos;
+		break;
+	}
+
+	case uri_check_pos: {
+		switch (*it) {
+		case '.': {
+			next_state = uri_cgi;
+			temp_extension += *it;
+			break;
+		}
+		case '/': {
+			next_state = uri_remain;
+			break;
+		}
+		case '?': {
+			next_state = uri_query;
+			break;
+		}
+		case '#': {
+			next_state = uri_fragment;
+			break;
+		}
+		case ';': {
+			next_state = uri_done;
+			break;
+		}
+		default: {
+			next_state = uri_done;
+			break;
+		}
+		}
+		state = next_state;
+		break;
+	}
+
+	case uri_cgi: {
+		while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+			temp_extension += *it;
+			++it;
+		}
+		{
+			uri_location_map_p::iterator it_ = cgi_case.find(temp_extension);
+			if (it_ != uri_case.end()) {
+				return_location = &it_->second;
+			} else {
+				return_location = NULL;
+			}
+		}
+		temp_extension.clear();
+		uri_resolved_sets.script_name_ += temp_extension;
+		state = uri_check_pos;
+		break;
+	}
+
+	default: {
+		return NULL;
+	}
+	}
 
 	// uri_location_map_p::const_iterator it = uri_case.find();
 	if (it != uri_case.end()) {
@@ -80,6 +184,15 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		return &it->second;
 	} else {
 	}
+
+	// {
+	// 	vec_env_.push_back("SCRIPT_NAME=" +); // /blah/blah/blah.cgi
+	// 	vec_env_.push_back("PATH_INFO=" +); // remain /blah/blah
+	// 	vec_env_.push_back("QUERY_STRING=" +); // key=value&key=value&key=value
+	// 	vec_env_.push_back("REQUEST_METHOD=" +); // GET|POST|...
+	// 	vec_env_.push_back("SERVER_NAME=" +); // server name from server_info_t
+	// 	vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
+	// }
 	return NULL;
 }
 
