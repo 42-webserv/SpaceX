@@ -98,6 +98,7 @@ buffer_print_header(buffer_t buf) {
 		}
 	}
 	std::cout << "\nbody_size = " << cnt << std::endl;
+	write(1, &buf[0], 56);
 }
 void
 buffer_print(buffer_t buf) {

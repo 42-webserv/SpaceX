@@ -109,17 +109,17 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 	res_field_t& cur_res
 		= client_buffer.req_res_queue_.front().second;
 
-	const std::string& uri = cur_req.file_path_;
-	int				   req_fd;
+	const std::string& uri		  = cur_req.file_path_;
+	int				   req_fd	  = -1;
 	int				   req_method = cur_req.req_type_;
 	std::string		   content;
 
 	// Set Date Header
 	setDate();
-	if ((req_method & (REQ_GET | REQ_HEAD)) == true) {
+	// std::cout << "messss : " << (req_method & (REQ_GET | REQ_HEAD)) << std::endl;
+	if ((req_method & (REQ_GET | REQ_HEAD))) {
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
-
 		if (req_fd == 0) {
 			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
 			return;
