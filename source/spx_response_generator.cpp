@@ -110,7 +110,8 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
 
-		// TODO : if autoindex flag is on -> go to autoindexgenerate
+		if (req_fd < 1 && cur_req.uri_loc_->autoindex_flag == Kautoindex_on)
+			generate_autoindex_page(req_fd, cur_req.uri_loc_->root);
 		if (req_fd == 0)
 			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
 		else
