@@ -1,7 +1,7 @@
+#include "spx_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
-#include "spx_port_info.hpp"
 #include <cstddef>
 #include <fstream>
 #include <sstream>
@@ -73,13 +73,14 @@ uri_location_t const*
 server_info_t::get_uri_location_t_(std::string const& uri,
 								   uri_resolved_t&	  uri_resolved_sets) const {
 	uri_resolved_sets;
+	/*
+		// uri_location_map_p::const_iterator it = uri_case.find();
+		if (it != uri_case.end()) {
 
-	// uri_location_map_p::const_iterator it = uri_case.find();
-	if (it != uri_case.end()) {
-
-		return &it->second;
-	} else {
-	}
+			return &it->second;
+		} else {
+		}
+		*/
 	return NULL;
 }
 

@@ -6,13 +6,16 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 	struct dirent*	  entry;
 	std::stringstream result;
 
-	std::string full_path("/");
-	full_path + path;
-	char* base_name = basename((char*)full_path.c_str());
+	std::string slash("/");
+	std::string path2	  = slash + path;
+	char*		base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << base_name
 		   << HTML_BEFORE_LIST;
 	result << "<table>";
+
 	if ((dir = opendir(path.c_str())) != NULL) {
+		// std::cout << "XX" << std::endl;
+
 		/* print all the files and directories within directory */
 		entry = readdir(dir);
 		while ((entry = readdir(dir)) != NULL) {
@@ -53,6 +56,6 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 		return result.str();
 	} else {
 		req_fd = -1;
-		return NULL;
+		return "";
 	}
 }

@@ -120,11 +120,10 @@ struct Response {
 private:
 	typedef std::pair<std::string, std::string> header;
 	std::vector<header>							headers_;
-	int											version_minor_;
-	int											version_major_;
-	unsigned int								status_code_;
-	std::string									status_;
-	bool										keep_alive_ = true; // TODO: Default member initializer for non-static data member  is a C++11 extension [-Wc++11-extensions]
+	int											version_minor_ = 1;
+	int											version_major_ = 1;
+	unsigned int								status_code_   = 200;
+	std::string									status_		   = "OK";
 
 	std::string
 	make_to_string() const;
@@ -156,6 +155,9 @@ public:
 
 	void
 	set_res_field_header(res_field_t& cur_res);
+
+	void
+	write_to_response_buffer(res_field_t& cur_res, const std::string& content);
 };
 
 #endif
