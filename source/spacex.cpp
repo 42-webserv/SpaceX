@@ -7,6 +7,9 @@
 #include "spx_client_buffer.hpp"
 #endif
 
+#include "spx_autoindex_generator.hpp"
+#include "spx_response_generator.hpp"
+
 namespace {
 
 #ifdef LEAK
@@ -77,6 +80,41 @@ main_info_t::port_info_print_(void) {
 		++i;
 	}
 }
+#ifdef SPACE_RESPONSE_TEST
+void
+buffer_print_header(buffer_t buf) {
+	size_t cnt	= 0;
+	bool   flag = false;
+	for (buffer_t::iterator it = buf.begin(); it != buf.end(); ++it) {
+		cnt++;
+		if (*it == '\n' && *(it + 1) == '\r')
+			flag = true;
+		std::cout << *it;
+		if (flag) {
+			flag = false;
+			std::cout << "====header END====\n";
+			std::cout << "header_size = " << cnt << std::endl;
+			cnt = 0;
+		}
+	}
+	std::cout << "\nbody_size = " << cnt << std::endl;
+}
+void
+buffer_print(buffer_t buf) {
+	for (buffer_t::iterator it = buf.begin(); it != buf.end(); ++it) {
+		std::cout << *it;
+	}
+	std::cout << "\nbuffer size = " << buf.size() << std::endl;
+}
+void
+test_check(ClientBuffer& cb) {
+	res_field_t& response = cb.req_res_queue_.back().second;
+	std::cout << "body_fd: " << response.body_fd_ << "\n"
+			  << "buf_size: " << response.buf_size_ << "\n";
+	buffer_print_header(response.res_buffer_);
+	// buffer_print(response.res_buffer_);
+}
+#endif
 
 int
 main(int argc, char const* argv[]) {
@@ -108,17 +146,42 @@ main(int argc, char const* argv[]) {
 		spx_log_(temp_.get_error_page_path_(404));
 		spx_log_(temp_.get_error_page_path_(303));
 		std::string temp2;
-		spx_log_(temp_.get_uri_location_t_("////upload/", temp2));
+		// spx_log_(temp_.get_uri_location_t_("////upload/", temp2));
 		spx_log_(temp2);
 #endif
 
 #ifdef YOMA_SEARCH_DEBUG
-		while (1) {
-		}
+		// while (1) {
+		// }
 #else
 		kqueue_main(spx.port_info);
 #endif
+#ifdef SPACE_RESPONSE_TEST
+		Response							res;
+		ClientBuffer						c;
+		std::pair<req_field_t, res_field_t> one_set;
+		ReqField&							req = one_set.first;
 
+		uri_location_for_copy_stage stage;
+		stage.autoindex_flag = Kautoindex_on;
+		stage.uri			 = "../respnose_dev/unit_test/test";
+		stage.root			 = "../respnose_dev/unit_test/test";
+
+		server_info_for_copy_stage serv_info_stage;
+
+		uri_location* uri_loc_tmp	  = new uri_location(stage);
+		server_info*  server_info_tmp = new server_info(serv_info_stage);
+
+		req.uri_loc_   = uri_loc_tmp;
+		req.serv_info_ = server_info_tmp;
+
+		req.req_type_  = REQ_GET;
+		req.file_path_ = "../respnose_dev/unit_test/test";
+		c.req_res_queue_.push(one_set);
+		res.make_response_header(c);
+		test_check(c);
+
+#endif
 	} else {
 		error_exit_msg("usage: ./spacex [config_file]");
 	}

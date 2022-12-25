@@ -79,7 +79,7 @@ public:
 	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
-	int								   flag_;
+	int								   body_flag_;
 	int								   req_type_;
 	int								   transfer_encoding_;
 
@@ -93,7 +93,7 @@ public:
 		, body_recieved_(0)
 		, body_limit_(-1)
 		, content_length_(0)
-		, flag_(0)
+		, body_flag_(0)
 		, req_type_(0)
 		, transfer_encoding_(0) {
 	}
@@ -145,14 +145,15 @@ public:
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
 	uintptr_t										 client_fd_;
-	port_info_t*									 port_info_;
+	port_info_t*									 serv_info_;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;
 	char											 rdbuf_[BUFFER_SIZE];
 
-	ClientBuffer();
-	~ClientBuffer();
+	// TEMP Implement
+	ClientBuffer() { }
+	~ClientBuffer() { }
 
 	void write_filter_enable(event_list_t& change_list, struct kevent* cur_event);
 
@@ -163,10 +164,8 @@ public:
 
 	void disconnect_client(event_list_t& change_list);
 
-	bool write_response(uintptr_t fd, event_list_t& change_list);
+	bool write_res_body(uintptr_t fd, event_list_t& change_list);
 	bool write_res_header(uintptr_t fd, event_list_t& change_list);
-
-	bool host_check(std::string& host);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);
