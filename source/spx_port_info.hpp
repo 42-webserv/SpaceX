@@ -1,5 +1,4 @@
 #pragma once
-#include <_types/_uint16_t.h>
 #ifndef __SPX__PORT__INFO__HPP__
 #define __SPX__PORT__INFO__HPP__
 
@@ -158,6 +157,7 @@ typedef struct uri_resolved {
 	std::string		path_translated_; // if path_info is not empty, full path + path_info
 	std::string		query_string_;
 	std::string		fragment_;
+	void			print_(void) const;
 } uri_resolved_t;
 
 typedef struct server_info {

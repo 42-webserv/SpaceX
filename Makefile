@@ -38,7 +38,7 @@ CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
 # CXXFLAGS	+=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 CXXFLAGS	+=	$(LOG)
-CXXFLAGS	+=	-Wc++11-extensions
+# CXXFLAGS	+=	-Wc++11-extensions
 
 RM			=	rm -f
 

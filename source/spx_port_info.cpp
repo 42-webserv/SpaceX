@@ -1,5 +1,4 @@
 #include "spx_port_info.hpp"
-#include "spx_autoindex_generator.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
@@ -76,6 +75,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 								   uri_resolved_t&	  uri_resolved_sets) const {
 	uri_location_t*				return_location = NULL;
 	std::string					temp;
+	std::string					temp_root;
+	std::string					temp_location;
 	std::string					temp_extension;
 	std::string					temp_index;
 	uint8_t						flag_check_dup = 0;
@@ -86,22 +87,27 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	uri_resolved_sets.request_uri_ = uri;
 
 	enum {
-		uri_main,
+		uri_main, // 0
 		uri_remain,
 		uri_cgi,
 		uri_query,
 		uri_fragment,
-		uri_find_delimeter_case,
-		uri_done
+		uri_find_delimeter_case, // 5
+		uri_done,
+		uri_end
 	} state,
 		next_state;
 
 	state	   = uri_main;
 	next_state = uri_find_delimeter_case;
 
-	while (state != uri_done) {
+	while (state != uri_end) {
 		switch (state) {
 		case uri_main: {
+			while (*it == '/') {
+				++it;
+			}
+			temp += "/";
 			while (syntax_(usual_for_uri_parse_, static_cast<uint8_t>(*it))) {
 				temp += *it;
 				++it;
@@ -110,14 +116,20 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			if (it_ != uri_case.end()) {
 				return_location = &it_->second;
 				temp_index		= it_->second.index;
+				temp_root		= it_->second.root;
+				temp_location	= it_->second.uri;
 			} else {
 				it_ = uri_case.find("/");
 				if (it_ != uri_case.end()) {
 					return_location = &it_->second;
 					temp_index		= it_->second.index;
+					temp_root		= it_->second.root;
+					temp_location	= it_->second.uri;
+				} else {
+					uri_resolved_sets.script_name_ += temp;
 				}
 			}
-			uri_resolved_sets.script_name_ += temp;
+			// uri_resolved_sets.script_name_ += temp; // NOTE: different from nginx
 			temp.clear();
 			state = next_state;
 			break;
@@ -127,30 +139,31 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			switch (*it) {
 			case '?': {
 				++it;
-				next_state = uri_query;
+				state = uri_query;
 				break;
 			}
 			case '#': {
 				++it;
-				next_state = uri_fragment;
+				state = uri_fragment;
 				break;
 			}
 			case '.': {
-				next_state = uri_cgi;
+				state = uri_cgi;
 				break;
 			}
 			case '/': {
-				temp += *it;
-				++it;
-				next_state = uri_remain;
+				while (*it == '/') {
+					++it;
+				}
+				temp += "/";
+				state = uri_remain;
 				break;
 			}
 			default: {
-				next_state = uri_done;
+				state = uri_done;
 				break;
 			}
 			}
-			state = next_state;
 			break;
 		}
 
@@ -163,16 +176,14 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				uri_resolved_sets.script_name_ += temp;
 			} else {
 				uri_resolved_sets.path_info_ += temp;
-				if (*it == '.' || *it == '/') {
-					while (syntax_(except_query_fragment_, static_cast<uint8_t>(*it))) {
-						temp_extension += *it;
-						++it;
-					}
-					uri_resolved_sets.path_info_ += temp_extension;
+				while (syntax_(except_query_fragment_, static_cast<uint8_t>(*it))) {
+					temp_extension += *it;
+					++it;
 				}
+				uri_resolved_sets.path_info_ += temp_extension;
+				temp_extension.clear();
 			}
 			temp.clear();
-			temp_extension.clear();
 			state = uri_find_delimeter_case;
 			break;
 		}
@@ -182,16 +193,17 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				temp_extension += *it;
 				++it;
 			}
-			std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
-			cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
-			if (it_ != cgi_case.end()) {
-				if (!(flag_check_dup & Kuri_cgi)) {
+			if (flag_check_dup & Kuri_cgi) {
+				uri_resolved_sets.path_info_ += temp_extension;
+			} else {
+				std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
+				cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
+				if (it_ != cgi_case.end()) {
 					uri_resolved_sets.is_cgi_  = true;
 					uri_resolved_sets.cgi_loc_ = &it_->second;
-					uri_resolved_sets.script_name_ += temp_extension;
-				} else {
-					uri_resolved_sets.path_info_ += temp_extension;
+					flag_check_dup |= Kuri_cgi;
 				}
+				uri_resolved_sets.script_name_ += temp_extension;
 			}
 			temp_extension.clear();
 			state = uri_find_delimeter_case;
@@ -199,8 +211,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_query: {
-			while (it != uri.end() || *it != '#') {
-				uri_resolved_sets.query_string_ = *it;
+			while (it != uri.end() && *it != '#') {
+				uri_resolved_sets.query_string_ += *it;
 				++it;
 			}
 			if (*it == '#') {
@@ -220,12 +232,17 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_done: {
-			uri_resolved_sets.script_name_			= path_resolve_(uri_resolved_sets.script_name_);
+			uri_resolved_sets.script_filename_		= path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
+			uri_resolved_sets.script_name_			= path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
-			uri_resolved_sets.script_filename_		= path_resolve_(uri_resolved_sets.script_name_);
-
-			// resolved all value
+			if (uri_resolved_sets.path_info_.empty() == false) {
+				uri_resolved_sets.path_translated_ = path_resolve_(temp_root + "/" + uri_resolved_sets.path_info_);
+			}
+			state = uri_end;
+			break;
+		}
+		case uri_end: {
 			break;
 		}
 		} // switch end
@@ -287,10 +304,26 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 			++it;
 		}
 	}
-#ifdef YOMA_SEARCH_DEBUG
-	std::cout << "resolved_path : " << resolved_path << std::endl;
-#endif
 	return resolved_path;
+}
+
+void
+uri_resolved_t::print_(void) const {
+	std::cout << "is_cgi : " << is_cgi_ << std::endl;
+	std::cout << "cgi_location_t : ";
+	if (cgi_loc_ == NULL) {
+		std::cout << "NULL" << std::endl;
+	} else {
+		std::cout << "ON" << std::endl;
+	}
+	std::cout << "request_uri :" << request_uri_ << std::endl;
+	std::cout << "resolved_request_uri :" << resolved_request_uri_ << std::endl;
+	std::cout << "script_name :" << script_name_ << std::endl;
+	std::cout << "script_filename :" << script_filename_ << std::endl;
+	std::cout << "path_info :" << path_info_ << std::endl;
+	std::cout << "path_translated :" << path_translated_ << std::endl;
+	std::cout << "query_string :" << query_string_ << std::endl;
+	std::cout << "fragment : " << fragment_ << std::endl;
 }
 
 void
