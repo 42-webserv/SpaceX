@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <iostream>
 #include <libgen.h> //basename
+#include <sstream>
 #include <string>
 #include <sys/stat.h>
 
@@ -19,5 +20,5 @@
 #define A_TAG_END "\">"
 #define CLOSE_A_TAG "</a>"
 
-int
-generate_autoindex_page(const char* path);
+std::string
+generate_autoindex_page(int& req_fd, const std::string& path);
