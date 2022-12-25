@@ -141,21 +141,22 @@ typedef struct uri_location {
  */
 
 typedef enum {
+	Kuri_basic_slash  = 1 << 0,
 	Kuri_cgi		  = 1 << 1,
 	Kuri_query_string = 1 << 2,
-	Kuri_fragment	  = 1 << 3,
-	Kuri_basic_slash  = 1 << 4
+	Kuri_fragment	  = 1 << 3
 } uri_flag_e;
 
 typedef struct uri_resolved {
-	uint16_t		setting_flag_;
+	bool			is_cgi_;
 	uri_location_t* cgi_loc_;
-	std::string		request_uri_;
+	std::string		request_uri_; // full request_uri
+	std::string		resolved_request_uri_; // resolved_uri
 	std::string		script_name_;
-	std::string		script_filename_; // full path
-	std::string		path_info_;
-	std::string		path_translated_; // if path_info is not empty
-	std::string		query_;
+	std::string		script_filename_; // full path + script_name
+	std::string		path_info_; // script name after, before ? or #
+	std::string		path_translated_; // if path_info is not empty, full path + path_info
+	std::string		query_string_;
 	std::string		fragment_;
 } uri_resolved_t;
 
