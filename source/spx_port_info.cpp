@@ -140,8 +140,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				break;
 			}
 			case '/': {
-				++it;
 				temp += *it;
+				++it;
 				next_state = uri_remain;
 				break;
 			}
