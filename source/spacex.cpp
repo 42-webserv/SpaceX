@@ -98,7 +98,7 @@ buffer_print_header(buffer_t buf) {
 		}
 	}
 	std::cout << "\nbody_size = " << cnt << std::endl;
-	write(1, &buf[0], 56);
+	// write(1, &buf[0], 56);
 }
 void
 buffer_print(buffer_t buf) {
@@ -165,8 +165,8 @@ main(int argc, char const* argv[]) {
 
 		uri_location_for_copy_stage stage;
 		stage.autoindex_flag = Kautoindex_on;
-		stage.uri			 = "../respnose_dev/unit_test/test";
-		stage.root			 = "../respnose_dev/unit_test/test";
+		stage.uri			 = "/Users/spacechae/Desktop/webserv/SpaceX";
+		stage.root			 = "/Users/spacechae/Desktop/webserv/SpaceX";
 
 		server_info_for_copy_stage serv_info_stage;
 
@@ -177,7 +177,7 @@ main(int argc, char const* argv[]) {
 		req.serv_info_ = server_info_tmp;
 
 		req.req_type_  = REQ_GET;
-		req.file_path_ = "../respnose_dev/unit_test/test";
+		req.file_path_ = "/Users/spacechae/Desktop/webserv/SpaceX";
 		c.req_res_queue_.push(one_set);
 		res.make_response_header(c);
 		test_check(c);

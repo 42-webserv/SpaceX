@@ -143,9 +143,6 @@ private:
 	void
 	setDate();
 
-	void
-	set_response_header_vector(res_field_t& cur_res);
-
 public:
 	void
 	make_error_response(ClientBuffer& client_buffer, http_status error_code);
@@ -161,6 +158,6 @@ public:
 
 	void
 	make_redirect_response(const std::string& redirect_uri, res_field_t& res);
-}
+};
 
 #endif
