@@ -160,7 +160,7 @@ public:
 	write_to_response_buffer(res_field_t& cur_res, const std::string& content);
 
 	void
-	make_redirect_response(res_field_t& cur_res);
-};
+	make_redirect_response(const std::string& redirect_uri, res_field_t& res);
+}
 
 #endif

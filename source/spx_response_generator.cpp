@@ -147,5 +147,8 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 }
 
 void
-Response::make_redirect_response(res_field_t& cur_res) {
+Response::make_redirect_response(const std::string& redirect_uri, res_field_t& res) {
+	setDate();
+	headers_.push_back(header("Location", redirect_uri));
+	write_to_response_buffer(res, make_to_string());
 }
