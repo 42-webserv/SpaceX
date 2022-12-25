@@ -104,14 +104,16 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 	int				   req_fd;
 	int				   req_method = cur_req.req_type_;
 
+	// Set Date Header
 	setDate();
 	if (req_method & (REQ_GET | REQ_HEAD) == true) {
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
 
+		// TODO : if autoindex flag is on -> go to autoindexgenerate
 		if (req_fd == 0)
 			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
-		else if (req_fd < 0)
+		else
 			make_error_response(client_buffer, HTTP_STATUS_NOT_FOUND);
 
 		cur_res.buf_size_ += setContentLength(req_fd);
@@ -121,6 +123,8 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 		cur_res.body_fd_  = req_fd;
 		cur_res.buf_size_ = 0;
 	}
+
+	// settting response_header size  + content-length size to res_field
 	set_res_field_header(cur_res);
 }
 
