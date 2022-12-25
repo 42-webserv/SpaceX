@@ -2,6 +2,7 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
+#include <_types/_uint8_t.h>
 #include <cstddef>
 #include <fstream>
 #include <sstream>
@@ -75,6 +76,11 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	uri_location_t* return_location = NULL;
 	std::string		temp;
 	std::string		temp_extension;
+	std::string		temp_index;
+	uint8_t			flag_check_dup = 0;
+
+	uri_resolved_sets.setting_flag_ = 0;
+	uri_resolved_sets.cgi_loc_		= NULL;
 
 	enum {
 		uri_slash,
@@ -92,90 +98,139 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	next_state = uri_main;
 
 	std::string::const_iterator it = uri.begin();
-
-	switch (state) {
-	case uri_slash: {
-		while (*it == '/') {
-			++it;
-		}
-		temp += '/';
-		state = next_state;
-		break;
-	}
-
-	case uri_main: {
-		while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
-			temp += *it;
-			++it;
-		}
-		uri_resolved_sets.script_name_ = temp;
-		{
-			uri_location_map_p::iterator it_ = uri_case.find(temp);
-			if (it_ != uri_case.end()) {
-				return_location = &it_->second;
-			} else {
-				return_location = NULL;
+	while (it != uri.end()) {
+		switch (state) {
+		case uri_slash: {
+			while (*it == '/') {
+				++it;
 			}
+			temp += '/';
+			state = next_state;
+			break;
 		}
-		temp.clear();
-		state = uri_check_pos;
-		break;
-	}
 
-	case uri_check_pos: {
-		switch (*it) {
-		case '.': {
-			next_state = uri_cgi;
-			temp_extension += *it;
+		case uri_main: {
+			while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+				if (*it == '.') {
+					while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+						temp_extension += *it;
+						++it;
+					}
+					next_state = uri_cgi;
+					break;
+				}
+				temp += *it;
+				++it;
+			}
+			{
+				uri_location_map_p::iterator it_ = uri_case.find(temp + temp_extension);
+				if (it_ != uri_case.end()) {
+					uri_resolved_sets.script_name_ += it_->second.root + temp + temp_extension;
+					return_location = &it_->second;
+					if (!it_->second.index.empty()) { // TODO: if remain is empty, check index
+						temp_index = it_->second.index;
+						state	   = uri_remain;
+					}
+				} else {
+					it_ = uri_case.find("/");
+					if (it_ != uri_case.end()) {
+						uri_resolved_sets.script_name_ += it_->second.root + temp + temp_extension;
+						return_location = &it_->second;
+						flag_check_dup |= Kuri_basic_slash;
+						if (!it_->second.index.empty()) { // TODO: if remain is empty, check index
+							temp_index = it_->second.index;
+							state	   = uri_remain;
+						}
+					} else {
+						return_location = NULL;
+						uri_resolved_sets.script_name_ += temp + temp_extension;
+					}
+				}
+			}
+			temp.clear();
+			if (next_state == uri_cgi) {
+				state = next_state;
+			} else {
+				state = uri_check_pos;
+			}
 			break;
 		}
-		case '/': {
-			next_state = uri_remain;
+
+		case uri_check_pos: {
+			switch (*it) {
+			case '.': {
+				next_state = uri_cgi;
+				temp_extension += *it;
+				break;
+			}
+			case '/': {
+				state	   = uri_slash;
+				next_state = uri_remain;
+				break;
+			}
+			case '?': {
+				next_state = uri_query;
+				break;
+			}
+			case '#': {
+				next_state = uri_fragment;
+				break;
+			}
+			case ';': {
+				next_state = uri_done;
+				break;
+			}
+			default: {
+				next_state = uri_done;
+				break;
+			}
+			}
+			state = next_state;
 			break;
 		}
-		case '?': {
-			next_state = uri_query;
+
+		case uri_cgi: {
+			std::string					 real_cgi_extension_ = temp_extension.substr(temp_extension.find_last_of('.'));
+			uri_location_map_p::iterator it_				 = cgi_case.find(real_cgi_extension_);
+			if (it_ != cgi_case.end()) {
+				uri_resolved_sets.cgi_loc_ = &it_->second;
+				uri_resolved_sets.setting_flag_ |= Kuri_cgi;
+			}
+			temp_extension.clear();
+			state = uri_check_pos;
 			break;
 		}
-		case '#': {
-			next_state = uri_fragment;
+
+		case uri_remain: {
+			while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+				if (!(uri_resolved_sets.setting_flag_ & Kuri_cgi)) {
+					if (*it == '.') {
+						while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
+							temp_extension += *it;
+							++it;
+						}
+						next_state = uri_cgi;
+						break;
+					}
+				} else {
+					temp += *it;
+					++it;
+				}
+			}
+			if (flag_check_dup & Kuri_basic_slash) {
+				uri_resolved_sets.script_name_ += temp + temp_extension;
+			} else {
+				uri_resolved_sets.path_info_ += temp + temp_extension;
+			}
+			temp.clear();
+			state = uri_check_pos;
 			break;
 		}
-		case ';': {
-			next_state = uri_done;
-			break;
-		}
+
 		default: {
-			next_state = uri_done;
-			break;
+			return NULL;
 		}
 		}
-		state = next_state;
-		break;
-	}
-
-	case uri_cgi: {
-		while (syntax_(uri_delimeter_for_location_, static_cast<uint8_t>(*it)) == false) {
-			temp_extension += *it;
-			++it;
-		}
-		{
-			uri_location_map_p::iterator it_ = cgi_case.find(temp_extension);
-			if (it_ != uri_case.end()) {
-				return_location = &it_->second;
-			} else {
-				return_location = NULL;
-			}
-		}
-		temp_extension.clear();
-		uri_resolved_sets.script_name_ += temp_extension;
-		state = uri_check_pos;
-		break;
-	}
-
-	default: {
-		return NULL;
-	}
 	}
 
 	// uri_location_map_p::const_iterator it = uri_case.find();

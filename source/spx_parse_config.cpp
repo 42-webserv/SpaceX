@@ -746,13 +746,24 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
+			int cgi_dot_checker_ = 0;
 			if (*it == '/' || *it == '.') {
 				temp_string.push_back(*it);
+				if (*it == '.')
+					++cgi_dot_checker_;
 				++it;
 			} else {
 				return error_("conf_location_uri", "start char error", line_number_count);
 			}
 			while (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
+				if (*it == '/') {
+					return error_("conf_location_uri", "only allowed one depth slash", line_number_count);
+				} else if (*it == '.') {
+					++cgi_dot_checker_;
+					if (cgi_dot_checker_ > 1) {
+						return error_("conf_location_uri", "only allowed one depth dot", line_number_count);
+					}
+				}
 				temp_string.push_back(*it);
 				++it;
 			}
