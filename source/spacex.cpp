@@ -108,8 +108,9 @@ main(int argc, char const* argv[]) {
 		spx_log_(temp_.get_error_page_path_(404));
 		spx_log_(temp_.get_error_page_path_(303));
 		std::cout << "server_name: " << temp_.server_name << std::endl;
-		uri_resolved_t		  resol_uri_;
-		uri_location_t const* loc_ = temp_.get_uri_location_t_("/upload/blah.cgi/%00somepath/adder?arsiotenrstn#rsiten", resol_uri_);
+		uri_resolved_t resol_uri_;
+		// uri_location_t const* loc_ = temp_.get_uri_location_t_("/upload/blah/%00somepath/adder?arsiotenrstn#rsiten", resol_uri_);
+		uri_location_t const* loc_ = temp_.get_uri_location_t_("/upload?arsiotenrstn#rsiten", resol_uri_);
 		std::cout << "location: " << loc_ << std::endl;
 		resol_uri_.print_();
 #endif

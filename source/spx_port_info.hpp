@@ -140,10 +140,10 @@ typedef struct uri_location {
  */
 
 typedef enum {
-	Kuri_basic_slash  = 1 << 0,
-	Kuri_cgi		  = 1 << 1,
-	Kuri_query_string = 1 << 2,
-	Kuri_fragment	  = 1 << 3
+	Kuri_basic_slash = 1 << 0,
+	Kuri_cgi		 = 1 << 1,
+	Kuri_path_info	 = 1 << 2,
+	Kuri_fragment	 = 1 << 3
 } uri_flag_e;
 
 typedef struct uri_resolved {

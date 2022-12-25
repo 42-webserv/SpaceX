@@ -175,6 +175,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			if (!(flag_check_dup & Kuri_cgi)) {
 				uri_resolved_sets.script_name_ += temp;
 			} else {
+				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp;
 				while (syntax_(except_query_fragment_, static_cast<uint8_t>(*it))) {
 					temp_extension += *it;
@@ -194,6 +195,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				++it;
 			}
 			if (flag_check_dup & Kuri_cgi) {
+				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp_extension;
 			} else {
 				std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
@@ -232,6 +234,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_done: {
+			// XXX : if set saved_path, then use saved_path // not recommend this time
+			// TODO: cgi's saved_path isn't defined yet
 			uri_resolved_sets.script_filename_		= path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_			= path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);

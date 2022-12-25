@@ -573,7 +573,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 			if (location_count != 0) {
 				if (!(flag_location_part & Kflag_root)) {
 					if (temp_basic_server_info.root.empty()) {
-						temp_uri_location_info.root = cur_path;
+						temp_uri_location_info.root = cur_path + temp_uri_location_info.uri;
 					} else {
 						temp_uri_location_info.root = temp_basic_server_info.root;
 					}
