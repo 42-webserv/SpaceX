@@ -125,7 +125,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					temp_index		= it_->second.index;
 					temp_root		= it_->second.root;
 					temp_location	= it_->second.uri;
-				} else {
 					uri_resolved_sets.script_name_ += temp;
 				}
 			}
