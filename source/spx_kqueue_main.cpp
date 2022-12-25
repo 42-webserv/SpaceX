@@ -105,10 +105,10 @@ ClientBuffer::header_field_parser() {
 			idx = header_field_line.find(':');
 			if (idx != std::string::npos) {
 				size_t tmp = idx + 1;
-				// to do
 				while (syntax_(ows_, header_field_line[tmp])) {
 					++tmp;
 				}
+				// to do
 				for (std::string::iterator it = header_field_line.begin();
 					 it != header_field_line.end(); ++it) {
 					if (isupper(*it)) {
@@ -184,7 +184,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		}
 		req_field_t* req = &this->req_res_queue_.back().first;
 		// uri loc
-
+		this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 		std::string& host = req->field_["host"];
 
 		req->serv_info_ = &this->port_info_->search_server_config_(host);
@@ -193,11 +193,16 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			return false;
 		}
 		req->uri_loc_ = req->serv_info_->get_uri_location_t_(req->req_target_,
-															 this->req_res_queue_.back().second.file_path_);
-		if (req->uri_loc_->cgi_path_info.size() != 0) {
-			// cgi code
-		}
+															 this->req_res_queue_.back().second.uri_resolv_);
+
 		this->state_ = REQ_BODY;
+
+		if (req->uri_loc_ && req->uri_loc_->accepted_methods_flag & req->req_type_ == false) {
+			// Not Allowed / Not Supported error.
+			this->state_ = REQ_LINE_PARSING;
+			break;
+		}
+
 		switch (this->req_res_queue_.back().first.req_type_) {
 		case REQ_GET:
 			// if (this->req_res_queue_.back().second.res_buffer_.size() == 0) {
@@ -216,6 +221,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			} else if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 				this->skip_body(-1);
 			}
+			break;
 		case REQ_HEAD:
 			// same with REQ_GET without body.
 			// if (this->req_res_queue_.back().second.header_ready_ == 0) {
@@ -279,9 +285,17 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		}
 	case REQ_BODY:
-		if (this->req_res_queue_.back().first.body_recieved_ < this->req_res_queue_.back().first.body_limit_) {
-		}
+		req_field_t* req = &this->req_res_queue_.back().first;
+		// if (req->)
+		// 	// std::min(req->req->);
+		// 	if (req->body_recieved_ == req->body_limit_) {
+		// 		this->state_ = REQ_LINE_PARSING;
+		// 	}
+		break;
+	case REQ_CGI:
+		break;
 	}
+	this->state_ = REQ_LINE_PARSING;
 	return true;
 }
 
@@ -343,8 +357,8 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 						EV_ADD | EV_ENABLE, 0, 0, new_buf);
 		add_change_list(change_list, client_fd, EVFILT_WRITE,
 						EV_ADD | EV_DISABLE, 0, 0, new_buf);
-		add_change_list(change_list, client_fd, EVFILT_TIMER,
-						EV_ADD, NOTE_SECONDS, 60, new_buf);
+		// add_change_list(change_list, client_fd, EVFILT_TIMER,
+		// 				EV_ADD, NOTE_SECONDS, 60, new_buf);
 		return true;
 	}
 }
@@ -367,12 +381,23 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 		// TODO: error handle
 		return;
 	}
-	this->flag_ &= ~READ_READY;
 	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_, this->rdbuf_ + n_read);
-	while (this->req_res_controller(change_list, cur_event) == true) {
-		;
-	}
+	if (this->req_res_queue_.size() == 0
+		|| this->req_res_queue_.front().second.flag_ & WRITE_READY == false) {
+		this->req_res_controller(change_list, cur_event);
+	};
 	write_filter_enable(change_list, cur_event);
+}
+
+void
+ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event) {
+	int n_read = read(this->client_fd_, this->rdbuf_, BUFFER_SIZE);
+	if (n_read < 0) {
+		// TODO: error handle
+		return;
+	}
+	this->req_res_queue_.back().first.cgi_buffer_.insert(
+		this->req_res_queue_.back().first.cgi_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 }
 
 void
@@ -399,9 +424,11 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 	client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 	if (cur_event->ident == buf->client_fd_) {
 		buf->read_to_client_buffer(change_list, cur_event);
-	} else if (buf->req_res_queue_.back().first.flag_ & REQ_CGI) {
-		// server file read case for res_body or cgi.
+	} else if (buf->state_ == REQ_CGI) {
+		// read from cgi output.
+		buf->read_to_cgi_buffer(change_list, cur_event);
 	} else {
+		// server file read case for res_body.
 		buf->read_to_res_buffer(change_list, cur_event);
 	}
 }
@@ -564,9 +591,10 @@ timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 
 void
 cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
-	int	  write_to_cgi[2];
-	int	  read_from_cgi[2];
-	pid_t pid;
+	client_buf_t& buf = (client_buf_t&)cur_event->udata;
+	int			  write_to_cgi[2];
+	int			  read_from_cgi[2];
+	pid_t		  pid;
 
 	if (pipe(write_to_cgi) == -1) {
 		// pipe error
@@ -604,6 +632,8 @@ cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	close(read_from_cgi[1]);
+	buf.req_res_queue_.back().first.cgi_in_fd  = write_to_cgi[1];
+	buf.req_res_queue_.back().first.cgi_out_fd = read_from_cgi[0];
 	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
