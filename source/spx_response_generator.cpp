@@ -63,8 +63,9 @@ Response::setContentType(std::string uri) {
 
 void
 Response::make_error_response(ClientBuffer& client_buffer, http_status error_code) {
-	status_		 = http_status_str(error_code);
-	status_code_ = error_code;
+	status_			 = http_status_str(error_code);
+	status_code_	 = error_code;
+	req_field_t& req = client_buffer.req_res_queue_.front().first;
 
 	if (error_code == HTTP_STATUS_BAD_REQUEST)
 		headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
@@ -81,7 +82,8 @@ Response::make_error_response(ClientBuffer& client_buffer, http_status error_cod
 		headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		write_to_response_buffer(client_buffer.req_res_queue_.front().second, make_to_string());
-		write_to_response_buffer(client_buffer.req_res_queue_.front().second, error_page);
+		if (req.req_type_ != REQ_HEAD)
+			write_to_response_buffer(client_buffer.req_res_queue_.front().second, error_page);
 	}
 }
 
@@ -93,12 +95,6 @@ Response::setDate(void) {
 	char date_buf[32];
 	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
 	headers_.push_back(header("Date", date_buf));
-}
-
-void
-Response::set_res_field_header(res_field_t& cur_res) {
-	std::string header_contents = make_to_string();
-	write_to_response_buffer(cur_res, header_contents);
 }
 
 // this is main logic to make response
@@ -133,19 +129,24 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 			}
 		}
 		setContentType(uri);
-		cur_res.buf_size_ += setContentLength(req_fd);
+		off_t content_length = setContentLength(req_fd);
+		if (req_method == REQ_GET)
+			cur_res.buf_size_ += content_length;
 		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-
 		cur_res.body_fd_ = req_fd;
 	}
 	// settting response_header size  + content-length size to res_field
-	set_res_field_header(cur_res);
-
+	write_to_response_buffer(cur_res, make_to_string());
 	if (!content.empty()) {
 		write_to_response_buffer(cur_res, content);
 	}
 }
 
 void
-Response::make_redirect_response(res_field_t& cur_res) {
+Response::make_redirect_response(const std::string& redirect_uri, res_field_t& res) {
+	setDate();
+	status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
+	status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
+	headers_.push_back(header("Location", redirect_uri));
+	write_to_response_buffer(res, make_to_string());
 }
