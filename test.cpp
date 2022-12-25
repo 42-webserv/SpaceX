@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <string>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -6,6 +7,8 @@
 
 #include <map>
 #include <vector>
+
+#define BUF_SIZE 5
 
 void
 change_events(std::vector<struct kevent>& change_list, uintptr_t ident,
@@ -26,8 +29,9 @@ main(void) {
 	std::vector<struct kevent> change_list; // kevent vector for changelist
 	struct kevent			   event_list[8]; // kevent array for eventlist
 
-	int pid;
-	int status;
+	int	  pid;
+	int	  status;
+	char* a = "udata";
 
 	pid = fork();
 
@@ -35,7 +39,7 @@ main(void) {
 		sleep(2);
 		exit(1);
 	} else {
-		change_events(change_list, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, NULL);
+		change_events(change_list, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, a);
 	}
 	kevent(kq, &change_list[0], change_list.size(), NULL, 0, NULL);
 
@@ -44,17 +48,22 @@ main(void) {
 	struct kevent* curr_event;
 	timespec	   time;
 
-	char* a = "udata";
-
 	printf("size: %d\n", change_list.size());
 	printf("pid: %d\n", pid);
+
+	int fd = open("asdf", O_RDWR | O_APPEND, 0644);
+
+	fcntl(fd, F_SETFL, O_NONBLOCK);
 
 	time.tv_sec	 = 3;
 	time.tv_nsec = 0;
 
 	change_list.clear();
 
-	change_events(change_list, 6, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 2, (void*)a);
+	char buf[BUF_SIZE];
+
+	change_events(change_list, 6, EVFILT_TIMER, EV_ADD | EV_ONESHOT, NOTE_SECONDS, 2, (void*)a);
+
 	while (1) {
 		/*  apply changes and return new events(pending events) */
 		new_events = kevent(kq, &change_list[0], change_list.size(), event_list, 8, &time);
@@ -67,11 +76,32 @@ main(void) {
 		for (int i = 0; i < new_events; ++i) {
 			curr_event = &event_list[i];
 
-			if (curr_event->filter == EVFILT_PROC) {
+			switch (curr_event->filter) {
+			case EVFILT_READ:
+				write(STDOUT_FILENO, "read\n", 5);
+				read(fd, buf, BUF_SIZE);
+				change_events(change_list, fd, EVFILT_WRITE, EV_ENABLE, 0, 0, (void*)a);
+				/* code */
+				break;
+
+			case EVFILT_WRITE:
+				write(STDOUT_FILENO, "write: ", 7);
+				write(STDOUT_FILENO, buf, BUF_SIZE);
+				write(STDOUT_FILENO, "\n", 1);
+				change_events(change_list, fd, EVFILT_WRITE, EV_DISABLE, 0, 0, (void*)a);
+				// write(fd, buf, BUF_SIZE);
+				/* code */
+				break;
+
+			case EVFILT_PROC:
+				/* code */
 				waitpid(curr_event->ident, &status, 0);
-			} else if (curr_event->filter == EVFILT_TIMER) {
+				break;
+
+			case EVFILT_TIMER:
 				printf("timer!! %s ident: %d\n", (char*)curr_event->udata, curr_event->ident);
-				change_events(change_list, 6, EVFILT_TIMER, EV_DELETE, NOTE_SECONDS, 3, (void*)a);
+				change_events(change_list, 6, EVFILT_TIMER, EV_DELETE, NOTE_SECONDS, 2, (void*)a);
+				break;
 			}
 		}
 	}

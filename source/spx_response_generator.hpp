@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "spacex.hpp"
+#include "spx_autoindex_generator.hpp"
 #include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 
