@@ -2,9 +2,8 @@
 
 void
 Response::write_to_response_buffer(res_field_t& cur_res, const std::string& content) {
-	for (std::string::const_iterator it = content.begin(); it != content.end(); ++it)
-		cur_res.res_buffer_.push_back(*it);
-	cur_res.buf_size_ += cur_res.res_buffer_.size();
+	cur_res.res_buffer_.insert(cur_res.res_buffer_.end(), content.begin(), content.end());
+	cur_res.buf_size_ += content.size();
 }
 
 std::string
