@@ -116,7 +116,6 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 
 	// Set Date Header
 	setDate();
-	// std::cout << "messss : " << (req_method & (REQ_GET | REQ_HEAD)) << std::endl;
 	if ((req_method & (REQ_GET | REQ_HEAD))) {
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
@@ -133,14 +132,12 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 				return;
 			}
 		}
-		cur_res.buf_size_ += setContentLength(req_fd);
 		setContentType(uri);
+		cur_res.buf_size_ += setContentLength(req_fd);
 		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
 		cur_res.body_fd_ = req_fd;
-		// cur_res.buf_size_ = 0;
 	}
-
 	// settting response_header size  + content-length size to res_field
 	set_res_field_header(cur_res);
 
@@ -149,4 +146,6 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 	}
 }
 
-// TODO : Redirection 300
+void
+Response::make_redirect_response(res_field_t& cur_res) {
+}
