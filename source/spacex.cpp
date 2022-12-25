@@ -1,6 +1,6 @@
 #include "spacex.hpp"
-#include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
+#include "spx_port_info.hpp"
 #include <vector>
 
 #ifndef YOMA_SEARCH_DEBUG

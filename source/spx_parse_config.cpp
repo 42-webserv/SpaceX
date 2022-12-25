@@ -1,6 +1,6 @@
-#include "spx_config_parse.hpp"
-#include "spx_config_port_info.hpp"
+#include "spx_parse_config.hpp"
 #include "spx_core_util_box.hpp"
+#include "spx_port_info.hpp"
 
 #ifdef CONFIG_DEBUG
 #include <iostream>
@@ -746,6 +746,12 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_location_uri: {
+			if (*it == '/' || *it == '.') {
+				temp_string.push_back(*it);
+				++it;
+			} else {
+				return error_("conf_location_uri", "start char error", line_number_count);
+			}
 			while (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
 				temp_string.push_back(*it);
 				++it;

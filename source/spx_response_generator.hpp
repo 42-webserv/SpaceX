@@ -124,7 +124,7 @@ private:
 	int											version_major_;
 	unsigned int								status_code_;
 	std::string									status_;
-	bool										keep_alive_ = true;
+	bool										keep_alive_ = true; // TODO: Default member initializer for non-static data member  is a C++11 extension [-Wc++11-extensions]
 
 	std::string
 	make_to_string() const;

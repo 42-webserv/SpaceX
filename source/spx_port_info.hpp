@@ -1,10 +1,10 @@
 #pragma once
-#ifndef __SPX__CONFIG_PORT__INFO__HPP__
-#define __SPX__CONFIG_PORT__INFO__HPP__
+#ifndef __SPX__PORT__INFO__HPP__
+#define __SPX__PORT__INFO__HPP__
 
-#include "spx_config_port_info.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
+#include "spx_port_info.hpp"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <iostream>
@@ -139,6 +139,20 @@ typedef struct uri_location {
  * --------------------
  */
 
+typedef struct uri_resolved {
+	std::string script_filename_; // manda
+
+	std::string request_uri_;
+	std::string script_name_;
+	std::string path_info_;
+	std::string path_translated_;
+	std::string query_;
+	std::string fragment_;
+
+	// static std::string const path_resolve_(std::string const& unvalid_path);
+
+} uri_resolved_t;
+
 typedef struct server_info {
 	const std::string			 ip;
 	const uint32_t				 port;
@@ -154,8 +168,9 @@ typedef struct server_info {
 	server_info(server_info_t const& from);
 	// server_info& operator=(server_info_t const& from);
 	~server_info();
-	std::string const		 get_error_page_path_(uint32_t const& error_code) const;
-	uri_location_t const*	 get_uri_location_t_(std::string const& uri, std::string& output_resolved_uri) const;
+	std::string const get_error_page_path_(uint32_t const& error_code) const;
+	// uri_location_t const*	 get_uri_location_t_(std::string const& uri, std::string& output_resolved_uri) const;
+	uri_location_t const*	 get_uri_location_t_(std::string const& uri, uri_resolved_t& uri_resolved_sets) const;
 	static std::string const path_resolve_(std::string const& unvalid_path);
 	void					 print_(void) const;
 

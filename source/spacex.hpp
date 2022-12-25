@@ -2,8 +2,8 @@
 #ifndef __SPACEX_HPP__
 #define __SPACEX_HPP__
 
-#include "spx_config_parse.hpp"
 #include "spx_core_util_box.hpp"
+#include "spx_parse_config.hpp"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
