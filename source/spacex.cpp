@@ -158,7 +158,7 @@ main(int argc, char const* argv[]) {
 		// while (1) {
 		// }
 #else
-		kqueue_main(spx.port_info);
+		// kqueue_main(spx.port_info);
 #endif
 #ifdef SPACE_RESPONSE_TEST
 		Response							res;

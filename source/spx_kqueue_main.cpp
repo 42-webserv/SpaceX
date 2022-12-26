@@ -156,6 +156,7 @@ ClientBuffer::skip_body(ssize_t cont_len) {
 			this->req_res_queue_.back().first.body_recieved_ += n;
 		}
 	}
+	return true;
 }
 
 bool
@@ -188,7 +189,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		std::string& host = req->field_["host"];
 
 		req->serv_info_ = &this->port_info_->search_server_config_(host);
-		if (host_check(host) == false) {
+		if (this->host_check(host) == false) {
 			this->flag_ |= E_BAD_REQ;
 			return false;
 		}
@@ -284,16 +285,16 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			// error. disconnect client.
 			break;
 		}
-	case REQ_BODY:
-		req_field_t* req = &this->req_res_queue_.back().first;
-		// if (req->)
-		// 	// std::min(req->req->);
-		// 	if (req->body_recieved_ == req->body_limit_) {
-		// 		this->state_ = REQ_LINE_PARSING;
-		// 	}
-		break;
-	case REQ_CGI:
-		break;
+		// case REQ_BODY:
+		// 	// req_field_t* req = &this->req_res_queue_.back().first;
+		// 	// if (req->)
+		// 	// 	// std::min(req->req->);
+		// 	// 	if (req->body_recieved_ == req->body_limit_) {
+		// 	// 		this->state_ = REQ_LINE_PARSING;
+		// 	// 	}
+		// 	break;
+		// case REQ_CGI:
+		// 	break;
 	}
 	this->state_ = REQ_LINE_PARSING;
 	return true;
@@ -505,6 +506,76 @@ ClientBuffer::write_response(uintptr_t					 fd,
 }
 
 void
+proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
+	// need to check exit status??
+	client_buf_t* buf = (client_buf_t*)cur_event->udata;
+	waitpid(cur_event->ident, NULL, 0);
+	close(buf->req_res_queue_.front().first.cgi_in_fd_);
+	close(buf->req_res_queue_.front().first.cgi_out_fd_);
+	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
+}
+
+void
+timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
+	// timeout(60s)
+	close(cur_event->ident);
+	// TODO: check file write to delete tmp file and check file descriptors to close.
+	add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+	add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+}
+
+void
+cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
+	client_buf_t& buf = (client_buf_t&)cur_event->udata;
+	int			  write_to_cgi[2];
+	int			  read_from_cgi[2];
+	pid_t		  pid;
+
+	if (pipe(write_to_cgi) == -1) {
+		// pipe error
+		std::cerr << "pipe error" << std::endl;
+		return;
+	}
+	if (pipe(read_from_cgi) == -1) {
+		// pipe error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		std::cerr << "pipe error" << std::endl;
+		return;
+	}
+	pid = fork();
+	if (pid < 0) {
+		// fork error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		close(read_from_cgi[1]);
+		return;
+	}
+	if (pid == 0) {
+		// child. run cgi
+		dup2(write_to_cgi[0], STDIN_FILENO);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		dup2(read_from_cgi[1], STDOUT_FILENO);
+		// set_cgi_envp()
+		// execve();
+		exit(EXIT_FAILURE);
+	}
+	// parent
+	close(write_to_cgi[0]);
+	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
+	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
+	close(read_from_cgi[1]);
+	buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
+	buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
+	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+}
+
+void
 kqueue_main(std::vector<port_info_t>& port_info) {
 	std::vector<struct kevent>		  change_list;
 	std::map<uintptr_t, client_buf_t> clients;
@@ -570,71 +641,4 @@ kqueue_main(std::vector<port_info_t>& port_info) {
 		}
 	}
 	return;
-}
-
-void
-proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
-	// need to check exit status??
-	waitpid(cur_event->ident, NULL, 0);
-	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
-}
-
-void
-timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
-	// timeout(60s)
-	close(cur_event->ident);
-	// TODO: check file write to delete tmp file and check file descriptors to close.
-	add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
-	add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-}
-
-void
-cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
-	client_buf_t& buf = (client_buf_t&)cur_event->udata;
-	int			  write_to_cgi[2];
-	int			  read_from_cgi[2];
-	pid_t		  pid;
-
-	if (pipe(write_to_cgi) == -1) {
-		// pipe error
-		std::cerr << "pipe error" << std::endl;
-		return;
-	}
-	if (pipe(read_from_cgi) == -1) {
-		// pipe error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		std::cerr << "pipe error" << std::endl;
-		return;
-	}
-	pid = fork();
-	if (pid < 0) {
-		// fork error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		close(read_from_cgi[1]);
-		return;
-	}
-	if (pid == 0) {
-		// child. run cgi
-		dup2(write_to_cgi[0], STDIN_FILENO);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		dup2(read_from_cgi[1], STDOUT_FILENO);
-		// set_cgi_envp()
-		// execve();
-		exit(EXIT_FAILURE);
-	}
-	// parent
-	close(write_to_cgi[0]);
-	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
-	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
-	close(read_from_cgi[1]);
-	buf.req_res_queue_.back().first.cgi_in_fd  = write_to_cgi[1];
-	buf.req_res_queue_.back().first.cgi_out_fd = read_from_cgi[0];
-	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
 }

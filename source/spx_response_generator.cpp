@@ -1,5 +1,15 @@
 #include "spx_response_generator.hpp"
 
+Response::Response()
+	: headers_()
+	, version_minor_(1)
+	, version_major_(1)
+	, status_code_(200)
+	, status_("OK") {
+}
+
+Response::~Response() { }
+
 void
 Response::write_to_response_buffer(res_field_t& cur_res, const std::string& content) {
 	cur_res.res_buffer_.insert(cur_res.res_buffer_.end(), content.begin(), content.end());
@@ -63,9 +73,8 @@ Response::setContentType(std::string uri) {
 
 void
 Response::make_error_response(ClientBuffer& client_buffer, http_status error_code) {
-	status_			 = http_status_str(error_code);
-	status_code_	 = error_code;
-	req_field_t& req = client_buffer.req_res_queue_.front().first;
+	status_		 = http_status_str(error_code);
+	status_code_ = error_code;
 
 	if (error_code == HTTP_STATUS_BAD_REQUEST)
 		headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
@@ -82,8 +91,7 @@ Response::make_error_response(ClientBuffer& client_buffer, http_status error_cod
 		headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		write_to_response_buffer(client_buffer.req_res_queue_.front().second, make_to_string());
-		if (req.req_type_ != REQ_HEAD)
-			write_to_response_buffer(client_buffer.req_res_queue_.front().second, error_page);
+		write_to_response_buffer(client_buffer.req_res_queue_.front().second, error_page);
 	}
 }
 
@@ -97,6 +105,12 @@ Response::setDate(void) {
 	headers_.push_back(header("Date", date_buf));
 }
 
+void
+Response::set_res_field_header(res_field_t& cur_res) {
+	std::string header_contents = make_to_string();
+	write_to_response_buffer(cur_res, header_contents);
+}
+
 // this is main logic to make response
 void
 Response::make_response_header(ClientBuffer& client_buffer) {
@@ -105,16 +119,17 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 	res_field_t& cur_res
 		= client_buffer.req_res_queue_.front().second;
 
-	const std::string& uri		  = cur_req.file_path_;
-	int				   req_fd	  = -1;
+	const std::string& uri = cur_req.file_path_;
+	int				   req_fd;
 	int				   req_method = cur_req.req_type_;
 	std::string		   content;
 
 	// Set Date Header
 	setDate();
-	if ((req_method & (REQ_GET | REQ_HEAD))) {
+	if ((req_method & (REQ_GET | REQ_HEAD)) == true) {
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
+
 		if (req_fd == 0) {
 			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
 			return;
@@ -128,25 +143,20 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 				return;
 			}
 		}
+		cur_res.buf_size_ += setContentLength(req_fd);
 		setContentType(uri);
-		off_t content_length = setContentLength(req_fd);
-		if (req_method == REQ_GET)
-			cur_res.buf_size_ += content_length;
 		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+
 		cur_res.body_fd_ = req_fd;
+		// cur_res.buf_size_ = 0;
 	}
+
 	// settting response_header size  + content-length size to res_field
-	write_to_response_buffer(cur_res, make_to_string());
+	set_res_field_header(cur_res);
+
 	if (!content.empty()) {
 		write_to_response_buffer(cur_res, content);
 	}
 }
 
-void
-Response::make_redirect_response(const std::string& redirect_uri, res_field_t& res) {
-	setDate();
-	status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
-	status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
-	headers_.push_back(header("Location", redirect_uri));
-	write_to_response_buffer(res, make_to_string());
-}
+// TODO : Redirection 300
