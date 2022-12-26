@@ -20,6 +20,8 @@
 #include <vector>
 
 #include "spacex.hpp"
+#include "spx_response_generator.hpp"
+#include "spx_syntax_checker.hpp"
 
 #define SERV_PORT 1234
 #define SERV_SOCK_BACKLOG 10
@@ -28,6 +30,8 @@
 #define WRITE_BUFFER_MAX 40 * 1024
 #define MAX_EVENT_LOOP 20
 // #define BUFFER_MAX 80 * 1024
+
+// struct Response;
 
 enum e_request_method {
 	REQ_GET		  = 1 << 1,
@@ -47,10 +51,10 @@ enum e_client_buffer_flag {
 };
 
 enum e_read_status {
-	REQ_LINE_PARSING = 0,
-	REQ_HEADER_PARSING,
-	REQ_BODY,
-	REQ_CGI
+	REQ_LINE_PARSING   = 0,
+	REQ_HEADER_PARSING = 1,
+	REQ_BODY		   = 2,
+	REQ_CGI			   = 3
 };
 
 enum e_req_flag { REQ_FILE_OPEN = 1,
@@ -109,7 +113,6 @@ public:
 
 class ResField {
 public:
-	// res_header
 	buffer_t	   res_buffer_;
 	uri_resolved_t uri_resolv_;
 	std::string	   file_path_;
@@ -119,6 +122,7 @@ public:
 	int			   sent_pos_;
 	int			   flag_;
 	int			   transfer_encoding_;
+	Response	   res;
 
 	ResField()
 		: res_buffer_()
