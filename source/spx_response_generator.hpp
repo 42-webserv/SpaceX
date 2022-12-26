@@ -1,6 +1,6 @@
+#pragma once
 #ifndef __SPX_RESPONSE_GENERATOR_HPP__
 #define __SPX_RESPONSE_GENERATOR_HPP__
-#pragma once
 
 #include <ctime>
 #include <fcntl.h>
@@ -13,7 +13,6 @@
 
 #include "spacex.hpp"
 #include "spx_autoindex_generator.hpp"
-#include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 
 /* Status Codes */
@@ -95,24 +94,15 @@
 	XX(510, NOT_EXTENDED, Not Extended)                                       \
 	XX(511, NETWORK_AUTHENTICATION_REQUIRED, Network Authentication Required)
 
-typedef enum http_status_ {
+enum http_status {
 #define XX(num, name, string) HTTP_STATUS_##name = num,
 	HTTP_STATUS_MAP(XX)
 #undef XX
-} http_status;
+};
 
 std::string
-http_status_str(http_status s) {
-	switch (s) {
-#define XX(num, name, string) \
-	case HTTP_STATUS_##name:  \
-		return #string;
-		HTTP_STATUS_MAP(XX)
-#undef XX
-	default:
-		return "<unknown>";
-	}
-};
+http_status_str(http_status s);
+
 /*
 struct Response {
 private:

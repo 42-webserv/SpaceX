@@ -169,7 +169,8 @@ spx_http_syntax_start_line(std::string const& line,
 				break;
 			}
 			}
-			return error_flag_("invalid uri : request line", req_type);
+			spx_log_("start_line__uri");
+			// return error_flag_("invalid uri : request line", req_type);
 		}
 
 		case start_line__http_protocol_version: {

@@ -12,8 +12,8 @@ typedef unsigned int	   uint32_t;
 typedef long long		   int64_t;
 typedef unsigned long long uint64_t;
 
-#define LF "\n"
-#define CR "\r"
+#define LF (u_char)'\n'
+#define CR (u_char)'\r'
 #define CRLF "\r\n"
 
 typedef enum {

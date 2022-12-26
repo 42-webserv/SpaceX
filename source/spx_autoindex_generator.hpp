@@ -1,4 +1,6 @@
 #pragma once
+#ifndef __SPX_AUTOINDEX_GENERATOR_HPP__
+#define __SPX_AUTOINDEX_GENERATOR_HPP__
 
 #include <dirent.h>
 #include <iostream>
@@ -22,3 +24,5 @@
 
 std::string
 generate_autoindex_page(int& req_fd, const std::string& path);
+
+#endif

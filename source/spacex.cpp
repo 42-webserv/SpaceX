@@ -8,7 +8,7 @@
 #endif
 
 #include "spx_autoindex_generator.hpp"
-#include "spx_response_generator.hpp"
+// #include "spx_response_generator.hpp"
 
 namespace {
 

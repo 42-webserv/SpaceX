@@ -149,7 +149,12 @@ public:
 		, header_ready_(0)
 		, sent_pos_(0)
 		, flag_(0)
-		, transfer_encoding_(0) {
+		, transfer_encoding_(0)
+		, headers_()
+		, version_minor_(1)
+		, version_major_(1)
+		, status_code_(200)
+		, status_("OK") {
 	}
 
 	~ResField() {
@@ -190,7 +195,7 @@ public:
 
 	void disconnect_client(event_list_t& change_list);
 
-	bool write_response(uintptr_t fd, event_list_t& change_list);
+	bool write_response(event_list_t& change_list);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);

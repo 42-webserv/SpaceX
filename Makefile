@@ -9,11 +9,11 @@ NAME		= spacex
 # DEBUG_FLAG	+=	LEAK
 DEBUG_FLAG	+=	DEBUG
 # DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
-DEBUG_FLAG	+=  SOCKET_DEBUG
+# DEBUG_FLAG	+=  SOCKET_DEBUG
 # DEBUG_FLAG  +=  SPACE_RESPONSE_TEST
 # DEBUG_FLAG 	+= CONFIG_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
-# DEBUG_FLAG += LOG_MODE
+DEBUG_FLAG += LOG_MODE
 
 LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
@@ -50,7 +50,7 @@ SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
-
+CXXFLAGS   += $(SNTZ)
 #==============================================================================
 #	Make Part
 #==============================================================================
