@@ -198,7 +198,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 
 		this->state_ = REQ_BODY;
 
-		if (req->uri_loc_ && req->uri_loc_->accepted_methods_flag & req->req_type_ == false) {
+		if (req->uri_loc_ && (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.
 			this->state_ = REQ_LINE_PARSING;
 			break;
@@ -241,7 +241,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		case REQ_POST:
 			// set_post_res();
-			if (this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN == false) {
+			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
 				uintptr_t fd = open(
 					this->req_res_queue_.back().first.file_path_.c_str(),
 					O_RDONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
@@ -259,7 +259,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 			break;
 		case REQ_PUT:
-			if (this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN == false) {
+			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
 				uintptr_t fd = open(
 					this->req_res_queue_.back().first.file_path_.c_str(),
 					O_RDONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
@@ -311,34 +311,34 @@ ClientBuffer::disconnect_client(std::vector<struct kevent>& change_list) {
 	close(this->client_fd_);
 }
 
-uintptr_t
-server_init() {
-	int				   serv_sd;
-	struct sockaddr_in serv_addr;
+// uintptr_t
+// server_init() {
+// 	int				   serv_sd;
+// 	struct sockaddr_in serv_addr;
 
-	serv_sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (serv_sd == -1) {
-		error_exit("socket()", NULL, 0);
-	}
+// 	serv_sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+// 	if (serv_sd == -1) {
+// 		error_exit("socket()", NULL, 0);
+// 	}
 
-	int opt = 1;
-	if (setsockopt(serv_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-		error_exit("setsockopt()", close, serv_sd);
-	}
+// 	int opt = 1;
+// 	if (setsockopt(serv_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+// 		error_exit("setsockopt()", close, serv_sd);
+// 	}
 
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family	  = AF_INET;
-	serv_addr.sin_port		  = htons(SERV_PORT);
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+// 	memset(&serv_addr, 0, sizeof(serv_addr));
+// 	serv_addr.sin_family	  = AF_INET;
+// 	serv_addr.sin_port		  = htons(SERV_PORT);
+// 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	if (bind(serv_sd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
-		error_exit("bind", close, serv_sd);
-	}
+// 	if (bind(serv_sd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
+// 		error_exit("bind", close, serv_sd);
+// 	}
 
-	if (listen(serv_sd, SERV_SOCK_BACKLOG) == -1) {
-		error_exit("bind", close, serv_sd);
-	}
-}
+// 	if (listen(serv_sd, SERV_SOCK_BACKLOG) == -1) {
+// 		error_exit("bind", close, serv_sd);
+// 	}
+// }
 
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
@@ -367,7 +367,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 void
 ClientBuffer::write_filter_enable(event_list_t& change_list, struct kevent* cur_event) {
 	if (this->req_res_queue_.size() != 0
-		&& this->req_res_queue_.front().second.flag_ & WRITE_READY == true) {
+		&& (this->req_res_queue_.front().second.flag_ & WRITE_READY) == true) {
 		add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
 						EV_ENABLE, 0, 0, this);
 	}
@@ -384,7 +384,7 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 	}
 	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 	if (this->req_res_queue_.size() == 0
-		|| this->req_res_queue_.front().second.flag_ & WRITE_READY == false) {
+		|| (this->req_res_queue_.front().second.flag_ & WRITE_READY) == false) {
 		this->req_res_controller(change_list, cur_event);
 	};
 	write_filter_enable(change_list, cur_event);
@@ -465,12 +465,12 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		// } else {
 		// }
 		buf->write_response(cur_event->ident, change_list);
-		if (buf->flag_ & RDBUF_CHECKED == false) {
+		if ((buf->flag_ & RDBUF_CHECKED) == false) {
 			while (buf->req_res_controller(change_list, cur_event) == true) {
 				;
 			}
 		}
-		if (buf->req_res_queue_.size() == 0 || buf->req_res_queue_.front().second.flag_ & WRITE_READY == false) {
+		if (buf->req_res_queue_.size() == 0 || (buf->req_res_queue_.front().second.flag_ & WRITE_READY) == false) {
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
 							EV_DISABLE, 0, 0, buf);
 		}

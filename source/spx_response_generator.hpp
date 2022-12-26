@@ -119,45 +119,29 @@ namespace {
 struct Response {
 private:
 	typedef std::pair<std::string, std::string> header;
-	std::vector<header>							headers_;
-	int											version_minor_ = 1;
-	int											version_major_ = 1;
-	unsigned int								status_code_   = 200;
-	std::string									status_		   = "OK";
 
-	std::string
-	make_to_string() const;
+	std::vector<header> headers_;
+	int					version_minor_;
+	int					version_major_;
+	unsigned int		status_code_;
+	std::string			status_;
 
-	int
-	file_open(const char* dir) const;
-
-	off_t
-	setContentLength(int fd);
-
-	void
-	setContentType(std::string uri);
-
-	std::string
-	handle_static_error_page();
-
-	void
-	setDate();
+	std::string make_to_string() const;
+	int			file_open(const char* dir) const;
+	off_t		setContentLength(int fd);
+	void		setContentType(std::string uri);
+	std::string handle_static_error_page();
+	void		setDate();
 
 public:
-	void
-	make_error_response(ClientBuffer& client_buffer, http_status error_code);
+	Response();
+	~Response();
 
-	void
-	make_response_header(ClientBuffer& client_buffer);
-
-	void
-	set_res_field_header(res_field_t& cur_res);
-
-	void
-	write_to_response_buffer(res_field_t& cur_res, const std::string& content);
-
-	void
-	make_redirect_response(const std::string& redirect_uri, res_field_t& res);
+	void make_error_response(ClientBuffer& client_buffer, http_status error_code);
+	void make_response_header(ClientBuffer& client_buffer);
+	void set_res_field_header(res_field_t& cur_res);
+	void write_to_response_buffer(res_field_t& cur_res, const std::string& content);
+	void make_redirect_response(const std::string& redirect_uri, res_field_t& res);
 };
 
 #endif
