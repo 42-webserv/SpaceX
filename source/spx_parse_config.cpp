@@ -590,11 +590,19 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (check_dup.second == false) {
 						return error_("conf_location_zero", "duplicate cgi location", line_number_count);
 					}
+					if (temp_uri_location_info.module_state == Kmodule_none) {
+						temp_uri_location_info.module_state = Kmodule_cgi;
+					} else {
+						return error_("conf_location_zero", "module_state already defined", line_number_count);
+					}
 				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
 						return error_("conf_location_zero", "duplicate location", line_number_count);
+					}
+					if (temp_uri_location_info.module_state == Kmodule_none) {
+						temp_uri_location_info.module_state = Kmodule_serve;
 					}
 				} else {
 					return error_("conf_location_zero", "location uri syntax error", line_number_count);
