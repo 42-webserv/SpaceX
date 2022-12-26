@@ -8,9 +8,9 @@ NAME		= spacex
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK, LOG_MODE
 # DEBUG_FLAG	+=	LEAK
 DEBUG_FLAG	+=	DEBUG
-DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
+# DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
 DEBUG_FLAG	+=  SOCKET_DEBUG
-DEBUG_FLAG  +=  SPACE_RESPONSE_TEST
+# DEBUG_FLAG  +=  SPACE_RESPONSE_TEST
 # DEBUG_FLAG 	+= CONFIG_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 # DEBUG_FLAG += LOG_MODE
@@ -21,9 +21,9 @@ SRC			=	spacex.cpp \
 				spx_port_info.cpp \
 				spx_core_util_box.cpp \
 				spx_response_generator.cpp \
-				spx_autoindex_generator.cpp
-# spx_syntax_checker.cpp
-# spx_kqueue_main.cpp
+				spx_autoindex_generator.cpp \
+				spx_syntax_checker.cpp \
+				spx_kqueue_main.cpp
 
 
 SRC_DIR		=	source/

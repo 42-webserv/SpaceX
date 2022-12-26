@@ -1,3 +1,7 @@
+#pragma once
+#ifndef __SPX__CLIENT_BUFFER__HPP
+#define __SPX__CLIENT_BUFFER__HPP
+
 #include <algorithm>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -68,8 +72,8 @@ typedef std::vector<struct kevent> event_list_t;
 class ReqField {
 public:
 	buffer_t						   cgi_buffer_;
-	int								   cgi_in_fd;
-	int								   cgi_out_fd;
+	int								   cgi_in_fd_;
+	int								   cgi_out_fd_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
 	std::string						   http_ver_;
@@ -79,12 +83,14 @@ public:
 	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
-	int								   body_flag_;
+	int								   flag_;
 	int								   req_type_;
 	int								   transfer_encoding_;
 
 	ReqField()
 		: cgi_buffer_()
+		, cgi_in_fd_()
+		, cgi_out_fd_()
 		, field_()
 		, req_target_()
 		, http_ver_()
@@ -93,7 +99,7 @@ public:
 		, body_recieved_(0)
 		, body_limit_(-1)
 		, content_length_(0)
-		, body_flag_(0)
+		, flag_(0)
 		, req_type_(0)
 		, transfer_encoding_(0) {
 	}
@@ -145,15 +151,15 @@ public:
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
 	uintptr_t										 client_fd_;
-	port_info_t*									 serv_info_;
+	port_info_t*									 port_info_;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;
 	char											 rdbuf_[BUFFER_SIZE];
 
 	// TEMP Implement
-	ClientBuffer() { }
-	~ClientBuffer() { }
+	ClientBuffer();
+	~ClientBuffer();
 
 	void write_filter_enable(event_list_t& change_list, struct kevent* cur_event);
 
@@ -164,11 +170,12 @@ public:
 
 	void disconnect_client(event_list_t& change_list);
 
-	bool write_res_body(uintptr_t fd, event_list_t& change_list);
-	bool write_res_header(uintptr_t fd, event_list_t& change_list);
+	bool write_response(uintptr_t fd, event_list_t& change_list);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);
+
+	bool host_check(std::string& host);
 
 	void read_to_client_buffer(event_list_t& change_list, struct kevent* cur_event);
 	void read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event);
@@ -176,3 +183,5 @@ public:
 };
 
 typedef ClientBuffer client_buf_t;
+
+#endif
