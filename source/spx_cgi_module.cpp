@@ -24,6 +24,7 @@ CgiModule::made_env_for_cgi_(void) {
 	}
 
 	{ // variable part
+		vec_env_.push_back("REQUEST_URI=" +); // /blah/blah/blah.cgi/remain/blah/blah
 		vec_env_.push_back("SCRIPT_NAME=" +); // /blah/blah/blah.cgi
 		vec_env_.push_back("PATH_INFO=" +); // remain /blah/blah
 		vec_env_.push_back("QUERY_STRING=" +); // key=value&key=value&key=value

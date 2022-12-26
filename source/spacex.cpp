@@ -146,9 +146,12 @@ main(int argc, char const* argv[]) {
 		server_info_t const& temp_ = spx.port_info[3].search_server_config_("aoriestnaoiresnt");
 		spx_log_(temp_.get_error_page_path_(404));
 		spx_log_(temp_.get_error_page_path_(303));
-		std::string temp2;
-		// spx_log_(temp_.get_uri_location_t_("////upload/", temp2));
-		spx_log_(temp2);
+		std::cout << "server_name: " << temp_.server_name << std::endl;
+		uri_resolved_t resol_uri_;
+		// uri_location_t const* loc_ = temp_.get_uri_location_t_("/upload/blah/%00somepath/adder?arsiotenrstn#rsiten", resol_uri_);
+		uri_location_t const* loc_ = temp_.get_uri_location_t_("/upload?arsiotenrstn#rsiten", resol_uri_);
+		std::cout << "location: " << loc_ << std::endl;
+		resol_uri_.print_();
 #endif
 
 #ifdef YOMA_SEARCH_DEBUG
