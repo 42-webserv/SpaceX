@@ -26,11 +26,11 @@ typedef enum {
 } autoindex_state_e;
 
 typedef enum {
-	Kmodule_none = 0,
-	Kmodule_serve,
-	Kmodule_upload,
-	Kmodule_redirect,
-	Kmodule_cgi
+	Kmodule_none	 = 1 << 0,
+	Kmodule_serve	 = 1 << 1,
+	Kmodule_upload	 = 1 << 2,
+	Kmodule_redirect = 1 << 3,
+	Kmodule_cgi		 = 1 << 4
 } module_case_state_e;
 
 typedef enum {

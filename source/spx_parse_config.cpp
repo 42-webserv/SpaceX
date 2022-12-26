@@ -981,6 +981,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				// if (temp_uri_location_info.module_state == Kmodule_none) {
 				// 	temp_uri_location_info.module_state = Kmodule_redirect;
 				// }
+				temp_uri_location_info.module_state = Kmodule_redirect;
 				temp_string.clear();
 				break;
 			}
