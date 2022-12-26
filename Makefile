@@ -15,7 +15,7 @@ DEBUG_FLAG	+=	DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 DEBUG_FLAG += LOG_MODE
 
-LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
+LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \

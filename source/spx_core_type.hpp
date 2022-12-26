@@ -31,7 +31,7 @@ syntax_(const uint32_t table[8], uint8_t c) {
 const uint32_t usual_[] = {
 	0x00000000, /*	0000 0000 0000 0000  0000 0000 0000 0000 */
 	/*				?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-	0x7fffffd6, /*	0111 1111 1111 1111  1111 1111 1101 0110 */
+	0xfffffffe, /*	1111 1111 1111 1111  1111 1111 1111 1110 */
 	/*				_^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
 	0xffffffff, /*	1111 1111 1111 1111  1111 1111 1111 1111 */
 	/*				 ~}| {zyx wvut srqp  onml kjih gfed cba` */

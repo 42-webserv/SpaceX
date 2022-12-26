@@ -81,9 +81,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	uint8_t						flag_check_dup = 0;
 	std::string::const_iterator it			   = uri.begin();
 
-	uri_resolved_sets.is_cgi_	   = false;
-	uri_resolved_sets.cgi_loc_	   = NULL;
-	uri_resolved_sets.request_uri_ = uri;
+	uri_resolved_sets.is_cgi_			= false;
+	uri_resolved_sets.is_same_location_ = false;
+	uri_resolved_sets.cgi_loc_			= NULL;
+	uri_resolved_sets.request_uri_		= uri;
 
 	enum {
 		uri_main, // 0
@@ -117,15 +118,17 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				temp_index		= it_->second.index;
 				temp_root		= it_->second.root;
 				temp_location	= it_->second.uri;
+				flag_check_dup |= Kuri_same_uri;
 			} else {
-				it_ = uri_case.find("/");
-				if (it_ != uri_case.end()) {
-					return_location = &it_->second;
-					temp_index		= it_->second.index;
-					temp_root		= it_->second.root;
-					temp_location	= it_->second.uri;
-					uri_resolved_sets.script_name_ += temp;
-				}
+				// it_ = uri_case.find("/");
+				// if (it_ != uri_case.end()) {
+				// 	return_location = &it_->second;
+				// 	temp_index		= it_->second.index;
+				// 	temp_root		= it_->second.root;
+				// 	temp_location	= it_->second.uri;
+				temp_root = this->root;
+				uri_resolved_sets.script_name_ += temp;
+				// }
 			}
 			// uri_resolved_sets.script_name_ += temp; // NOTE: different from nginx
 			temp.clear();
@@ -171,6 +174,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				++it;
 			}
 			if (!(flag_check_dup & Kuri_cgi)) {
+				flag_check_dup &= ~Kuri_same_uri;
 				uri_resolved_sets.script_name_ += temp;
 			} else {
 				flag_check_dup |= Kuri_path_info;
@@ -225,6 +229,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 
 		case uri_fragment: { // NOTE : fragment is not used in this project. just passing
 			while (it != uri.end()) {
+				// uri_resolved_sets.fragment_ += *it;
 				++it;
 			}
 			state = uri_done;
@@ -237,6 +242,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			if (flag_check_dup & Kuri_path_info) {
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
+			} else if (temp_index.empty()) {
+				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
+				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			} else {
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
@@ -245,6 +253,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
 			if (uri_resolved_sets.path_info_.empty() == false) {
 				uri_resolved_sets.path_translated_ = path_resolve_(temp_root + "/" + uri_resolved_sets.path_info_);
+			}
+			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
+				uri_resolved_sets.is_same_location_ = true;
 			}
 			state = uri_end;
 			break;
@@ -316,7 +327,9 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 
 void
 uri_resolved_t::print_(void) const {
+	std::cout << "\n-----resolved uri info-----" << std::endl;
 	std::cout << "is_cgi : " << is_cgi_ << std::endl;
+	std::cout << "is_same_location : " << is_same_location_ << std::endl;
 	std::cout << "cgi_location_t : ";
 	if (cgi_loc_ == NULL) {
 		std::cout << "NULL" << std::endl;
@@ -330,7 +343,8 @@ uri_resolved_t::print_(void) const {
 	std::cout << "path_info :" << path_info_ << std::endl;
 	std::cout << "path_translated :" << path_translated_ << std::endl;
 	std::cout << "query_string :" << query_string_ << std::endl;
-	std::cout << "fragment : " << fragment_ << std::endl;
+	// std::cout << "fragment : " << fragment_ << std::endl;
+	std::cout << "----------------------------" << std::endl;
 }
 
 void

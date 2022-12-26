@@ -14,8 +14,17 @@ template <typename T>
 inline void
 spx_log_(T msg) {
 #ifdef DEBUG
-	std::cout << "\033[1;32m" << msg << ";"
-			  << "\033[0m" << std::endl;
+	std::cout << "\033[1;32m" << msg << "\033[0m" << std::endl;
+#else
+	(void)msg;
+#endif
+}
+
+template <typename T>
+inline void
+spx_log_(std::string id, T msg) {
+#ifdef DEBUG
+	std::cout << "\033[1;32m" << id << ": " << msg << "\033[0m" << std::endl;
 #else
 	(void)msg;
 #endif
@@ -24,7 +33,7 @@ spx_log_(T msg) {
 inline void
 spx_log_check_(std::string const& msg) {
 #ifdef LOG_MODE
-	static std::fstream file;
+	std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::ate);
 	if (file.is_open()) {
 		file << msg << std::endl;

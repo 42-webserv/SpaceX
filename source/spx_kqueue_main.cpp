@@ -52,7 +52,6 @@ ClientBuffer::request_line_parser() {
 				return false;
 			}
 			req_line.assign(this->rdsaved_.begin() + this->rdchecked_, crlf_pos);
-			spx_log_(req_line);
 			crlf_pos += 2;
 			this->rdchecked_ = crlf_pos - this->rdsaved_.begin();
 			if (req_line.size() == 0) {
@@ -96,7 +95,6 @@ ClientBuffer::header_field_parser() {
 				// request header parsed.
 				break;
 			}
-			spx_log_(header_field_line);
 			if (spx_http_syntax_header_line(header_field_line) == -1) {
 				this->flag_ |= E_BAD_REQ;
 				// error_res();
@@ -199,6 +197,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		}
 		req->uri_loc_ = req->serv_info_->get_uri_location_t_(req->req_target_,
 															 this->req_res_queue_.back().second.uri_resolv_);
+
+		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
 
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.

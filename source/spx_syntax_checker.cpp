@@ -68,6 +68,8 @@ spx_http_syntax_start_line(std::string const& line,
 
 	state = start_line__start;
 
+	spx_log_("\n______request_syntax_start_line______");
+	spx_log_(line);
 	spx_log_check_(line);
 
 	while (state != start_line__done) {
@@ -141,7 +143,7 @@ spx_http_syntax_start_line(std::string const& line,
 		}
 
 		case start_line__uri: {
-			while (syntax_(usual_, *it)) { // NOTE: we didn't support query and fragment in usual_ now. maybe change
+			while (syntax_(usual_, *it)) {
 				++it;
 			}
 			switch (*it) {
@@ -168,9 +170,11 @@ spx_http_syntax_start_line(std::string const& line,
 				// 	return error_flag_("invalid uri : request line : we didn't support query", req_type);
 				break;
 			}
+			default: {
+				return error_flag_("invalid uri : request line", req_type);
 			}
-			spx_log_("start_line__uri");
-			// return error_flag_("invalid uri : request line", req_type);
+			}
+			break;
 		}
 
 		case start_line__http_protocol_version: {
@@ -292,6 +296,7 @@ spx_http_syntax_header_line(std::string const& line) {
 	state = spx_start;
 
 	spx_log_check_(line);
+	spx_log_(line);
 
 	while (state != spx_done) {
 		switch (state) {

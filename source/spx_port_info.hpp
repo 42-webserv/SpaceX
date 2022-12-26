@@ -143,11 +143,13 @@ typedef enum {
 	Kuri_basic_slash = 1 << 0,
 	Kuri_cgi		 = 1 << 1,
 	Kuri_path_info	 = 1 << 2,
-	Kuri_fragment	 = 1 << 3
+	Kuri_fragment	 = 1 << 3,
+	Kuri_same_uri	 = 1 << 4
 } uri_flag_e;
 
 typedef struct uri_resolved {
 	bool			is_cgi_;
+	bool			is_same_location_;
 	uri_location_t* cgi_loc_;
 	std::string		request_uri_; // full request_uri
 	std::string		resolved_request_uri_; // resolved_uri
