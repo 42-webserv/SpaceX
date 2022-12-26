@@ -2,7 +2,6 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
-#include <_types/_uint8_t.h>
 #include <cstddef>
 #include <fstream>
 #include <sstream>
@@ -235,8 +234,13 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		case uri_done: {
 			// XXX : if set saved_path, then use saved_path // not recommend this time
 			// TODO: cgi's saved_path isn't defined yet
-			uri_resolved_sets.script_filename_		= path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
-			uri_resolved_sets.script_name_			= path_resolve_(temp_location + uri_resolved_sets.script_name_);
+			if (flag_check_dup & Kuri_path_info) {
+				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
+				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
+			} else {
+				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
+				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
+			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
 			if (uri_resolved_sets.path_info_.empty() == false) {
