@@ -137,8 +137,8 @@ public:
 	Response();
 	~Response();
 
-	void make_error_response(ClientBuffer& client_buffer, http_status error_code);
-	void make_response_header(ClientBuffer& client_buffer);
+	void make_error_response(client_buf_t& client_buffer, http_status error_code);
+	void make_response_header(client_buf_t& client_buffer);
 	void set_res_field_header(res_field_t& cur_res);
 	void write_to_response_buffer(res_field_t& cur_res, const std::string& content);
 	void make_redirect_response(client_buf_t& client_buffer);

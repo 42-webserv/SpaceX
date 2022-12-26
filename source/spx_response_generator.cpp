@@ -73,7 +73,7 @@ Response::setContentType(std::string uri) {
 };
 
 void
-Response::make_error_response(ClientBuffer& client_buffer, http_status error_code) {
+Response::make_error_response(client_buf_t& client_buffer, http_status error_code) {
 	status_			 = http_status_str(error_code);
 	status_code_	 = error_code;
 	req_field_t& req = client_buffer.req_res_queue_.front().first;
@@ -110,11 +110,11 @@ Response::setDate(void) {
 
 // this is main logic to make response
 void
-Response::make_response_header(ClientBuffer& client_buffer) {
+Response::make_response_header(client_buf_t& client_buffer) {
 	const req_field_t& cur_req
-		= client_buffer.req_res_queue_.front().first;
+		= client_buffer.req_res_queue_.back().first;
 	res_field_t& cur_res
-		= client_buffer.req_res_queue_.front().second;
+		= client_buffer.req_res_queue_.back().second;
 
 	const std::string& uri		  = cur_req.file_path_;
 	int				   req_fd	  = -1;
