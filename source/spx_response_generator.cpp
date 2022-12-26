@@ -1,5 +1,15 @@
 #include "spx_response_generator.hpp"
 
+Response::Response()
+	: headers_()
+	, version_minor_(1)
+	, version_major_(1)
+	, status_code_(200)
+	, status_("OK") {
+}
+
+Response::~Response() { }
+
 void
 Response::write_to_response_buffer(res_field_t& cur_res, const std::string& content) {
 	cur_res.res_buffer_.insert(cur_res.res_buffer_.end(), content.begin(), content.end());
@@ -37,6 +47,7 @@ Response::setContentLength(int fd) {
 	ss << length;
 
 	headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+	return length;
 }
 
 void
