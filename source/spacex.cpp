@@ -161,7 +161,7 @@ main(int argc, char const* argv[]) {
 		kqueue_main(spx.port_info);
 #endif
 #ifdef SPACE_RESPONSE_TEST
-		Response							res;
+		ResField							res;
 		ClientBuffer						c;
 		std::pair<req_field_t, res_field_t> one_set;
 		ReqField&							req = one_set.first;

@@ -1,27 +1,17 @@
 #include "spx_response_generator.hpp"
 
-Response::Response()
-	: headers_()
-	, version_minor_(1)
-	, version_major_(1)
-	, status_code_(200)
-	, status_("OK") {
-}
-
-Response::~Response() { }
-
 void
-Response::write_to_response_buffer(res_field_t& cur_res, const std::string& content) {
-	cur_res.res_buffer_.insert(cur_res.res_buffer_.end(), content.begin(), content.end());
-	cur_res.buf_size_ += content.size();
+ResField::write_to_response_buffer(const std::string& content) {
+	res_buffer_.insert(res_buffer_.end(), content.begin(), content.end());
+	buf_size_ += content.size();
 }
 
 std::string
-Response::make_to_string() const {
+ResField::make_to_string() const {
 	std::stringstream stream;
 	stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_code_ << " " << status_
 		   << CRLF;
-	for (std::vector<Response::header>::const_iterator it = headers_.begin();
+	for (std::vector<header>::const_iterator it = headers_.begin();
 		 it != headers_.end(); ++it)
 		stream << it->first << ": " << it->second << CRLF;
 	stream << CRLF;
@@ -29,7 +19,7 @@ Response::make_to_string() const {
 }
 
 int
-Response::file_open(const char* dir) const {
+ResField::file_open(const char* dir) const {
 	int fd = open(dir, O_RDONLY | O_NONBLOCK, 0644);
 	if (fd < 0 && errno == EACCES)
 		return 0;
@@ -37,7 +27,7 @@ Response::file_open(const char* dir) const {
 }
 
 off_t
-Response::setContentLength(int fd) {
+ResField::setContentLength(int fd) {
 	if (fd < 0)
 		return 0;
 	off_t length = lseek(fd, 0, SEEK_END);
@@ -51,7 +41,7 @@ Response::setContentLength(int fd) {
 }
 
 void
-Response::setContentType(std::string uri) {
+ResField::setContentType(std::string uri) {
 
 	std::string::size_type uri_ext_size = uri.find_last_of('.');
 	std::string			   ext;
@@ -73,33 +63,7 @@ Response::setContentType(std::string uri) {
 };
 
 void
-Response::make_error_response(client_buf_t& client_buffer, http_status error_code) {
-	status_			 = http_status_str(error_code);
-	status_code_	 = error_code;
-	req_field_t& req = client_buffer.req_res_queue_.front().first;
-
-	if (error_code == HTTP_STATUS_BAD_REQUEST)
-		headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
-	else
-		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-
-	std::string page_path	 = client_buffer.req_res_queue_.front().first.serv_info_->get_error_page_path_(status_code_);
-	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
-	if (error_req_fd < 0) {
-		std::stringstream  ss;
-		const std::string& error_page = generator_error_page_(status_code_);
-
-		ss << error_page.length();
-		headers_.push_back(header(CONTENT_LENGTH, ss.str()));
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
-		write_to_response_buffer(client_buffer.req_res_queue_.front().second, make_to_string());
-		if (req.req_type_ != REQ_HEAD)
-			write_to_response_buffer(client_buffer.req_res_queue_.front().second, error_page);
-	}
-}
-
-void
-Response::setDate(void) {
+ResField::setDate(void) {
 	std::time_t now			 = std::time(nullptr);
 	std::tm*	current_time = std::gmtime(&now);
 
@@ -108,71 +72,98 @@ Response::setDate(void) {
 	headers_.push_back(header("Date", date_buf));
 }
 
+void
+ClientBuffer::make_error_response(http_status error_code) {
+	res_field_t& res = req_res_queue_.front().second;
+	req_field_t& req = req_res_queue_.front().first;
+
+	res.status_		 = http_status_str(error_code);
+	res.status_code_ = error_code;
+
+	if (error_code == HTTP_STATUS_BAD_REQUEST)
+		res.headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
+	else
+		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+
+	std::string page_path	 = req.serv_info_->get_error_page_path_(error_code);
+	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
+	if (error_req_fd < 0) {
+		std::stringstream  ss;
+		const std::string& error_page = generator_error_page_(error_code);
+
+		ss << error_page.length();
+		res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+		res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+		res.write_to_response_buffer(res.make_to_string());
+		if (req.req_type_ != REQ_HEAD)
+			res.write_to_response_buffer(error_page);
+	}
+}
+
 // this is main logic to make response
 void
-Response::make_response_header(client_buf_t& client_buffer) {
-	const req_field_t& cur_req
-		= client_buffer.req_res_queue_.back().first;
-	res_field_t& cur_res
-		= client_buffer.req_res_queue_.back().second;
+ClientBuffer::make_response_header() {
+	const req_field_t& req
+		= req_res_queue_.back().first;
+	res_field_t& res
+		= req_res_queue_.back().second;
 
-	const std::string& uri		  = cur_req.file_path_;
+	const std::string& uri		  = req.file_path_;
 	int				   req_fd	  = -1;
-	int				   req_method = cur_req.req_type_;
+	int				   req_method = req.req_type_;
 	std::string		   content;
-	Response		   response_result;
 
 	// Set Date Header
-	response_result.setDate();
+	res.setDate();
 	switch (req_method) {
 	case (REQ_HEAD):
-		response_result.make_redirect_response(client_buffer);
+		make_redirect_response();
 		break;
 	case (REQ_GET):
-		req_fd			 = file_open(uri.c_str());
-		cur_res.body_fd_ = req_fd;
+		req_fd		 = res.file_open(uri.c_str());
+		res.body_fd_ = req_fd;
 		if (req_fd == 0) {
-			make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
+			make_error_response(HTTP_STATUS_FORBIDDEN);
 			return;
-		} else if (req_fd == -1 && cur_req.uri_loc_ == NULL) {
-			make_error_response(client_buffer, HTTP_STATUS_NOT_FOUND);
+		} else if (req_fd == -1 && req.uri_loc_ == NULL) {
+			make_error_response(HTTP_STATUS_NOT_FOUND);
 			return;
-		} else if (req_fd == -1 && cur_req.uri_loc_->autoindex_flag == Kautoindex_on) {
-			content = generate_autoindex_page(req_fd, cur_req.uri_loc_->root);
+		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
+			content = generate_autoindex_page(req_fd, req.uri_loc_->root);
 			if (content.empty()) {
-				make_error_response(client_buffer, HTTP_STATUS_FORBIDDEN);
+				make_error_response(HTTP_STATUS_FORBIDDEN);
 				return;
 			}
 		}
-		setContentType(uri);
-		off_t content_length = setContentLength(req_fd);
+		res.setContentType(uri);
+		off_t content_length = res.setContentLength(req_fd);
 		if (req_method == REQ_GET)
-			cur_res.buf_size_ += content_length;
-		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-		cur_res.body_fd_ = req_fd;
+			res.buf_size_ += content_length;
+		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+		res.body_fd_ = req_fd;
 		break;
 	}
 	// settting response_header size  + content-length size to res_field
-	write_to_response_buffer(cur_res, make_to_string());
+	res.write_to_response_buffer(res.make_to_string());
 	if (!content.empty()) {
-		write_to_response_buffer(cur_res, content);
+		res.write_to_response_buffer(content);
 	}
 }
 
 void
-Response::make_redirect_response(client_buf_t& client_buffer) {
+ClientBuffer::make_redirect_response() {
 	const req_field_t& req
-		= client_buffer.req_res_queue_.front().first;
+		= req_res_queue_.front().first;
 	res_field_t& res
-		= client_buffer.req_res_queue_.front().second;
+		= req_res_queue_.front().second;
 
-	setDate();
+	res.setDate();
 	if (req.uri_loc_ == NULL || req.uri_loc_->redirect.empty()) {
-		make_error_response(client_buffer, HTTP_STATUS_NOT_FOUND);
+		make_error_response(HTTP_STATUS_NOT_FOUND);
 		return;
 	};
-	status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
-	status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
-	headers_.push_back(header("Location", req.uri_loc_->redirect));
-	write_to_response_buffer(res, make_to_string());
+	res.status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
+	res.status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
+	res.headers_.push_back(header("Location", req.uri_loc_->redirect));
+	res.write_to_response_buffer(res.make_to_string());
 }

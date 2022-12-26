@@ -32,7 +32,6 @@
 // #define BUFFER_MAX 80 * 1024
 
 // struct Response;
-
 enum e_request_method {
 	REQ_GET		  = 1 << 1,
 	REQ_POST	  = 1 << 2,
@@ -70,8 +69,9 @@ enum e_transfer_encoding { TE_CHUNKED = 0,
 						   TE_GZIP,
 						   TE_DEFLATE };
 
-typedef std::vector<char>		   buffer_t;
-typedef std::vector<struct kevent> event_list_t;
+typedef std::vector<char>					buffer_t;
+typedef std::vector<struct kevent>			event_list_t;
+typedef std::pair<std::string, std::string> header;
 
 class ReqField {
 public:
@@ -122,7 +122,23 @@ public:
 	int			   sent_pos_;
 	int			   flag_;
 	int			   transfer_encoding_;
-	Response	   res;
+
+	/* RESPONSE*/
+	std::vector<header> headers_;
+	int					version_minor_;
+	int					version_major_;
+	unsigned int		status_code_;
+	std::string			status_;
+
+	int			file_open(const char* dir) const;
+	off_t		setContentLength(int fd);
+	void		setContentType(std::string uri);
+	void		setDate();
+	std::string handle_static_error_page();
+	std::string make_to_string() const;
+	void		write_to_response_buffer(const std::string& content);
+
+	/* RESPONSE END*/
 
 	ResField()
 		: res_buffer_()
@@ -184,6 +200,12 @@ public:
 	void read_to_client_buffer(event_list_t& change_list, struct kevent* cur_event);
 	void read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event);
 	void read_to_res_buffer(event_list_t& change_list, struct kevent* cur_event);
+
+	/* RESPONSE */
+	void make_error_response(http_status error_code);
+	void make_response_header();
+	void make_redirect_response();
+	/* RESPONSE END*/
 };
 
 typedef ClientBuffer client_buf_t;

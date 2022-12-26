@@ -17,7 +17,6 @@
 #include "spx_core_type.hpp"
 
 /* Status Codes */
-namespace {
 
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
@@ -96,26 +95,25 @@ namespace {
 	XX(510, NOT_EXTENDED, Not Extended)                                       \
 	XX(511, NETWORK_AUTHENTICATION_REQUIRED, Network Authentication Required)
 
-	enum http_status {
+typedef enum http_status_ {
 #define XX(num, name, string) HTTP_STATUS_##name = num,
-		HTTP_STATUS_MAP(XX)
+	HTTP_STATUS_MAP(XX)
 #undef XX
-	};
+} http_status;
 
-	std::string
-	http_status_str(enum http_status s) {
-		switch (s) {
+std::string
+http_status_str(http_status s) {
+	switch (s) {
 #define XX(num, name, string) \
 	case HTTP_STATUS_##name:  \
 		return #string;
-			HTTP_STATUS_MAP(XX)
+		HTTP_STATUS_MAP(XX)
 #undef XX
-		default:
-			return "<unknown>";
-		}
-	};
-}
-
+	default:
+		return "<unknown>";
+	}
+};
+/*
 struct Response {
 private:
 	typedef std::pair<std::string, std::string> header;
@@ -143,5 +141,5 @@ public:
 	void write_to_response_buffer(res_field_t& cur_res, const std::string& content);
 	void make_redirect_response(client_buf_t& client_buffer);
 };
-
+*/
 #endif
