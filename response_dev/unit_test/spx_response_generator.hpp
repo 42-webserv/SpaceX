@@ -11,10 +11,10 @@
 #include <unistd.h>
 #include <vector>
 
-#include "spacex.hpp"
+#include "../../source/spacex.hpp"
+#include "../../source/spx_client_buffer.hpp"
+#include "../../source/spx_core_type.hpp"
 #include "spx_autoindex_generator.hpp"
-#include "spx_client_buffer.hpp"
-#include "spx_core_type.hpp"
 
 /* Status Codes */
 namespace {
@@ -120,15 +120,15 @@ struct Response {
 private:
 	typedef std::pair<std::string, std::string> header;
 	std::vector<header>							headers_;
-	int											version_minor_ = 1;
-	int											version_major_ = 1;
-	unsigned int								status_code_   = 200;
-	std::string									status_		   = "OK";
+	int											version_minor_;
+	int											version_major_;
+	unsigned int								status_code_;
+	std::string									status_;
 
 	std::string
 	make_to_string() const;
 
-	int
+	uintptr_t
 	file_open(const char* dir) const;
 
 	off_t
@@ -143,7 +143,12 @@ private:
 	void
 	setDate();
 
+	void
+	set_response_header_vector(res_field_t& cur_res);
+
 public:
+	Response() { }
+	~Response() { }
 	void
 	make_error_response(ClientBuffer& client_buffer, http_status error_code);
 
@@ -154,10 +159,7 @@ public:
 	set_res_field_header(res_field_t& cur_res);
 
 	void
-	write_to_response_buffer(res_field_t& cur_res, const std::string& content);
-
-	void
-	make_redirect_response(const std::string& redirect_uri, res_field_t& res);
+	write_to_response_buffer(const std::string& content);
 };
 
 #endif

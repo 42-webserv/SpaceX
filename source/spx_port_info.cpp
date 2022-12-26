@@ -2,14 +2,17 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_parse_config.hpp"
+<<<<<<< HEAD
 #include <_types/_uint8_t.h>
+	=======
+>>>>>>> 573d45cb70871c27ae609de4aef76dd4452570c5
 #include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 
-namespace {
+	namespace {
 
 } // namespace
 

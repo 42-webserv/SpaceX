@@ -7,7 +7,6 @@
 #include <string>
 #include <sys/stat.h>
 
-#include "spacex.hpp"
 #include "spx_response_generator.hpp"
 
 #define HTML_HEAD_TITLE "<html>\r\n<head><title>Index of "
@@ -21,4 +20,4 @@
 #define CLOSE_A_TAG "</a>"
 
 std::string
-generate_autoindex_page(int& req_fd, const std::string& path);
+generate_autoindex_page(uintptr_t& req_fd, const std::string& path);

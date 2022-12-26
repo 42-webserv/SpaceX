@@ -10,6 +10,7 @@ NAME		= spacex
 DEBUG_FLAG	+=	DEBUG
 DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
 DEBUG_FLAG	+=  SOCKET_DEBUG
+DEBUG_FLAG  +=  SPACE_RESPONSE_TEST
 # DEBUG_FLAG 	+= CONFIG_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 # DEBUG_FLAG += LOG_MODE
@@ -18,7 +19,9 @@ LOG	+=	$(addprefix -D, $(DEBUG_FLAG))
 SRC			=	spacex.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \
-				spx_core_util_box.cpp
+				spx_core_util_box.cpp \
+				spx_response_generator.cpp \
+				spx_autoindex_generator.cpp
 # spx_syntax_checker.cpp
 # spx_kqueue_main.cpp
 
@@ -32,7 +35,7 @@ OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 #	Compile Flags
 #==============================================================================
 CXX			=	c++
-CXX_WARN_FLAGS	=	all extra error
+CXX_WARN_FLAGS	=	#all extra error
 CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
