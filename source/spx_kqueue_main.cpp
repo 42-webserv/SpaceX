@@ -1,5 +1,4 @@
 #include "spx_client_buffer.hpp"
-#include "spx_syntax_checker.hpp"
 
 void
 add_change_list(std::vector<struct kevent>& change_list,
@@ -177,7 +176,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			this->flag_ |= RDBUF_CHECKED;
 			return false;
 		}
-	case REQ_HEADER_PARSING:
+	case REQ_HEADER_PARSING: {
 		if (this->header_field_parser() == false) {
 			// need to read more from the client socket. or error?
 			this->flag_ |= RDBUF_CHECKED;
@@ -200,6 +199,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 
 		if (req->uri_loc_ && (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.
+			// make_response_header(*this);
 			this->state_ = REQ_LINE_PARSING;
 			break;
 		}
@@ -285,16 +285,18 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			// error. disconnect client.
 			break;
 		}
-		// case REQ_BODY:
-		// 	// req_field_t* req = &this->req_res_queue_.back().first;
-		// 	// if (req->)
-		// 	// 	// std::min(req->req->);
-		// 	// 	if (req->body_recieved_ == req->body_limit_) {
-		// 	// 		this->state_ = REQ_LINE_PARSING;
-		// 	// 	}
-		// 	break;
-		// case REQ_CGI:
-		// 	break;
+		break;
+	}
+	case REQ_BODY:
+		// req_field_t* req = &this->req_res_queue_.back().first;
+		// if (req->)
+		// 	// std::min(req->req->);
+		// 	if (req->body_recieved_ == req->body_limit_) {
+		// 		this->state_ = REQ_LINE_PARSING;
+		// 	}
+		break;
+	case REQ_CGI:
+		break;
 	}
 	this->state_ = REQ_LINE_PARSING;
 	return true;
@@ -310,35 +312,6 @@ ClientBuffer::disconnect_client(std::vector<struct kevent>& change_list) {
 					0, NULL);
 	close(this->client_fd_);
 }
-
-// uintptr_t
-// server_init() {
-// 	int				   serv_sd;
-// 	struct sockaddr_in serv_addr;
-
-// 	serv_sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-// 	if (serv_sd == -1) {
-// 		error_exit("socket()", NULL, 0);
-// 	}
-
-// 	int opt = 1;
-// 	if (setsockopt(serv_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-// 		error_exit("setsockopt()", close, serv_sd);
-// 	}
-
-// 	memset(&serv_addr, 0, sizeof(serv_addr));
-// 	serv_addr.sin_family	  = AF_INET;
-// 	serv_addr.sin_port		  = htons(SERV_PORT);
-// 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-// 	if (bind(serv_sd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
-// 		error_exit("bind", close, serv_sd);
-// 	}
-
-// 	if (listen(serv_sd, SERV_SOCK_BACKLOG) == -1) {
-// 		error_exit("bind", close, serv_sd);
-// 	}
-// }
 
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
@@ -501,6 +474,7 @@ ClientBuffer::write_response(uintptr_t					 fd,
 	}
 	if (res->buf_size_ == 0) {
 		this->req_res_queue_.pop();
+		this->flag_ &= ~(RDBUF_CHECKED);
 	}
 	return true;
 }
@@ -510,8 +484,8 @@ proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// need to check exit status??
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
 	waitpid(cur_event->ident, NULL, 0);
-	close(buf->req_res_queue_.front().first.cgi_in_fd_);
-	close(buf->req_res_queue_.front().first.cgi_out_fd_);
+	// close(buf->req_res_queue_.front().first.cgi_in_fd_);
+	// close(buf->req_res_queue_.front().first.cgi_out_fd_);
 	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
 }
 
@@ -619,8 +593,12 @@ kqueue_main(std::vector<port_info_t>& port_info) {
 
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
-			if (cur_event->flags & EV_ERROR) {
-				kevnet_error_handler(port_info, cur_event, change_list);
+			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
+				if (cur_event->flags & EV_ERROR) {
+					kevnet_error_handler(port_info, cur_event, change_list);
+				} else {
+					// eof close fd.
+				}
 			}
 			switch (cur_event->filter) {
 			case EVFILT_READ:

@@ -73,7 +73,7 @@ Response::setContentType(std::string uri) {
 };
 
 void
-Response::make_error_response(ClientBuffer& client_buffer, http_status error_code) {
+Response::make_error_response(client_buf_t& client_buffer, http_status error_code) {
 	status_			 = http_status_str(error_code);
 	status_code_	 = error_code;
 	req_field_t& req = client_buffer.req_res_queue_.front().first;
@@ -110,20 +110,25 @@ Response::setDate(void) {
 
 // this is main logic to make response
 void
-Response::make_response_header(ClientBuffer& client_buffer) {
+Response::make_response_header(client_buf_t& client_buffer) {
 	const req_field_t& cur_req
-		= client_buffer.req_res_queue_.front().first;
+		= client_buffer.req_res_queue_.back().first;
 	res_field_t& cur_res
-		= client_buffer.req_res_queue_.front().second;
+		= client_buffer.req_res_queue_.back().second;
 
 	const std::string& uri		  = cur_req.file_path_;
 	int				   req_fd	  = -1;
 	int				   req_method = cur_req.req_type_;
 	std::string		   content;
+	Response		   response_result;
 
 	// Set Date Header
-	setDate();
-	if ((req_method & (REQ_GET | REQ_HEAD))) {
+	response_result.setDate();
+	switch (req_method) {
+	case (REQ_HEAD):
+		response_result.make_redirect_response(client_buffer);
+		break;
+	case (REQ_GET):
 		req_fd			 = file_open(uri.c_str());
 		cur_res.body_fd_ = req_fd;
 		if (req_fd == 0) {
@@ -145,6 +150,7 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 			cur_res.buf_size_ += content_length;
 		headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 		cur_res.body_fd_ = req_fd;
+		break;
 	}
 	// settting response_header size  + content-length size to res_field
 	write_to_response_buffer(cur_res, make_to_string());
@@ -154,10 +160,19 @@ Response::make_response_header(ClientBuffer& client_buffer) {
 }
 
 void
-Response::make_redirect_response(const std::string& redirect_uri, res_field_t& res) {
+Response::make_redirect_response(client_buf_t& client_buffer) {
+	const req_field_t& req
+		= client_buffer.req_res_queue_.front().first;
+	res_field_t& res
+		= client_buffer.req_res_queue_.front().second;
+
 	setDate();
+	if (req.uri_loc_ == NULL || req.uri_loc_->redirect.empty()) {
+		make_error_response(client_buffer, HTTP_STATUS_NOT_FOUND);
+		return;
+	};
 	status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
 	status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
-	headers_.push_back(header("Location", redirect_uri));
+	headers_.push_back(header("Location", req.uri_loc_->redirect));
 	write_to_response_buffer(res, make_to_string());
 }
