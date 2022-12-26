@@ -8,13 +8,22 @@
 #include <iostream>
 #include <string>
 
+#define COLOR_RED "\033[1;31m"
+#define COLOR_GREEN "\033[1;32m"
+#define COLOR_YELLOW "\033[1;33m"
+#define COLOR_BLUE "\033[1;34m"
+#define COLOR_PURPLE "\033[1;35m"
+#define COLOR_CYAN "\033[1;36m"
+#define COLOR_WHITE "\033[1;37m"
+#define COLOR_RESET "\033[0m"
+
 std::string const generator_error_page_(uint32_t const& error_code);
 
 template <typename T>
 inline void
 spx_log_(T msg) {
 #ifdef DEBUG
-	std::cout << "\033[1;32m" << msg << "\033[0m" << std::endl;
+	std::cout << COLOR_GREEN << msg << COLOR_RESET << std::endl;
 #else
 	(void)msg;
 #endif
@@ -24,7 +33,7 @@ template <typename T>
 inline void
 spx_log_(std::string id, T msg) {
 #ifdef DEBUG
-	std::cout << "\033[1;32m" << id << ": " << msg << "\033[0m" << std::endl;
+	std::cout << COLOR_GREEN << id << ": " << msg << COLOR_RESET << std::endl;
 #else
 	(void)msg;
 #endif
