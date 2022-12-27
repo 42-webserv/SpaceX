@@ -3,10 +3,8 @@
 #include "spx_port_info.hpp"
 #include <vector>
 
-#ifndef YOMA_SEARCH_DEBUG
 #include "spx_client_buffer.hpp"
 #include "spx_kqueue_module.hpp"
-#endif
 
 #include "spx_autoindex_generator.hpp"
 // #include "spx_response_generator.hpp"
