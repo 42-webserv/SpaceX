@@ -24,8 +24,8 @@ inline void
 spx_log_(T msg) {
 #ifdef DEBUG
 	std::cout << COLOR_GREEN << msg << COLOR_RESET << std::endl;
-	std::fstream file;
-	file.open("./log/request.log", std::ios::out | std::ios::ate);
+	static std::fstream file;
+	file.open("./log/request.log", std::ios::out | std::ios::app);
 	if (file.is_open()) {
 		file << msg << std::endl;
 	}
