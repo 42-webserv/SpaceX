@@ -109,8 +109,24 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 							EV_DISABLE, 0, 0, buf);
 		}
 	} else {
-		// write to serv file descriptor or cgi
-		// if (buf->req_res_queue_.front)
+		if (cur_event->ident == buf->req_res_queue_.back().first.body_fd_) {
+			if (buf->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+				spx_log_("write_for_upload - chunked");
+				// chunked logic
+			} else {
+				spx_log_("write_for_upload");
+				buf->write_for_upload(change_list);
+			}
+			if (buf->req_res_queue_.back().first.flag_ & READ_BODY_END) {
+				spx_log_("write_for_upload - uploaded");
+				close(cur_event->ident);
+				add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+				buf->make_response_header();
+				buf->req_res_queue_.back().second.flag_ |= WRITE_READY;
+			}
+		} else {
+			// cgi logic
+		}
 	}
 }
 

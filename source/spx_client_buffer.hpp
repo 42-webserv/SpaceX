@@ -56,8 +56,8 @@ enum e_read_status {
 	REQ_CGI			   = 3
 };
 
-enum e_req_flag { REQ_FILE_OPEN = 1,
-				  REQ_PARSED
+enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
+				  READ_BODY_END = 1 << 1
 };
 
 enum e_res_flag { RES_FILE_OPEN = 1,
@@ -78,6 +78,9 @@ public:
 	buffer_t						   cgi_buffer_;
 	int								   cgi_in_fd_;
 	int								   cgi_out_fd_;
+	int								   body_fd_;
+	size_t							   body_size_;
+	int								   body_read_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
 	std::string						   http_ver_;
@@ -95,6 +98,9 @@ public:
 		: cgi_buffer_()
 		, cgi_in_fd_()
 		, cgi_out_fd_()
+		, body_fd_(-1)
+		, body_size_(0)
+		, body_read_(0)
 		, field_()
 		, req_target_()
 		, http_ver_()
@@ -200,6 +206,7 @@ public:
 	void disconnect_client(event_list_t& change_list);
 
 	bool write_response(event_list_t& change_list);
+	bool write_for_upload(event_list_t& change_list);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);

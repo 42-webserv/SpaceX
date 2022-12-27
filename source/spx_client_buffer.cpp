@@ -100,6 +100,7 @@ ClientBuffer::header_field_parser() {
 						*it = tolower(*it);
 					}
 				}
+				spx_log_(header_field_line);
 				size_t tmp = idx + 1;
 				while (tmp < header_field_line.size() && syntax_(ows_, header_field_line[tmp])) {
 					++tmp;
@@ -118,12 +119,15 @@ ClientBuffer::header_field_parser() {
 	const std::map<std::string, std::string>*		   field = &this->req_res_queue_.back().first.field_;
 	std::map<std::string, std::string>::const_iterator it;
 	it = field->find("content-length");
+
 	if (it != field->end()) {
-		this->req_res_queue_.back().first.content_length_ = strtoul((it->second).c_str(), NULL, 10);
-		this->state_									  = REQ_BODY;
+		this->req_res_queue_.back().first.body_size_ = strtoul((it->second).c_str(), NULL, 10);
+		spx_log_("content-length", this->req_res_queue_.back().first.body_size_);
+		this->state_ = REQ_BODY;
 	}
 	it = field->find("transfer-encoding");
 	if (it != field->end() && it->second.find("chunked") != std::string::npos) {
+		spx_log_("transfer-encoding: cunked");
 		this->req_res_queue_.back().first.transfer_encoding_ |= TE_CHUNKED;
 		this->state_ = REQ_BODY;
 	}
@@ -262,19 +266,32 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		case REQ_POST:
 			// set_post_res();
-			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
-				uintptr_t fd = open(
-					this->req_res_queue_.back().first.file_path_.c_str(),
-					O_RDONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
-				if (fd < 0) {
-					// open error
-					// 405 not allowed error with keep-alive connection.
+			if ((this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) == false) {
+				if (this->req_res_queue_.back().first.body_size_ == 0) {
+					this->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
+					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+					return false;
 				}
+			}
+
+			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
+				this->req_res_queue_.back().first.body_fd_ = open(
+					this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(),
+					O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
+				if (this->req_res_queue_.back().first.body_fd_ < 0) {
+					// 405 not allowed error with keep-alive connection.
+					this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
+					if (this->req_res_queue_.back().second.body_fd_ != -1) {
+						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+						this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+						return false;
+					}
+				}
+				spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
 				// add_change_list(change_list, cur_event->ident,
 				// 				EVFILT_READ, EV_DISABLE, 0, 0,
 				// 				this);
-				add_change_list(change_list, fd, EVFILT_READ,
-								EV_ADD | EV_ENABLE, 0, 0, this);
+				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 				this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
 				return false;
 			}
@@ -283,7 +300,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
 				uintptr_t fd = open(
 					this->req_res_queue_.back().first.file_path_.c_str(),
-					O_RDONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
+					O_WRONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
 				if (fd < 0) {
 					// open error
 					// 405 not allowed error with keep-alive connection.
@@ -508,6 +525,10 @@ ClientBuffer::make_response_header() {
 		}
 		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 		break;
+	case REQ_POST:
+		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
+		break;
 	}
 	// settting response_header size  + content-length size to res_field
 	res.write_to_response_buffer(res.make_to_string());
@@ -535,6 +556,36 @@ ClientBuffer::make_redirect_response() {
 }
 
 bool
+ClientBuffer::write_for_upload(event_list_t& change_list) {
+	int	   n_write;
+	size_t buf_len = this->rdsaved_.size() - this->rdchecked_;
+	size_t len	   = this->req_res_queue_.back().first.body_size_ - this->req_res_queue_.back().first.body_read_;
+
+	if (req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+		// chunked logic
+	} else {
+		if (WRITE_BUFFER_MAX <= std::min(buf_len, len)) {
+			spx_log_("write_for_upload: MAX_BUF ");
+			n_write = write(this->req_res_queue_.back().first.body_fd_, &this->rdsaved_[this->rdchecked_], WRITE_BUFFER_MAX);
+		} else if (buf_len <= len) {
+			spx_log_("write_for_upload: buf_len: ", buf_len);
+			n_write = write(this->req_res_queue_.back().first.body_fd_, &this->rdsaved_[this->rdchecked_], buf_len);
+		} else {
+			spx_log_("write_for_upload: len: ", len);
+			n_write = write(this->req_res_queue_.back().first.body_fd_, &this->rdsaved_[this->rdchecked_], len);
+		}
+		spx_log_("body_fd: ", this->req_res_queue_.back().first.body_fd_);
+		spx_log_("write len: ", n_write);
+		this->req_res_queue_.back().first.body_read_ += n_write;
+		this->rdchecked_ += n_write;
+	}
+	if (this->req_res_queue_.back().first.body_read_ == this->req_res_queue_.back().first.body_size_) {
+		req_res_queue_.back().first.flag_ |= READ_BODY_END;
+	}
+	return true;
+}
+
+bool
 ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 	res_field_t* res = &this->req_res_queue_.front().second;
 	// no chunked case.
@@ -542,9 +593,9 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 						std::min((size_t)WRITE_BUFFER_MAX,
 								 res->res_buffer_.size() - res->sent_pos_));
 	// write(this->client_fd_, "asdf", 4);
-	write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
-		  std::min((size_t)WRITE_BUFFER_MAX,
-				   res->res_buffer_.size() - res->sent_pos_));
+	// write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
+	// 	  std::min((size_t)WRITE_BUFFER_MAX,
+	// 			   res->res_buffer_.size() - res->sent_pos_));
 	if (n_write < 0) {
 		spx_log_("write error");
 		// client fd error. maybe disconnected.
