@@ -653,14 +653,17 @@ ClientBuffer::make_response_header() {
 			make_error_response(HTTP_STATUS_NOT_FOUND);
 			return;
 		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
-			content = generate_autoindex_page(req_fd, req.uri_loc_->root);
-			std::stringstream ss;
-			ss << content.size();
-			res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
-			// ???? autoindex fail case?
-			if (content.empty()) {
-				make_error_response(HTTP_STATUS_FORBIDDEN);
-				return;
+			if (res.uri_resolv_.is_same_location_) {
+				content = generate_autoindex_page(req_fd, req.uri_loc_->root);
+				std::stringstream ss;
+				ss << content.size();
+				res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+				// ???? autoindex fail case?
+				if (content.empty()) {
+					make_error_response(HTTP_STATUS_FORBIDDEN);
+					return;
+				} else
+					make_error_response(HTTP_STATUS_NOT_FOUND);
 			}
 		}
 		if (req_fd != -1) {
