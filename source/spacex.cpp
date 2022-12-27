@@ -124,7 +124,6 @@ main(int argc, char const* argv[]) {
 	if (argc <= 2) {
 		std::string cur_dir;
 		get_current_path_(cur_dir);
-		spx_log_(cur_dir);
 
 		total_port_server_map_p config_info = config_file_open_(argc, argv, cur_dir);
 		spx_log_("config file open success");
