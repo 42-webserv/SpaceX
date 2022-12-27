@@ -5,6 +5,7 @@
 
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
+#include <vector>
 
 typedef std::map<std::string, std::string> header_field_map;
 
@@ -23,6 +24,7 @@ public:
 	~CgiModule();
 
 	void made_env_for_cgi_(void);
+	// static
 };
 
 #endif
