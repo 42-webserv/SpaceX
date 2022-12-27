@@ -25,9 +25,7 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 	struct dirent*	  entry;
 	std::stringstream result;
 
-	std::string slash("/");
-	std::string path2	  = slash + path;
-	char*		base_name = basename((char*)path.c_str());
+	char* base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << base_name
 		   << HTML_BEFORE_LIST;
 	result << "<table>";
@@ -52,10 +50,12 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 				result << filename << CLOSE_A_TAG << CRLF;
 				continue;
 			}
-			std::string full_path = path + filename;
+			std::string full_path = path + "/" + filename;
 			struct stat file_status;
 			result << filename << CLOSE_A_TAG << "</td>"
 				   << "<td " << TD_STYLE << ">";
+			spx_log_(full_path.c_str());
+			spx_log_(stat(full_path.c_str(), &file_status));
 			if (stat(full_path.c_str(), &file_status) == 0) {
 				result << get_file_timetable(file_status);
 			}
