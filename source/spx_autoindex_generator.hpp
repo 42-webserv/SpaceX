@@ -23,6 +23,6 @@
 #define CLOSE_A_TAG "</a>"
 
 std::string
-generate_autoindex_page(int& req_fd, const std::string& path);
+generate_autoindex_page(int& req_fd, uri_resolved_t& path);
 
 #endif

@@ -20,10 +20,12 @@ get_file_timetable(struct stat file_status) {
 }
 
 std::string
-generate_autoindex_page(int& req_fd, const std::string& path) {
+generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	DIR*			  dir;
 	struct dirent*	  entry;
 	std::stringstream result;
+	std::string&	  path = path_info.script_filename_;
+	std::string		  full_path;
 
 	char* base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << base_name
@@ -43,13 +45,18 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 			result << "<tr>";
 			// get the full path of the file
 			result << "<td>";
-			result << A_TAG_START << entry->d_name << A_TAG_END;
+			// TODO : this is something wrong
+			if (path_info.resolved_request_uri_.size() != 1) {
+				full_path = path_info.resolved_request_uri_ + "/" + filename;
+			} else {
+				full_path = filename;
+			}
+			result << A_TAG_START << full_path << A_TAG_END;
 
 			if (filename.compare("..") == 0) {
 				result << filename << CLOSE_A_TAG << CRLF;
 				continue;
 			}
-			std::string full_path = path + "/" + filename;
 			struct stat file_status;
 			result << filename << CLOSE_A_TAG << "</td>"
 				   << "<td " << TD_STYLE << ">";
