@@ -581,7 +581,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 		res->res_buffer_.clear();
 		res->sent_pos_ = 0;
 	}
-	spx_log_("write_bufsize: ", res->buf_size_);
+	// spx_log_("write_bufsize: ", res->buf_size_);
 	if (res->buf_size_ == 0) {
 		this->req_res_queue_.pop();
 		this->flag_ &= ~(RDBUF_CHECKED);
@@ -604,8 +604,10 @@ ClientBuffer::make_error_response(http_status error_code) {
 	else
 		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
-	std::string page_path	 = req.serv_info_->get_error_page_path_(error_code);
-	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
+	std::string page_path = req.serv_info_->get_error_page_path_(error_code);
+	spx_log_("page_path = ", page_path);
+	int error_req_fd = open(page_path.c_str(), O_RDONLY);
+	spx_log_("error_req_fd : ", error_req_fd);
 	if (error_req_fd < 0) {
 		std::stringstream ss;
 		const std::string error_page = generator_error_page_(error_code);
@@ -613,10 +615,23 @@ ClientBuffer::make_error_response(http_status error_code) {
 		ss << error_page.length();
 		res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 		res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
-		res.write_to_response_buffer(res.make_to_string());
+		std::string tmp = res.make_to_string();
+		res.write_to_response_buffer(tmp);
+		res.buf_size_ += tmp.length();
 		if (req.req_type_ != REQ_HEAD)
 			res.write_to_response_buffer(error_page);
+		return;
 	}
+	res.body_fd_ = error_req_fd;
+
+	res.setContentType(page_path);
+	int	  req_method	 = req.req_type_;
+	off_t content_length = res.setContentLength(error_req_fd);
+
+	if (req_method == REQ_GET)
+		res.buf_size_ += content_length;
+	res.buf_size_ += content_length;
+	res.write_to_response_buffer(res.make_to_string());
 }
 
 // this is main logic to make response
@@ -663,8 +678,10 @@ ClientBuffer::make_response_header() {
 					make_error_response(HTTP_STATUS_FORBIDDEN);
 					return;
 				}
-			} else
+			} else {
 				make_error_response(HTTP_STATUS_NOT_FOUND);
+				return;
+			}
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");
