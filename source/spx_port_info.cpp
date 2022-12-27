@@ -122,7 +122,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				flag_check_dup |= Kuri_same_uri;
 			} else {
 				it_ = uri_case.find("/");
-				if (it_ != uri_case.end()) {
+				if (it_ != uri_case.end() && temp == "/") {
 					return_location = &it_->second;
 					root_uri_flag |= 1;
 				}
