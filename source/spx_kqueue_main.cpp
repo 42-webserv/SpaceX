@@ -421,7 +421,11 @@ ClientBuffer::read_to_res_buffer(event_list_t& change_list, struct kevent* cur_e
 	this->req_res_queue_.back().second.res_buffer_.insert(
 		this->req_res_queue_.back().second.res_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 	this->req_res_queue_.back().second.body_read_ += n_read;
-	// if (this->req_res_queue_.back().second.body_read_ ==)
+	// if all content read, close fd.
+	if (this->req_res_queue_.back().second.body_read_ == this->req_res_queue_.back().second.body_size_) {
+		close(cur_event->ident);
+		add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+	}
 }
 
 void
