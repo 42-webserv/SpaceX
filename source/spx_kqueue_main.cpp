@@ -200,11 +200,23 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
 
+		spx_log_("uri_loc", req->uri_loc_);
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.
 			// make_response_header(*this);
-			this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
-			this->state_ = REQ_LINE_PARSING;
+			if (req->uri_loc_ == NULL) {
+				this->make_error_response(HTTP_STATUS_NOT_FOUND);
+				if (this->req_res_queue_.back().second.body_fd_ != -1) {
+					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+				}
+				this->state_ = REQ_LINE_PARSING;
+			} else {
+				this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
+				if (this->req_res_queue_.back().second.body_fd_ != -1) {
+					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+				}
+				this->state_ = REQ_LINE_PARSING;
+			}
 			break;
 		}
 
@@ -326,9 +338,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 void
 ClientBuffer::disconnect_client(std::vector<struct kevent>& change_list) {
 	// client status, tmp file...? check.
-	add_change_list(change_list, this->client_fd_, EVFILT_READ, EV_DELETE, 0, 0,
+	add_change_list(change_list, this->client_fd_, EVFILT_READ, EV_DISABLE | EV_DELETE, 0, 0,
 					NULL);
-	add_change_list(change_list, this->client_fd_, EVFILT_WRITE, EV_DELETE, 0,
+	add_change_list(change_list, this->client_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0,
 					0, NULL);
 	close(this->client_fd_);
 }
@@ -377,7 +389,7 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 		return;
 	}
 	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_, this->rdbuf_ + n_read);
-	spx_log_("read_to_client");
+	spx_log_("read_to_client: ", n_read);
 	if (this->req_res_queue_.size() == 0
 		|| (this->req_res_queue_.front().second.flag_ & WRITE_READY) == false) {
 		this->req_res_controller(change_list, cur_event);
@@ -408,6 +420,12 @@ ClientBuffer::read_to_res_buffer(event_list_t& change_list, struct kevent* cur_e
 	spx_log_("read_to_res_buffer");
 	this->req_res_queue_.back().second.res_buffer_.insert(
 		this->req_res_queue_.back().second.res_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
+	this->req_res_queue_.back().second.body_read_ += n_read;
+	// if all content read, close fd.
+	if (this->req_res_queue_.back().second.body_read_ == this->req_res_queue_.back().second.body_size_) {
+		close(cur_event->ident);
+		add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+	}
 }
 
 void
@@ -445,6 +463,7 @@ ResField::setContentLength(int fd) {
 
 	std::stringstream ss;
 	ss << length;
+	body_size_ += length;
 
 	headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 	return length;
@@ -493,7 +512,7 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 		}
 		return;
 	}
-
+	spx_log_("read_event_handler");
 	client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 	if (cur_event->ident == buf->client_fd_) {
 		buf->read_to_client_buffer(change_list, cur_event);
@@ -509,7 +528,7 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 }
 
 void
-kevnet_error_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event,
+kevent_error_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event,
 					 std::vector<struct kevent>& change_list) {
 	if (cur_event->ident < port_info.size()) {
 		for (int i = 0; i < port_info.size(); i++) {
@@ -521,8 +540,10 @@ kevnet_error_handler(std::vector<port_info_t>& port_info, struct kevent* cur_eve
 	} else {
 		client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 		std::cerr << "client socket error" << std::endl;
-		buf->disconnect_client(change_list);
-		delete buf;
+		if (buf != NULL) {
+			buf->disconnect_client(change_list);
+			delete buf;
+		}
 	}
 }
 
@@ -581,7 +602,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 		res->res_buffer_.clear();
 		res->sent_pos_ = 0;
 	}
-	spx_log_("write_bufsize: ", res->buf_size_);
+	// spx_log_("write_bufsize: ", res->buf_size_);
 	if (res->buf_size_ == 0) {
 		this->req_res_queue_.pop();
 		this->flag_ &= ~(RDBUF_CHECKED);
@@ -604,8 +625,10 @@ ClientBuffer::make_error_response(http_status error_code) {
 	else
 		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
-	std::string page_path	 = req.serv_info_->get_error_page_path_(error_code);
-	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
+	std::string page_path = req.serv_info_->get_error_page_path_(error_code);
+	spx_log_("page_path = ", page_path);
+	int error_req_fd = open(page_path.c_str(), O_RDONLY);
+	spx_log_("error_req_fd : ", error_req_fd);
 	if (error_req_fd < 0) {
 		std::stringstream ss;
 		const std::string error_page = generator_error_page_(error_code);
@@ -613,10 +636,23 @@ ClientBuffer::make_error_response(http_status error_code) {
 		ss << error_page.length();
 		res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 		res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
-		res.write_to_response_buffer(res.make_to_string());
+		std::string tmp = res.make_to_string();
+		res.write_to_response_buffer(tmp);
+		res.buf_size_ += tmp.length();
 		if (req.req_type_ != REQ_HEAD)
 			res.write_to_response_buffer(error_page);
+		return;
 	}
+	res.body_fd_ = error_req_fd;
+
+	res.setContentType(page_path);
+	int	  req_method	 = req.req_type_;
+	off_t content_length = res.setContentLength(error_req_fd);
+
+	if (req_method == REQ_GET)
+		res.buf_size_ += content_length;
+	res.buf_size_ += content_length;
+	res.write_to_response_buffer(res.make_to_string());
 }
 
 // this is main logic to make response
@@ -663,8 +699,10 @@ ClientBuffer::make_response_header() {
 					make_error_response(HTTP_STATUS_FORBIDDEN);
 					return;
 				}
-			} else
+			} else {
 				make_error_response(HTTP_STATUS_NOT_FOUND);
+				return;
+			}
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");
@@ -815,23 +853,36 @@ kqueue_main(std::vector<port_info_t>& port_info) {
 			error_exit_msg("kevent()");
 		}
 		change_list.clear();
-
+		spx_log_("event_len:", event_len);
 		// std::cout << "current loop: " << l++ << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
-					kevnet_error_handler(port_info, cur_event, change_list);
+					kevent_error_handler(port_info, cur_event, change_list);
 				} else {
 					// eof close fd.
+					client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
+					if (cur_event->ident == ((client_buf_t*)cur_event->udata)->client_fd_) {
+						std::cerr << "client socket eof" << std::endl;
+						buf->disconnect_client(change_list);
+						delete buf;
+					} else {
+						// cgi? server file?
+					}
 				}
+				continue;
 			}
+			spx_log_("cur->ident:", cur_event->ident);
+			spx_log_("cur->flags:", cur_event->flags);
 			switch (cur_event->filter) {
 			case EVFILT_READ:
+				spx_log_("event_read");
 				read_event_handler(port_info, cur_event, change_list);
 				break;
 			case EVFILT_WRITE:
+				spx_log_("event_write");
 				write_event_handler(port_info, cur_event, change_list);
 				break;
 			case EVFILT_PROC:
