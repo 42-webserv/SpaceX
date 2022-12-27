@@ -664,9 +664,9 @@ ClientBuffer::make_response_header() {
 				if (content.empty()) {
 					make_error_response(HTTP_STATUS_FORBIDDEN);
 					return;
-				} else
-					make_error_response(HTTP_STATUS_NOT_FOUND);
-			}
+				}
+			} else
+				make_error_response(HTTP_STATUS_NOT_FOUND);
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");
