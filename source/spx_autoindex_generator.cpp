@@ -1,6 +1,25 @@
 #include "spx_autoindex_generator.hpp"
 
 std::string
+get_file_timetable(struct stat file_status) {
+	std::stringstream result;
+
+	// get the size of the file in bytes
+	size_t size = file_status.st_size;
+	// get the time of the last modification
+	time_t	 mtime		 = file_status.st_mtime;
+	std::tm* modify_time = std::gmtime(&mtime);
+
+	char date_buf[32];
+	std::strftime(date_buf, sizeof(date_buf), "%d-%b-%Y %H:%M",
+				  modify_time);
+
+	result << date_buf << "</td><td>"
+		   << size;
+	return result.str();
+}
+
+std::string
 generate_autoindex_page(int& req_fd, const std::string& path) {
 	DIR*			  dir;
 	struct dirent*	  entry;
@@ -35,22 +54,13 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 			}
 			std::string full_path = path + filename;
 			struct stat file_status;
+			result << filename << CLOSE_A_TAG << "</td>"
+				   << "<td " << TD_STYLE << ">";
 			if (stat(full_path.c_str(), &file_status) == 0) {
-				// get the size of the file in bytes
-				size_t size = file_status.st_size;
-				// get the time of the last modification
-				time_t	 mtime		 = file_status.st_mtime;
-				std::tm* modify_time = std::gmtime(&mtime);
-
-				char date_buf[32];
-				std::strftime(date_buf, sizeof(date_buf), "%d-%b-%Y %H:%M",
-							  modify_time);
-				// print the name, size, and modification time
-				result << filename << CLOSE_A_TAG << "</td>"
-					   << "<td " << TD_STYLE << ">" << date_buf << "</td><td>"
-					   << size << "</td>"
-					   << "</tr>" << CRLF;
+				result << get_file_timetable(file_status);
 			}
+			result << "</td>"
+				   << "</tr>" << CRLF;
 		}
 		result << "</table>" << HTML_AFTER_LIST;
 		closedir(dir);
