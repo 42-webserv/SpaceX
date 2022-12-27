@@ -100,7 +100,6 @@ ClientBuffer::header_field_parser() {
 						*it = tolower(*it);
 					}
 				}
-				spx_log_(header_field_line);
 				size_t tmp = idx + 1;
 				while (tmp < header_field_line.size() && syntax_(ows_, header_field_line[tmp])) {
 					++tmp;
@@ -265,10 +264,13 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 			break;
 		case REQ_POST:
-			// set_post_res();
+			// POST - content len 0. (No body. error case?)
 			if ((this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) == false) {
 				if (this->req_res_queue_.back().first.body_size_ == 0) {
 					this->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
+					if (this->req_res_queue_.back().second.body_fd_ != -1) {
+						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+					}
 					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 					return false;
 				}
@@ -283,9 +285,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 					this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
 					if (this->req_res_queue_.back().second.body_fd_ != -1) {
 						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-						this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-						return false;
 					}
+					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+					return false;
 				}
 				spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
 				// add_change_list(change_list, cur_event->ident,

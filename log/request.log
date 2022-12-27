@@ -1,1 +1,32 @@
-Content-Type: test/file
+Connection: keep-alive
+Connection: keep-alive
+content-length: 11
+controller-header ok
+uri_loc: 0x611000017c78
+req_uri set ok
+control - REQ_POST fd: : 7
+req_res_controller check finished.
+enable write
+event_len:: 2
+cur->ident:: 7
+cur->flags:: 5
+event_write
+write_for_upload
+write_for_upload: buf_len: : 11
+body_fd: : 7
+write len: : 11
+write_for_upload - uploaded
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 325
+req_res_controller check finished.
+enable write
