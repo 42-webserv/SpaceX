@@ -575,8 +575,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (temp_basic_server_info.root.empty()) {
 						temp_uri_location_info.root = cur_path + temp_uri_location_info.uri;
 					} else {
-						temp_uri_location_info.root = temp_basic_server_info.root;
+						temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
 					}
+					flag_location_part |= Kflag_root;
 				}
 				if (!(flag_location_part & Kflag_client_max_body_size)) {
 					temp_uri_location_info.client_max_body_size = 8124;

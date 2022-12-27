@@ -2,9 +2,7 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 
-#ifndef YOMA_SEARCH_DEBUG
 #include "spx_client_buffer.hpp"
-#endif
 
 namespace {
 
