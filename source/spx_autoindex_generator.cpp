@@ -29,7 +29,6 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << base_name
 		   << HTML_BEFORE_LIST;
 	result << "<table>";
-
 	if ((dir = opendir(path.c_str())) != NULL) {
 		// std::cout << "XX" << std::endl;
 
@@ -54,8 +53,6 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 			struct stat file_status;
 			result << filename << CLOSE_A_TAG << "</td>"
 				   << "<td " << TD_STYLE << ">";
-			spx_log_(full_path.c_str());
-			spx_log_(stat(full_path.c_str(), &file_status));
 			if (stat(full_path.c_str(), &file_status) == 0) {
 				result << get_file_timetable(file_status);
 			}

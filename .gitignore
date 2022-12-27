@@ -15,3 +15,9 @@ spacex
 obj/*
 
 *.dSYM
+
+log/*
+
+**/*.log
+
+**/log
