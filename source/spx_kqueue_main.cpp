@@ -463,6 +463,7 @@ ResField::setContentLength(int fd) {
 
 	std::stringstream ss;
 	ss << length;
+	body_size_ += length;
 
 	headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 	return length;
