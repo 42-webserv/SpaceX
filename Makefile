@@ -23,7 +23,8 @@ SRC			=	spacex.cpp \
 				spx_response_generator.cpp \
 				spx_autoindex_generator.cpp \
 				spx_syntax_checker.cpp \
-				spx_kqueue_main.cpp
+				spx_client_buffer.cpp \
+				spx_kqueue_module.cpp
 
 
 SRC_DIR		=	source/

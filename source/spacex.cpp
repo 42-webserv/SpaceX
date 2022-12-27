@@ -5,6 +5,7 @@
 
 #ifndef YOMA_SEARCH_DEBUG
 #include "spx_client_buffer.hpp"
+#include "spx_kqueue_module.hpp"
 #endif
 
 #include "spx_autoindex_generator.hpp"
@@ -158,7 +159,7 @@ main(int argc, char const* argv[]) {
 		// while (1) {
 		// }
 #else
-		kqueue_main(spx.port_info);
+		kqueue_module(spx.port_info);
 #endif
 #ifdef SPACE_RESPONSE_TEST
 		ResField							res;
