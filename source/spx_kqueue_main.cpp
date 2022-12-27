@@ -219,6 +219,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			if (this->req_res_queue_.back().second.body_fd_ == -1) {
 				spx_log_("No file descriptor");
 			} else {
+				spx_log_("READ event added");
 				add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 			}
 			this->req_res_queue_.back().second.flag_ |= WRITE_READY;
@@ -388,7 +389,7 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 
 void
 ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event) {
-	int n_read = read(this->client_fd_, this->rdbuf_, BUFFER_SIZE);
+	int n_read = read(cur_event->ident, this->rdbuf_, BUFFER_SIZE);
 	if (n_read < 0) {
 		// TODO: error handle
 		return;
@@ -399,11 +400,12 @@ ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_e
 
 void
 ClientBuffer::read_to_res_buffer(event_list_t& change_list, struct kevent* cur_event) {
-	int n_read = read(this->client_fd_, this->rdbuf_, BUFFER_SIZE);
+	int n_read = read(cur_event->ident, this->rdbuf_, BUFFER_SIZE);
 	if (n_read < 0) {
 		// TODO: error handle
 		return;
 	}
+	spx_log_("read_to_res_buffer");
 	this->req_res_queue_.back().second.res_buffer_.insert(
 		this->req_res_queue_.back().second.res_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 }
@@ -439,7 +441,7 @@ ResField::setContentLength(int fd) {
 	if (fd < 0)
 		return 0;
 	off_t length = lseek(fd, 0, SEEK_END);
-	lseek(fd, SEEK_CUR, SEEK_SET);
+	lseek(fd, 0, SEEK_SET);
 
 	std::stringstream ss;
 	ss << length;
@@ -499,6 +501,7 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 		// read from cgi output.
 		buf->read_to_cgi_buffer(change_list, cur_event);
 	} else {
+		spx_log_("read_event_handler - read_to_res_buffer");
 		// server file read case for res_body.
 		buf->read_to_res_buffer(change_list, cur_event);
 		// if ( )
@@ -562,6 +565,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 	int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 						std::min((size_t)WRITE_BUFFER_MAX,
 								 res->res_buffer_.size() - res->sent_pos_));
+	// write(this->client_fd_, "asdf", 4);
 	write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
 		  std::min((size_t)WRITE_BUFFER_MAX,
 				   res->res_buffer_.size() - res->sent_pos_));
@@ -577,7 +581,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 		res->res_buffer_.clear();
 		res->sent_pos_ = 0;
 	}
-	spx_log_(res->buf_size_);
+	spx_log_("write_bufsize: ", res->buf_size_);
 	if (res->buf_size_ == 0) {
 		this->req_res_queue_.pop();
 		this->flag_ &= ~(RDBUF_CHECKED);
@@ -603,8 +607,8 @@ ClientBuffer::make_error_response(http_status error_code) {
 	std::string page_path	 = req.serv_info_->get_error_page_path_(error_code);
 	int			error_req_fd = open(page_path.c_str(), O_RDONLY);
 	if (error_req_fd < 0) {
-		std::stringstream  ss;
-		const std::string& error_page = generator_error_page_(error_code);
+		std::stringstream ss;
+		const std::string error_page = generator_error_page_(error_code);
 
 		ss << error_page.length();
 		res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
@@ -623,7 +627,7 @@ ClientBuffer::make_response_header() {
 	res_field_t& res
 		= req_res_queue_.back().second;
 
-	const std::string& uri		  = req.file_path_;
+	const std::string& uri		  = res.uri_resolv_.script_filename_;
 	int				   req_fd	  = -1;
 	int				   req_method = req.req_type_;
 	std::string		   content;
@@ -653,18 +657,23 @@ ClientBuffer::make_response_header() {
 			}
 		}
 		if (req_fd != -1) {
+			spx_log_("res_header");
 			res.setContentType(uri);
 			off_t content_length = res.setContentLength(req_fd);
 			if (req_method == REQ_GET)
 				res.buf_size_ += content_length;
-			res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-			res.body_fd_ = req_fd;
-			break;
+			// res.headers_.push_back(header("Accept-Ranges", "bytes"));
+			// res.headers_.push_back(header("Server", "SpaceX/12.27"));
+			// res.headers_.push_back(header("ETag", "63aa9b5e-a7"));
+			// res.headers_.push_back(header("Last-Modified", "Tue, 27 Dec 2022 07:14:38 GMT"));
+			// res.headers_.push_back(header("Status", "200"));
+
 		} else {
 			// autoindex case?
 			res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
-			res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 		}
+		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+		break;
 	}
 	// settting response_header size  + content-length size to res_field
 	res.write_to_response_buffer(res.make_to_string());
