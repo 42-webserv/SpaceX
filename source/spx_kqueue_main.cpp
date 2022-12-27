@@ -200,9 +200,11 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
 
+		spx_log_("uri_loc", req->uri_loc_);
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.
 			// make_response_header(*this);
+			spx_log_("uri_loc", req->uri_loc_);
 			this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
 			this->state_ = REQ_LINE_PARSING;
 			break;
