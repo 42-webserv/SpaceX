@@ -639,8 +639,12 @@ ClientBuffer::make_response_header() {
 		// make_redirect_response();
 		break;
 	case (REQ_GET):
-		req_fd = res.file_open(uri.c_str());
-		spx_log_(uri.c_str());
+		if (uri[uri.size() - 1] != '/') {
+			req_fd = res.file_open(uri.c_str());
+			spx_log_(uri.c_str());
+		} else {
+			spx_log_("folder skip");
+		}
 		res.body_fd_ = req_fd;
 		if (req_fd == 0) {
 			make_error_response(HTTP_STATUS_FORBIDDEN);
@@ -650,6 +654,9 @@ ClientBuffer::make_response_header() {
 			return;
 		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
 			content = generate_autoindex_page(req_fd, req.uri_loc_->root);
+			std::stringstream ss;
+			ss << content.size();
+			res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
 			// ???? autoindex fail case?
 			if (content.empty()) {
 				make_error_response(HTTP_STATUS_FORBIDDEN);
@@ -663,10 +670,6 @@ ClientBuffer::make_response_header() {
 			if (req_method == REQ_GET)
 				res.buf_size_ += content_length;
 			// res.headers_.push_back(header("Accept-Ranges", "bytes"));
-			// res.headers_.push_back(header("Server", "SpaceX/12.27"));
-			// res.headers_.push_back(header("ETag", "63aa9b5e-a7"));
-			// res.headers_.push_back(header("Last-Modified", "Tue, 27 Dec 2022 07:14:38 GMT"));
-			// res.headers_.push_back(header("Status", "200"));
 
 		} else {
 			// autoindex case?

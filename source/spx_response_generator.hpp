@@ -19,7 +19,7 @@
 
 #define SERVER_HEADER_KEY "Server"
 #define SERVER_HEADER_VALUE "SpaceX"
-#define CONTENT_LENGTH "Content-Legnth"
+#define CONTENT_LENGTH "Content-Length"
 #define CONTENT_TYPE "Content-Type"
 #define CONNECTION "Connection"
 #define KEEP_ALIVE "keep-alive"
