@@ -42,6 +42,11 @@ namespace {
 status
 spx_http_syntax_start_line(std::string const& line,
 						   int&				  req_type) {
+
+	if (line.length() > 8192) {
+		return error_flag_("invalid line start : too long", req_type);
+	}
+
 	std::string::const_iterator it		   = line.begin();
 	uint32_t					size_count = 0;
 	std::string					temp_str;
@@ -282,6 +287,11 @@ spx_http_syntax_start_line(std::string const& line,
 
 status
 spx_http_syntax_header_line(std::string const& line) {
+
+	if (line.length() > 8192) {
+		return error_("invalid header field : too long");
+	}
+
 	std::string::const_iterator it = line.begin();
 	enum {
 		spx_start = 0,
