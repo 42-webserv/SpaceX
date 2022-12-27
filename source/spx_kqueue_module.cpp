@@ -72,10 +72,11 @@ kevent_error_handler(std::vector<port_info_t>& port_info, struct kevent* cur_eve
 		error_exit_msg("kevent()");
 	} else {
 		client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
-		std::cerr << "client socket error" << std::endl;
-		if (buf != NULL) {
+		if (buf != NULL && buf->client_fd_ == cur_event->ident) {
 			buf->disconnect_client(change_list);
 			delete buf;
+		} else if (buf != NULL) {
+			spx_log_("cgi_fd_error?");
 		}
 	}
 }
