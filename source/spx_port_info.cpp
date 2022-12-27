@@ -79,6 +79,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	std::string					temp_extension;
 	std::string					temp_index;
 	uint8_t						flag_check_dup = 0;
+	uint8_t						root_uri_flag  = 0;
 	std::string::const_iterator it			   = uri.begin();
 
 	uri_resolved_sets.is_cgi_			= false;
@@ -120,9 +121,11 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				temp_location	= it_->second.uri;
 				flag_check_dup |= Kuri_same_uri;
 			} else {
-				// it_ = uri_case.find("/");
-				// if (it_ != uri_case.end()) {
-				// 	return_location = &it_->second;
+				it_ = uri_case.find("/");
+				if (it_ != uri_case.end()) {
+					return_location = &it_->second;
+					root_uri_flag |= 1;
+				}
 				// 	temp_index		= it_->second.index;
 				// 	temp_root		= it_->second.root;
 				// 	temp_location	= it_->second.uri;
@@ -240,6 +243,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			// XXX : if set saved_path, then use saved_path // not recommend this time
 			// TODO: cgi's saved_path isn't defined yet
 			if (flag_check_dup & Kuri_path_info) {
+				if (root_uri_flag & 1) {
+					return_location = NULL;
+				}
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			} else if (temp_index.empty()) {
