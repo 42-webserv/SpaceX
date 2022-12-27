@@ -118,6 +118,8 @@ public:
 	std::string	   file_path_;
 	size_t		   buf_size_;
 	int			   body_fd_;
+	int			   body_read_;
+	int			   body_size_;
 	int			   header_ready_;
 	int			   sent_pos_;
 	int			   flag_;
@@ -146,6 +148,8 @@ public:
 		, file_path_()
 		, buf_size_(0)
 		, body_fd_(-1)
+		, body_read_(0)
+		, body_size_(0)
 		, header_ready_(0)
 		, sent_pos_(0)
 		, flag_(0)
