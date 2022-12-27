@@ -48,7 +48,8 @@ generate_autoindex_page(int& req_fd, const std::string& path) {
 				// print the name, size, and modification time
 				result << filename << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">" << date_buf << "</td><td>"
-					   << size << "</td>" << CRLF;
+					   << size << "</td>"
+					   << "</tr>" << CRLF;
 			}
 		}
 		result << "</table>" << HTML_AFTER_LIST;
