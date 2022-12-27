@@ -110,10 +110,10 @@ generator_error_page_(uint32_t const& error_code) {
 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
 	error_page += "</title>";
 	error_page += "<style>html{background-color: #f1c40f;}body{color: #fefefe;}</style>";
-	error_page += "</head>" CRLF "<body>" CRLF "<div class=\"error-middle\"><h1>";
+	error_page += "</head>" CRLF "<body>" CRLF "<center><h1>";
 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
 	error_page += "</h1><p>";
 	error_page += "SpaceX Default error page.";
-	error_page += "</p></div>" CRLF "</body>" CRLF "</html>";
+	error_page += "</p></center>" CRLF "</body>" CRLF "</html>";
 	return error_page;
 }
