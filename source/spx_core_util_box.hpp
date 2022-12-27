@@ -22,14 +22,17 @@ std::string const generator_error_page_(uint32_t const& error_code);
 template <typename T>
 inline void
 spx_log_(T msg) {
-#ifdef DEBUG
-	std::cout << COLOR_GREEN << msg << COLOR_RESET << std::endl;
+#ifdef LOG_MODE
 	std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::app);
 	if (file.is_open()) {
 		file << msg << std::endl;
 	}
 	file.close();
+#endif
+
+#ifdef DEBUG
+	std::cout << COLOR_GREEN << msg << COLOR_RESET << std::endl;
 #else
 	(void)msg;
 #endif
@@ -38,27 +41,17 @@ spx_log_(T msg) {
 template <typename T>
 inline void
 spx_log_(std::string id, T msg) {
-#ifdef DEBUG
-	std::cout << COLOR_GREEN << id << ": " << msg << COLOR_RESET << std::endl;
+#ifdef LOG_MODE
 	std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::app);
 	if (file.is_open()) {
 		file << id << ": " << msg << std::endl;
 	}
 	file.close();
-#else
-	(void)msg;
 #endif
-}
 
-inline void
-spx_log_check_(std::string const& msg) {
-#ifdef LOG_MODE
-	std::fstream file;
-	file.open("./log/request.log", std::ios::out | std::ios::ate);
-	if (file.is_open()) {
-		file << msg << std::endl;
-	}
+#ifdef DEBUG
+	std::cout << COLOR_GREEN << id << ": " << msg << COLOR_RESET << std::endl;
 #else
 	(void)msg;
 #endif

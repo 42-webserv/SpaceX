@@ -73,7 +73,6 @@ spx_http_syntax_start_line(std::string const& line,
 
 	spx_log_("\n______request_syntax_start_line______");
 	spx_log_(line);
-	spx_log_check_(line);
 
 	while (state != start_line__done) {
 		switch (state) {
@@ -303,7 +302,6 @@ spx_http_syntax_header_line(std::string const& line) {
 
 	state = spx_start;
 
-	spx_log_check_(line);
 	spx_log_(line);
 
 	while (state != spx_done) {
