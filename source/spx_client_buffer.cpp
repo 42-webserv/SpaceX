@@ -479,7 +479,7 @@ ClientBuffer::make_response_header() {
 			return;
 		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
 			if (res.uri_resolv_.is_same_location_) {
-				content = generate_autoindex_page(req_fd, req.uri_loc_->root);
+				content = generate_autoindex_page(req_fd, res.uri_resolv_.script_filename_);
 				std::stringstream ss;
 				ss << content.size();
 				res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
