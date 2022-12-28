@@ -227,3 +227,8 @@ CgiModule::made_env_for_cgi_(void) {
 	}
 	env_for_cgi_.push_back(NULL);
 }
+
+static void
+CgiModule::check_cgi_response(void){
+
+}

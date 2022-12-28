@@ -24,7 +24,7 @@ public:
 	~CgiModule();
 
 	void made_env_for_cgi_(void);
-	// static
+	static void check_cgi_response(void);
 };
 
 #endif
