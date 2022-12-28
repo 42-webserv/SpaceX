@@ -179,8 +179,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				++it;
 			}
 			if (!(flag_check_dup & Kuri_cgi)) {
-				flag_check_dup &= ~Kuri_same_uri;
-				uri_resolved_sets.script_name_ += temp;
+				if (temp.size() != 1){
+					flag_check_dup &= ~Kuri_same_uri;
+					uri_resolved_sets.script_name_ += temp;
+				}
 			} else {
 				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp;
@@ -253,15 +255,12 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				}
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
-			} else if (temp_index.empty()) {
-				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
-				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			} else if (uri_resolved_sets.is_same_location_){
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
-			} else {
-				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
-				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
+			}else {
+				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
+				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
