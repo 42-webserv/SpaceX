@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace {
 
@@ -78,8 +79,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	std::string					temp_location;
 	std::string					temp_extension;
 	std::string					temp_index;
-	uint8_t						flag_check_dup = 0;
-	uint8_t						root_uri_flag  = 0;
+	uint16_t						flag_check_dup = 0;
+	uint16_t						root_uri_flag  = 0;
 	std::string::const_iterator it			   = uri.begin();
 
 	uri_resolved_sets.is_cgi_			= false;
@@ -256,6 +257,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			} else if (uri_resolved_sets.is_same_location_){
+				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
+				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
+			} else {
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
 			}
