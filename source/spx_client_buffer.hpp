@@ -50,10 +50,12 @@ enum e_client_buffer_flag {
 };
 
 enum e_read_status {
-	REQ_LINE_PARSING   = 0,
-	REQ_HEADER_PARSING = 1,
-	REQ_BODY		   = 2,
-	REQ_CGI			   = 3
+	REQ_LINE_PARSING	  = 0,
+	REQ_HEADER_PARSING	  = 1,
+	REQ_SKIP_BODY		  = 2,
+	REQ_SKIP_BODY_CHUNKED = 3,
+	REQ_CGI				  = 4,
+	REQ_HOLD			  = 5
 };
 
 enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
@@ -187,6 +189,7 @@ public:
 	timespec										 timeout_;
 	uintptr_t										 client_fd_;
 	port_info_t*									 port_info_;
+	int												 skip_size_;
 	int												 rdchecked_;
 	int												 flag_;
 	int												 state_;
@@ -206,7 +209,7 @@ public:
 	void disconnect_client(event_list_t& change_list);
 
 	bool write_response(event_list_t& change_list);
-	bool write_for_upload(event_list_t& change_list);
+	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);

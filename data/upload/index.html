@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html><body>
     <form enctype="multipart/form-data" id="myForm" action="/board/content/uploadFile.upload" method="post">
-       <p>File: <input type="file" id="fileInput"  onchange="updateFormAction()"></p>
+        <p>File: <input type="file" id="fileInput"  onchange="updateFormAction()"></p>
         <p><input type="submit" value="Upload"></p>
-      </form>
-      
-      <script>
+    </form>
+    
+    <script>
         function updateFormAction() {
-          var fileInput = document.getElementById('fileInput');
-          var form = document.getElementById('myForm');
-        
-          var fileName = fileInput.files[0].name;
-        
-          form.action = '/upload/' + fileName;
+            var fileInput = document.getElementById('fileInput');
+            var form = document.getElementById('myForm');
+            
+            var fileName = fileInput.files[0].name;
+            
+            form.action = '/upload/' + fileName;
         }
       </script>
-</body>
-</html>
+    </body>
+    </html>

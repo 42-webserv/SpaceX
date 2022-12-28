@@ -88,25 +88,16 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 	res_field_t*  res = &buf->req_res_queue_.front().second;
 
 	if (cur_event->ident == buf->client_fd_) {
-		// write to client
-		// if (res->flag_ & RES_CGI) {
-		// 	// buf->write_cgi()
-		// } else {
-		// }
+
 		buf->write_response(change_list);
-		// add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
-		// 				EV_DISABLE, 0, 0, buf);
-		// spx_log_(buf->rdsaved_.size());
-		// spx_log_(buf->rdchecked_);
-		if (buf->state_ <= REQ_HEADER_PARSING && buf->rdsaved_.size() != buf->rdchecked_) {
-			spx_log_("write_event_handler - rdbuf check false");
-			buf->req_res_controller(change_list, cur_event);
-			// exit(1);
-		}
+
 		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
 			spx_log_("write_event_handler - disable write");
-			add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
-							EV_DISABLE, 0, 0, buf);
+			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
+		}
+		if (buf->state_ != REQ_HOLD) {
+			spx_log_("write_event_handler - not REQ_HOLD");
+			buf->req_res_controller(change_list, cur_event);
 		}
 	} else {
 		if (cur_event->ident == buf->req_res_queue_.back().first.body_fd_) {
@@ -115,7 +106,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 				// chunked logic
 			} else {
 				spx_log_("write_for_upload");
-				buf->write_for_upload(change_list);
+				buf->write_for_upload(change_list, cur_event);
 			}
 			if (buf->req_res_queue_.back().first.flag_ & READ_BODY_END) {
 				spx_log_("write_for_upload - uploaded");
@@ -125,6 +116,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 				buf->req_res_queue_.back().second.flag_ |= WRITE_READY;
 			}
 		} else {
+			spx_log_("write_for_cgi");
 			// cgi logic
 		}
 	}
