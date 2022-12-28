@@ -26,3 +26,4 @@ std::string
 generate_autoindex_page(int& req_fd, uri_resolved_t& path);
 
 #endif
+

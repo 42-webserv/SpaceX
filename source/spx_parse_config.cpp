@@ -50,6 +50,7 @@ namespace {
 #define XX(num, name, string) CONFIG_STATE_##name = num,
 		CONFIG_STATE_MAP(XX)
 #undef XX
+		CONFIG_STATE_LAST
 	} config_state_e;
 
 	std::string

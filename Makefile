@@ -39,6 +39,7 @@ CXX			=	c++
 CXX_WARN_FLAGS	=	#all extra error
 CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
+CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
 # CXXFLAGS	+=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 CXXFLAGS	+=	$(LOG)
@@ -51,7 +52,10 @@ SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
-CXXFLAGS   += $(SNTZ)
+CXXFLAGS	+=	$(SNTZ)
+
+# CXXFLAGS	+=	-fno-sanitize-recover -fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
+
 #==============================================================================
 #	Make Part
 #==============================================================================
