@@ -27,6 +27,7 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	std::string&	  path = path_info.script_filename_;
 	std::string		  full_path;
 
+	spx_log_("path_info", path_info.script_filename_);
 	char* base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << base_name
 		   << HTML_BEFORE_LIST;
@@ -51,6 +52,8 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 			} else {
 				full_path = filename;
 			}
+			spx_log_("full_path", full_path);
+
 			result << A_TAG_START << full_path << A_TAG_END;
 
 			if (filename.compare("..") == 0) {

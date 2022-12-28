@@ -532,6 +532,9 @@ ClientBuffer::make_response_header() {
 		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
 		break;
 	}
+
+	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
+
 	// settting response_header size  + content-length size to res_field
 	res.write_to_response_buffer(res.make_to_string());
 	if (!content.empty()) {
@@ -638,6 +641,11 @@ ResField::make_to_string() const {
 
 int
 ResField::file_open(const char* dir) const {
+	struct stat buf;
+
+	stat(dir, &buf);
+	if (S_ISDIR(buf.st_mode))
+		return -1;
 	int fd = open(dir, O_RDONLY | O_NONBLOCK, 0644);
 	if (fd < 0 && errno == EACCES)
 		return 0;
