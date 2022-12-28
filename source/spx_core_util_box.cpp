@@ -73,7 +73,7 @@ namespace {
 #define XX(num, name, string) ERROR_PAGE_##name = num,
 		ERROR_PAGE_MAP(XX)
 #undef XX
-ERROR_PAGE_LAST
+		ERROR_PAGE_LAST
 	} error_page_e;
 
 	inline std::string
