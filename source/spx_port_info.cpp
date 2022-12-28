@@ -352,6 +352,23 @@ uri_resolved_t::print_(void) const {
 	std::cout << "query_string: " << query_string_ << std::endl;
 	// std::cout << "fragment : " << fragment_ << std::endl;
 	std::cout << "----------------------------" << std::endl;
+
+	spx_log_("\n-----resolved uri info-----");
+	spx_log_("is_cgi: ", is_cgi_);
+	spx_log_("is_same_location: ", is_same_location_);
+	if (cgi_loc_ == NULL) {
+	spx_log_("cgi_location_t: NULL");
+	} else {
+	spx_log_("cgi_location_t: ON");
+	}
+	spx_log_("request_uri: ", request_uri_);
+	spx_log_("resolved_request_uri: ", resolved_request_uri_);
+	spx_log_("script_name: ", script_name_);
+	spx_log_("script_filename: ", script_filename_);
+	spx_log_("path_info: ", path_info_);
+	spx_log_("path_translated: ", path_translated_);
+	spx_log_("query_string: ", query_string_);
+	spx_log_("----------------------------");
 }
 
 void
