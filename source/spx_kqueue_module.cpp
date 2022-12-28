@@ -24,7 +24,6 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		client_buf_t* new_buf = new client_buf_t;
 		new_buf->client_fd_	  = client_fd;
 		new_buf->port_info_	  = &port_info;
-		spx_log_(client_fd);
 		add_change_list(change_list, client_fd, EVFILT_READ,
 						EV_ADD | EV_ENABLE, 0, 0, new_buf);
 		add_change_list(change_list, client_fd, EVFILT_WRITE,
@@ -45,15 +44,16 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 		}
 		return;
 	}
-	spx_log_("read_event_handler");
 	client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 	if (cur_event->ident == buf->client_fd_) {
+		spx_log_("read_event_handler - client_fd");
 		buf->read_to_client_buffer(change_list, cur_event);
 	} else if (buf->state_ == REQ_CGI) {
 		// read from cgi output.
+		spx_log_("read_event_handler - cgi");
 		buf->read_to_cgi_buffer(change_list, cur_event);
 	} else {
-		spx_log_("read_event_handler - read_to_res_buffer");
+		spx_log_("read_event_handler - server_file");
 		// server file read case for res_body.
 		buf->read_to_res_buffer(change_list, cur_event);
 		// if ( )
@@ -98,13 +98,13 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		// 				EV_DISABLE, 0, 0, buf);
 		// spx_log_(buf->rdsaved_.size());
 		// spx_log_(buf->rdchecked_);
-		if ((buf->flag_ & RDBUF_CHECKED) == false && buf->rdsaved_.size() != buf->rdchecked_) {
+		if (buf->state_ <= REQ_HEADER_PARSING && buf->rdsaved_.size() != buf->rdchecked_) {
 			spx_log_("write_event_handler - rdbuf check false");
 			buf->req_res_controller(change_list, cur_event);
 			// exit(1);
 		}
-		spx_log_("try disable - write");
 		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
+			spx_log_("write_event_handler - disable write");
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
 							EV_DISABLE, 0, 0, buf);
 		}
