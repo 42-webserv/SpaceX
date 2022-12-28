@@ -490,6 +490,7 @@ ClientBuffer::make_response_header() {
 			spx_log_("folder skip");
 		}
 		res.body_fd_ = req_fd;
+		spx_log_("uri_locations", req.uri_loc_);
 		if (req_fd == 0) {
 			make_error_response(HTTP_STATUS_FORBIDDEN);
 			return;
@@ -497,21 +498,21 @@ ClientBuffer::make_response_header() {
 			make_error_response(HTTP_STATUS_NOT_FOUND);
 			return;
 		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
-			if (res.uri_resolv_.is_same_location_) {
-				spx_log_("uri=======", res.uri_resolv_.script_filename_);
-				content = generate_autoindex_page(req_fd, res.uri_resolv_);
-				std::stringstream ss;
-				ss << content.size();
-				res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
-				// ???? autoindex fail case?
-				if (content.empty()) {
-					make_error_response(HTTP_STATUS_FORBIDDEN);
-					return;
-				}
-			} else {
-				make_error_response(HTTP_STATUS_NOT_FOUND);
+			// if (res.uri_resolv_.is_same_location_) {
+			spx_log_("uri=======", res.uri_resolv_.script_filename_);
+			content = generate_autoindex_page(req_fd, res.uri_resolv_);
+			std::stringstream ss;
+			ss << content.size();
+			res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+			// ???? autoindex fail case?
+			if (content.empty()) {
+				make_error_response(HTTP_STATUS_FORBIDDEN);
 				return;
 			}
+			// } else {
+			// make_error_response(HTTP_STATUS_NOT_FOUND);
+			// return;
+			// }
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");

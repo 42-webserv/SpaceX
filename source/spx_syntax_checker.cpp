@@ -53,6 +53,7 @@ spx_http_syntax_start_line(std::string const& line,
 		start_line__start = 0,
 		start_line__method,
 		start_line__sp_before_uri,
+		start_line__scheme,
 		start_line__uri_start,
 		start_line__uri,
 		start_line__http_check,
@@ -140,8 +141,15 @@ spx_http_syntax_start_line(std::string const& line,
 				++it;
 				state = start_line__uri;
 				break;
+			}else if (syntax_(digit_, static_cast<uint8_t>(*it))){
+
 			}
 			return error_flag_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
+		}
+
+		case start_line__scheme:{
+
+			break;
 		}
 
 		case start_line__uri: {

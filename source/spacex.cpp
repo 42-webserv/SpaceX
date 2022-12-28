@@ -72,11 +72,18 @@ main_info_t::port_info_print_(void) {
 		// std::cout << "default_server info print: " << std::endl;
 		// port_info[i].my_port_default_server.print_();
 		for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
-			if ((it2->second.default_server_flag == Kother_server)) {
+			// if ((it2->second.default_server_flag == Kother_server)) {
 				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
-				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET <<std::endl;
+				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
+				if (it2->second.default_server_flag == Kdefault_server){
+					std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
+				}
+				else{
+
+					std::cout << std::endl;
+				}
 				// it2->second.print_();
-			}
+			// }
 		}
 		++i;
 	}
