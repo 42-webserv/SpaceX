@@ -124,14 +124,15 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				it_ = uri_case.find("/");
 				if (it_ != uri_case.end()) {
 					return_location = &it_->second;
+					temp_root		= it_->second.root;
+					temp_index		= it_->second.index;
+					temp_location	= it_->second.uri;
 					root_uri_flag |= 1;
+
+				}else {
+					temp_root = this->root;
 				}
-				// 	temp_index		= it_->second.index;
-				// 	temp_root		= it_->second.root;
-				// 	temp_location	= it_->second.uri;
-				temp_root = this->root;
 				uri_resolved_sets.script_name_ += temp;
-				// }
 			}
 			// uri_resolved_sets.script_name_ += temp; // NOTE: different from nginx
 			temp.clear();
@@ -242,6 +243,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		case uri_done: {
 			// XXX : if set saved_path, then use saved_path // not recommend this time
 			// TODO: cgi's saved_path isn't defined yet
+			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
+				uri_resolved_sets.is_same_location_ = true;
+			}
 			if (flag_check_dup & Kuri_path_info) {
 				if (root_uri_flag & 1) {
 					return_location = NULL;
@@ -251,7 +255,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			} else if (temp_index.empty()) {
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
-			} else {
+			} else if (uri_resolved_sets.is_same_location_){
 				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
 			}
@@ -259,9 +263,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
 			if (uri_resolved_sets.path_info_.empty() == false) {
 				uri_resolved_sets.path_translated_ = path_resolve_(temp_root + "/" + uri_resolved_sets.path_info_);
-			}
-			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
-				uri_resolved_sets.is_same_location_ = true;
 			}
 			state = uri_end;
 			break;
