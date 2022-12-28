@@ -65,20 +65,24 @@ namespace {
 inline void
 main_info_t::port_info_print_(void) {
 	uint32_t i = 3;
-	while (i < this->socket_size) {
 		std::cout << "------------------------------------" << std::endl;
-		std::cout << "listen_sd: " << port_info[i].listen_sd << std::endl;
-		std::cout << "my_port: " << port_info[i].my_port << std::endl;
-		std::cout << "default_server info print: " << std::endl;
-		port_info[i].my_port_default_server.print_();
+	while (i < this->socket_size) {
+		// std::cout << "listen_sd: " << port_info[i].listen_sd << std::endl;
+		// std::cout << "my_port: " << port_info[i].my_port << std::endl;
+		// std::cout << "default_server info print: " << std::endl;
+		// port_info[i].my_port_default_server.print_();
 		for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
 			if ((it2->second.default_server_flag == Kother_server)) {
-				it2->second.print_();
+				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
+				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET <<std::endl;
+				// it2->second.print_();
 			}
 		}
 		++i;
 	}
+		std::cout << "------------------------------------" << std::endl;
 }
+
 #ifdef SPACE_RESPONSE_TEST
 void
 buffer_print_header(buffer_t buf) {
@@ -133,10 +137,7 @@ main(int argc, char const* argv[]) {
 
 		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
 		spx_log_("socket per port_info success");
-
-#ifdef SOCKET_DEBUG
 		spx.port_info_print_();
-#endif
 
 #ifdef YOMA_SEARCH_DEBUG
 		// how to use handler function
