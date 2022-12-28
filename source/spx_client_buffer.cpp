@@ -117,8 +117,8 @@ ClientBuffer::header_field_parser() {
 	}
 	const std::map<std::string, std::string>*		   field = &this->req_res_queue_.back().first.field_;
 	std::map<std::string, std::string>::const_iterator it;
-	it = field->find("content-length");
 
+	it = field->find("content-length");
 	if (it != field->end()) {
 		this->req_res_queue_.back().first.body_size_ = strtoul((it->second).c_str(), NULL, 10);
 		spx_log_("content-length", this->req_res_queue_.back().first.body_size_);
@@ -195,7 +195,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
 
-		spx_log_("uri_loc", req->uri_loc_);
+		// spx_log_("uri_loc", req->uri_loc_);
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
 			// Not Allowed / Not Supported error.
 			// make_response_header(*this);
@@ -215,14 +215,14 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		}
 
-		spx_log_("req_uri set ok");
+		// spx_log_("req_uri set ok");
 		switch (this->req_res_queue_.back().first.req_type_) {
 		case REQ_GET:
 			// if (this->req_res_queue_.back().second.res_buffer_.size() == 0) {
 			// }
 			spx_log_("REQ_GET");
 			this->make_response_header();
-			spx_log_("RES_OK");
+			// spx_log_("RES_OK");
 			if (this->req_res_queue_.back().second.body_fd_ == -1) {
 				spx_log_("No file descriptor");
 			} else {
@@ -266,6 +266,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		case REQ_POST:
 			// POST - content len 0. (No body. error case?)
 			if ((this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) == false) {
+				spx_log_("body size == 0");
 				if (this->req_res_queue_.back().first.body_size_ == 0) {
 					this->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
 					if (this->req_res_queue_.back().second.body_fd_ != -1) {
@@ -276,28 +277,27 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				}
 			}
 
-			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
-				this->req_res_queue_.back().first.body_fd_ = open(
-					this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(),
-					O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
-				if (this->req_res_queue_.back().first.body_fd_ < 0) {
-					// 405 not allowed error with keep-alive connection.
-					this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
-					if (this->req_res_queue_.back().second.body_fd_ != -1) {
-						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-					}
-					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-					return false;
+			spx_log_("file open");
+			this->req_res_queue_.back().first.body_fd_ = open(
+				this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(),
+				O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
+			if (this->req_res_queue_.back().first.body_fd_ < 0) {
+				// 405 not allowed error with keep-alive connection.
+				this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
+				if (this->req_res_queue_.back().second.body_fd_ != -1) {
+					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 				}
-				spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
-				// add_change_list(change_list, cur_event->ident,
-				// 				EVFILT_READ, EV_DISABLE, 0, 0,
-				// 				this);
-				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
-				this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
+				this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 				return false;
 			}
-			break;
+			spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
+			// add_change_list(change_list, cur_event->ident,
+			// 				EVFILT_READ, EV_DISABLE, 0, 0,
+			// 				this);
+			add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
+			this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
+			return false;
+
 		case REQ_PUT:
 			if ((this->req_res_queue_.back().first.flag_ & REQ_FILE_OPEN) == false) {
 				uintptr_t fd = open(
