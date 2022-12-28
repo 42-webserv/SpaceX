@@ -98,6 +98,7 @@ enum http_status {
 #define XX(num, name, string) HTTP_STATUS_##name = num,
 	HTTP_STATUS_MAP(XX)
 #undef XX
+	HTTP_STATUS_LAST
 };
 
 std::string

@@ -740,7 +740,7 @@ ResField::setContentType(std::string uri) {
 		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_TEXT));
 	else
 		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_DEFUALT));
-};
+}
 
 void
 ResField::setDate(void) {

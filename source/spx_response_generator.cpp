@@ -11,4 +11,4 @@ http_status_str(http_status s) {
 	default:
 		return "<unknown>";
 	}
-};
+}
