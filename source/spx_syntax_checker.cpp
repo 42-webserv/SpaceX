@@ -53,7 +53,8 @@ spx_http_syntax_start_line(std::string const& line,
 		start_line__start = 0,
 		start_line__method,
 		start_line__sp_before_uri,
-		start_line__scheme,
+		// start_line__scheme,
+		// start_line__autority,
 		start_line__uri_start,
 		start_line__uri,
 		start_line__http_check,
@@ -141,16 +142,30 @@ spx_http_syntax_start_line(std::string const& line,
 				++it;
 				state = start_line__uri;
 				break;
-			}else if (syntax_(digit_, static_cast<uint8_t>(*it))){
-
 			}
+			// }else if (*it == 'h'){
+			// 	state == start_line__scheme;
+			// 	break;
+			// }
+			// else if (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))){
+			// 	break;
+			// }
 			return error_flag_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
 		}
 
-		case start_line__scheme:{
+		// case start_line__scheme:{
+		// 	if (line.compare(it - line.begin(), 7, "http://") == 0) {
+		// 		it += 7;
+		// 		state = start_line__autority;
+		// 	}else {
+		// 		return error_flag_("invalid scheme : request line", req_type);
+		// 	}
+		// 	break;
+		// }
 
-			break;
-		}
+		// case start_line__autority: {
+		// 	break;
+		// }
 
 		case start_line__uri: {
 			while (syntax_(usual_, *it)) {
