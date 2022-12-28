@@ -6,3 +6,667 @@ config file open success
 socket per port_info success
 config file open success
 socket per port_info success
+config file open success
+socket per port_info success
+event_len:: 1
+cur->ident:: 4
+cur->flags:: 5
+event_read
+6
+event_len:: 2
+cur->ident:: 4
+cur->flags:: 5
+event_read
+7
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 759
+
+______request_syntax_start_line______
+GET /upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+Cache-Control: max-age=0
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /upload
+resolved_request_uri: : /upload
+script_name: : /upload
+script_filename: : ./data/upload/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/
+req_uri: /upload
+full_path: /upload
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 789
+
+______request_syntax_start_line______
+GET /upload/in_upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 0
+cgi_location_t: NULL
+request_uri: : /upload/in_upload
+resolved_request_uri: : /upload/in_upload
+script_name: : /upload/in_upload
+script_filename: : ./data/upload/in_upload
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+./data/upload/in_upload
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/in_upload
+req_uri: /upload/in_upload
+full_path: /upload/in_upload
+full_path: /upload
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 811
+
+______request_syntax_start_line______
+GET /upload/in_upload/in_asdf.txt HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload/in_upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 0
+cgi_location_t: NULL
+request_uri: : /upload/in_upload/in_asdf.txt
+resolved_request_uri: : /upload/in_upload/in_asdf.txt
+script_name: : /upload/in_upload/in_asdf.txt
+script_filename: : ./data/upload/in_upload/in_asdf.txt
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+./data/upload/in_upload/in_asdf.txt
+uri_locations: 0x611000017b38
+res_header
+RES_OK
+READ event added
+req_res_controller check finished.
+enable write
+event_len:: 2
+cur->ident:: 8
+cur->flags:: 5
+event_read
+read_event_handler
+read_event_handler - read_to_res_buffer
+read_to_res_buffer
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 789
+
+______request_syntax_start_line______
+GET /upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload/in_upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /upload
+resolved_request_uri: : /upload
+script_name: : /upload
+script_filename: : ./data/upload/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/
+req_uri: /upload
+full_path: /upload
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 755
+
+______request_syntax_start_line______
+GET / HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /
+resolved_request_uri: : /
+script_name: : /
+script_filename: : ./data/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017778
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017778
+uri=======: ./data/
+req_uri: /
+full_path: 
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 749
+
+______request_syntax_start_line______
+GET / HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /
+resolved_request_uri: : /
+script_name: : /
+script_filename: : ./data/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017778
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017778
+uri=======: ./data/
+req_uri: /
+full_path: 
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 773
+
+______request_syntax_start_line______
+GET /upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /upload
+resolved_request_uri: : /upload
+script_name: : /upload
+script_filename: : ./data/upload/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/
+req_uri: /upload
+full_path: /upload
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 755
+
+______request_syntax_start_line______
+GET / HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /
+resolved_request_uri: : /
+script_name: : /
+script_filename: : ./data/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017778
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017778
+uri=======: ./data/
+req_uri: /
+full_path: 
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 773
+
+______request_syntax_start_line______
+GET /upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /upload
+resolved_request_uri: : /upload
+script_name: : /upload
+script_filename: : ./data/upload/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/
+req_uri: /upload
+full_path: /upload
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 789
+
+______request_syntax_start_line______
+GET /upload/in_upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 0
+cgi_location_t: NULL
+request_uri: : /upload/in_upload
+resolved_request_uri: : /upload/in_upload
+script_name: : /upload/in_upload
+script_filename: : ./data/upload/in_upload
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+./data/upload/in_upload
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/in_upload
+req_uri: /upload/in_upload
+full_path: /upload/in_upload
+full_path: /upload
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 5
+event_read
+read_event_handler
+read_to_client: : 789
+
+______request_syntax_start_line______
+GET /upload HTTP/1.1
+controller-req_line ok
+Host: localhost:8080
+Connection: keep-alive
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload/in_upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: SESSIONID=123456; SESSIONID=123456
+controller-header ok
+
+-----resolved uri info-----
+is_cgi: : 0
+is_same_location: : 1
+cgi_location_t: NULL
+request_uri: : /upload
+resolved_request_uri: : /upload
+script_name: : /upload
+script_filename: : ./data/upload/
+path_info: : 
+path_translated: : 
+query_string: : 
+----------------------------
+uri_loc: 0x611000017b38
+req_uri set ok
+REQ_GET
+folder skip
+uri_locations: 0x611000017b38
+uri=======: ./data/upload/
+req_uri: /upload
+full_path: /upload
+full_path: /
+RES_OK
+No file descriptor
+req_res_controller check finished.
+enable write
+event_len:: 1
+cur->ident:: 6
+cur->flags:: 9
+event_write
+write_bufsize: : 0
+try disable - write

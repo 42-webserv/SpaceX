@@ -46,7 +46,6 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				// get the full path of the file
 				result << "<td>";
 				// TODO : this is something wrong
-
 				if (filename.compare("..") == 0) {
 					spx_log_("req_uri", path_info.resolved_request_uri_);
 					if (path_info.resolved_request_uri_.size() != 1) {
