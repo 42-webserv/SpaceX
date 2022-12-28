@@ -16,7 +16,7 @@ obj/*
 
 *.dSYM
 
-log/*
+log/*.log
 
 **/*.log
 
