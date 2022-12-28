@@ -334,25 +334,6 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 
 void
 uri_resolved_t::print_(void) const {
-	std::cout << "\n-----resolved uri info-----" << std::endl;
-	std::cout << "is_cgi: " << is_cgi_ << std::endl;
-	std::cout << "is_same_location: " << is_same_location_ << std::endl;
-	std::cout << "cgi_location_t: ";
-	if (cgi_loc_ == NULL) {
-		std::cout << "NULL" << std::endl;
-	} else {
-		std::cout << "ON" << std::endl;
-	}
-	std::cout << "request_uri: " << request_uri_ << std::endl;
-	std::cout << "resolved_request_uri: " << resolved_request_uri_ << std::endl;
-	std::cout << "script_name: " << script_name_ << std::endl;
-	std::cout << "script_filename: " << script_filename_ << std::endl;
-	std::cout << "path_info: " << path_info_ << std::endl;
-	std::cout << "path_translated: " << path_translated_ << std::endl;
-	std::cout << "query_string: " << query_string_ << std::endl;
-	// std::cout << "fragment : " << fragment_ << std::endl;
-	std::cout << "----------------------------" << std::endl;
-
 	spx_log_("\n-----resolved uri info-----");
 	spx_log_("is_cgi: ", is_cgi_);
 	spx_log_("is_same_location: ", is_same_location_);
