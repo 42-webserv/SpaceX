@@ -199,7 +199,7 @@ CgiModule::made_env_for_cgi_(int status) {
 		if (cgi_loc_info_ && !(cgi_loc_info_->save_path_.empty())){
 			vec_env_.push_back("SAVED_PATH=" + cgi_loc_info_->save_path_); // /blah/blah/
 		}
-		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t
+		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t //TODO : need to add server_name
 		// vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
 	}
 
