@@ -50,7 +50,8 @@ main(void) {
 	// ss << "-----------------------------735323031399963166993862150--\r\n";
 	// std::string str = ss.str();
 	// std::cout << str.length() << std::endl;
-	std::string str = "num1=1&num2=2";
+
+	std::string str = "num1=4&num2=8";
 
 	pid = fork();
 
@@ -74,13 +75,13 @@ main(void) {
 		// char env3[100] = "REQUEST_METHOD=POST";
 
 		char env1[100] = "REQUEST_METHOD=POST";
-		char env2[100] = "QUERY_STRING=?num1=1&num2=2";
+		char env2[100] = "QUERY_STRING=num1=4&num2=1777";
 		char env3[100] = "CONTENT_TYPE=application/x-www-form-urlencoded";
-		char env4[100] = "CONTENT_LENGTH=3";
+		char env4[100] = "CONTENT_LENGTH=13";
 		char* envp[] = {env1,
 		env2,
 		env3,
-		// env4,
+		env4,
 		NULL};
 
 		execve(filename, argv, envp);
