@@ -221,7 +221,6 @@ CgiModule::made_env_for_cgi_(void) {
 		}
 	}
 
-	// env_for_cgi_ = new (std::nothrow) char*[vec_env_.size() + 1];
 	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
 		env_for_cgi_.push_back(vec_env_[i].c_str());
 	}

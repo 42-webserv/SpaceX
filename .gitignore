@@ -21,3 +21,11 @@ log/*.log
 **/*.log
 
 log/**
+
+log/*.html
+
+build/**
+
+CMake*
+
+tmp/**
