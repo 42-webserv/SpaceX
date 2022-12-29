@@ -50,12 +50,13 @@ enum e_client_buffer_flag {
 };
 
 enum e_read_status {
-	REQ_LINE_PARSING	  = 0,
-	REQ_HEADER_PARSING	  = 1,
-	REQ_SKIP_BODY		  = 2,
-	REQ_SKIP_BODY_CHUNKED = 3,
-	REQ_CGI				  = 4,
-	REQ_HOLD			  = 5
+	REQ_LINE_PARSING = 0,
+	REQ_HEADER_PARSING,
+	REQ_BODY_CHUNKED,
+	REQ_SKIP_BODY,
+	REQ_SKIP_BODY_CHUNKED,
+	REQ_CGI,
+	REQ_HOLD
 };
 
 enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
@@ -67,9 +68,9 @@ enum e_res_flag { RES_FILE_OPEN = 1,
 				  RES_CGI		= 4 };
 
 // gzip & deflate are not implemented.
-enum e_transfer_encoding { TE_CHUNKED = 0,
-						   TE_GZIP,
-						   TE_DEFLATE };
+enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
+						   TE_GZIP	  = 1 << 1,
+						   TE_DEFLATE = 1 << 2 };
 
 typedef std::vector<char>					buffer_t;
 typedef std::vector<struct kevent>			event_list_t;
@@ -77,19 +78,17 @@ typedef std::pair<std::string, std::string> header;
 
 class ReqField {
 public:
-	buffer_t						   cgi_buffer_;
-	int								   cgi_in_fd_;
-	int								   cgi_out_fd_;
-	int								   body_fd_;
+	buffer_t						   chunked_body_buffer_;
+	size_t							   chunked_checked_;
 	size_t							   body_size_;
-	int								   body_read_;
+	size_t							   body_read_;
+	int								   body_fd_;
 	std::map<std::string, std::string> field_;
 	std::string						   req_target_;
 	std::string						   http_ver_;
 	std::string						   file_path_;
 	const server_info_t*			   serv_info_;
 	const uri_location_t*			   uri_loc_;
-	size_t							   body_recieved_;
 	size_t							   body_limit_;
 	size_t							   content_length_;
 	int								   flag_;
@@ -97,18 +96,16 @@ public:
 	int								   transfer_encoding_;
 
 	ReqField()
-		: cgi_buffer_()
-		, cgi_in_fd_()
-		, cgi_out_fd_()
-		, body_fd_(-1)
+		: chunked_body_buffer_()
+		, chunked_checked_(0)
 		, body_size_(0)
 		, body_read_(0)
+		, body_fd_(-1)
 		, field_()
 		, req_target_()
 		, http_ver_()
 		, file_path_()
 		, uri_loc_()
-		, body_recieved_(0)
 		, body_limit_(-1)
 		, content_length_(0)
 		, flag_(0)
@@ -121,15 +118,16 @@ public:
 
 class ResField {
 public:
+	buffer_t	   cgi_buffer_;
 	buffer_t	   res_buffer_;
 	uri_resolved_t uri_resolv_;
 	std::string	   file_path_;
 	size_t		   buf_size_;
+	size_t		   body_read_;
+	size_t		   body_size_;
+	size_t		   sent_pos_;
 	int			   body_fd_;
-	int			   body_read_;
-	int			   body_size_;
 	int			   header_ready_;
-	int			   sent_pos_;
 	int			   flag_;
 	int			   transfer_encoding_;
 
@@ -155,11 +153,11 @@ public:
 		, uri_resolv_()
 		, file_path_()
 		, buf_size_(0)
-		, body_fd_(-1)
 		, body_read_(0)
 		, body_size_(0)
-		, header_ready_(0)
 		, sent_pos_(0)
+		, body_fd_(-1)
+		, header_ready_(0)
 		, flag_(0)
 		, transfer_encoding_(0)
 		, headers_()
@@ -189,8 +187,8 @@ public:
 	timespec										 timeout_;
 	uintptr_t										 client_fd_;
 	port_info_t*									 port_info_;
-	int												 skip_size_;
-	int												 rdchecked_;
+	size_t											 skip_size_;
+	size_t											 rdchecked_;
 	int												 flag_;
 	int												 state_;
 	char											 rdbuf_[BUFFER_SIZE];

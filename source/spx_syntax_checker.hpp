@@ -2,6 +2,7 @@
 #ifndef __SPX__SYNTAX_CHECKER__HPP__
 #define __SPX__SYNTAX_CHECKER__HPP__
 
+#include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include <cstddef>
@@ -11,7 +12,8 @@
 #include <string>
 #include <vector>
 
-typedef class client_buf t_client_buf;
+class ClientBuffer;
+typedef ClientBuffer client_buf_t;
 
 status
 spx_http_syntax_start_line(std::string const& line,
@@ -21,7 +23,7 @@ status
 spx_http_syntax_header_line(std::string const& line);
 
 status
-spx_chunked_syntax_start_line(std::string const&				  line,
+spx_chunked_syntax_start_line(client_buf_t&						  buf,
 							  uint32_t&							  chunk_size,
 							  std::map<std::string, std::string>& chunk_ext);
 

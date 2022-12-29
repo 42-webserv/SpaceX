@@ -88,7 +88,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 	res_field_t*  res = &buf->req_res_queue_.front().second;
 
 	if (cur_event->ident == buf->client_fd_) {
-
+		spx_log_("write event handler - buf state", buf->state_);
 		buf->write_response(change_list);
 
 		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
@@ -97,6 +97,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		}
 		if (buf->state_ != REQ_HOLD) {
 			spx_log_("write_event_handler - not REQ_HOLD");
+			spx_log_("write event handler - buf state", buf->state_);
 			buf->req_res_controller(change_list, cur_event);
 		}
 	} else {
@@ -185,8 +186,8 @@ cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	close(read_from_cgi[1]);
-	buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
-	buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
+	// buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
+	// buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
 	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);

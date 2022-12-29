@@ -2,8 +2,6 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 
-#include "spx_client_buffer.hpp"
-
 namespace {
 
 	inline status
@@ -79,6 +77,9 @@ spx_http_syntax_start_line(std::string const& line,
 	while (state != start_line__done) {
 		switch (state) {
 		case start_line__start: {
+			// write(STDOUT_FILENO, "syntax\n", 7);
+			// write(STDOUT_FILENO, &*it, 1);
+			// write(STDOUT_FILENO, &*it, line.size());
 			if (syntax_(alpha_upper_case_, static_cast<uint8_t>(*it))) {
 				state = start_line__method;
 				break;
@@ -153,19 +154,19 @@ spx_http_syntax_start_line(std::string const& line,
 			return error_flag_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
 		}
 
-		// case start_line__scheme:{
-		// 	if (line.compare(it - line.begin(), 7, "http://") == 0) {
-		// 		it += 7;
-		// 		state = start_line__autority;
-		// 	}else {
-		// 		return error_flag_("invalid scheme : request line", req_type);
-		// 	}
-		// 	break;
-		// }
+			// case start_line__scheme:{
+			// 	if (line.compare(it - line.begin(), 7, "http://") == 0) {
+			// 		it += 7;
+			// 		state = start_line__autority;
+			// 	}else {
+			// 		return error_flag_("invalid scheme : request line", req_type);
+			// 	}
+			// 	break;
+			// }
 
-		// case start_line__autority: {
-		// 	break;
-		// }
+			// case start_line__autority: {
+			// 	break;
+			// }
 
 		case start_line__uri: {
 			while (syntax_(usual_, *it)) {
@@ -404,10 +405,10 @@ spx_http_syntax_header_line(std::string const& line) {
 }
 
 status
-spx_chunked_syntax_start_line(std::string const&				  line,
+spx_chunked_syntax_start_line(client_buf_t&						  buf,
 							  uint32_t&							  chunk_size,
 							  std::map<std::string, std::string>& chunk_ext) {
-	std::string::const_iterator it = line.begin();
+	std::string::const_iterator it = buf.rdsaved_.begin() + buf.rdchecked_;
 	std::string					temp_str_key;
 	std::string					empty_str;
 	std::string					temp_str_value;
