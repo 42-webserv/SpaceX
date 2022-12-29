@@ -53,8 +53,7 @@ SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
-CXXFLAGS	+=	$(SNTZ)
-
+CXXFLAGS	+=	$(DEBUG) $(SNTZ)
 # CXXFLAGS	+=	-fno-sanitize-recover -fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
 #==============================================================================
