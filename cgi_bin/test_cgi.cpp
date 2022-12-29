@@ -58,9 +58,9 @@ main(void) {
 
 
 		dup2(write_to_cgi[0], STDIN_FILENO);
-		dup2(read_from_cgi[1], STDOUT_FILENO);
 		close(write_to_cgi[1]);
 		close(read_from_cgi[0]);
+		dup2(read_from_cgi[1], STDOUT_FILENO);
 
 		// char filename[100] = "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3";
 		char filename[100] = "/usr/bin/perl";
@@ -75,20 +75,21 @@ main(void) {
 
 		char env1[100] = "REQUEST_METHOD=POST";
 		char env2[100] = "QUERY_STRING=?num1=1&num2=2";
+		char env3[100] = "CONTENT_TYPE=application/x-www-form-urlencoded";
+		char env4[100] = "CONTENT_LENGTH=3";
 		char* envp[] = {env1,
 		env2,
-		// env3,
+		env3,
 		// env4,
 		NULL};
 
 		execve(filename, argv, envp);
 		exit(1);
 	} else {
+		close(write_to_cgi[0]);
 		write(write_to_cgi[1], str.c_str(), str.length());
 		close(write_to_cgi[1]);
-		close(write_to_cgi[0]);
 		close(read_from_cgi[1]);
-		// dup2(read_from_cgi[0], STDIN_FILENO);
 		std::cout << "parent----------" << std::endl;
 		while (waitpid(pid, NULL, 0) != -1){
 			std::cout << "waitpid" << std::endl;

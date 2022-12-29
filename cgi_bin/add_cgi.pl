@@ -13,10 +13,11 @@ my $cgi = CGI->new;
 my $num1 = $cgi->param("num1");
 my $num2 = $cgi->param("num2");
 
-@param_names = $cgi->param();
-foreach $p (@param_names) {
-  $value = $cgi->param($p);
-  print "Param $p = $value<p>\n";
+print "test param\n";
+my @parameters = $cgi->param;
+foreach my $param (@parameters) {
+    my $value = $cgi->param($param);
+    print "value : $value\n";
 }
 
 print "init : @names\n";
