@@ -24,7 +24,7 @@ public:
 	~CgiModule();
 
 	void made_env_for_cgi_(void);
-	static void check_cgi_response(void);
+	static status check_cgi_response(std::vector<char> cgi_response);
 };
 
 #endif

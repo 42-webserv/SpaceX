@@ -27,5 +27,4 @@ for field, filename in files.items():
 response += "</center></body></html>"
 
 print("Content-Length: {}".format(len(response)))
-print()
 print(response)
