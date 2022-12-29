@@ -1,4 +1,5 @@
 #include "spx_client_buffer.hpp"
+#include "spx_cgi_module.hpp"
 #include "spx_kqueue_module.hpp"
 
 ClientBuffer::ClientBuffer()
@@ -167,6 +168,60 @@ ClientBuffer::header_field_parser() {
 // 	return true;
 // }
 
+void
+ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
+	int	  write_to_cgi[2];
+	int	  read_from_cgi[2];
+	pid_t pid;
+
+	if (pipe(write_to_cgi) == -1) {
+		// pipe error
+		std::cerr << "pipe error" << std::endl;
+		return;
+	}
+	if (pipe(read_from_cgi) == -1) {
+		// pipe error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		std::cerr << "pipe error" << std::endl;
+		return;
+	}
+	pid = fork();
+	if (pid < 0) {
+		// fork error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		close(read_from_cgi[1]);
+		return;
+	}
+	if (pid == 0) {
+		// child. run cgi
+		dup2(write_to_cgi[0], STDIN_FILENO);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		dup2(read_from_cgi[1], STDOUT_FILENO);
+		// set_cgi_envp()
+		CgiModule cgi(*this->req_res_queue_.back().second.uri_resolv_.cgi_loc_, this->req_res_queue_.back().first.field_);
+
+		cgi.made_env_for_cgi_();
+		char* const script[3] = { this->req_res_queue_.back().second.uri_resolv_.cgi_loc_->cgi_path_info.c_str(), this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(), NULL };
+
+		execve(script[0], script, &cgi.env_for_cgi_[0]);
+		exit(EXIT_FAILURE);
+	}
+	// parent
+	close(write_to_cgi[0]);
+	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
+	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
+	close(read_from_cgi[1]);
+	// buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
+	// buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
+	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+}
+
 bool
 ClientBuffer::host_check(std::string& host) {
 	if (host.size() != 0 && host.find_first_of(" \t") == std::string::npos) {
@@ -246,6 +301,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				return false;
 			}
 			break;
+		} else if (this->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
+			// cgi case:
 		}
 
 		// spx_log_("req_uri set ok");
