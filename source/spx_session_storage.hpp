@@ -2,8 +2,8 @@
 #include "spacex.hpp"
 
 class SessionStorage {
-	typedef std::map<std::string, std::string> Table;
-	Table									   storage_;
+	typedef std::map<std::string, std::string> storage_t;
+	storage_t								   storage_;
 
 public:
 	SessionStorage() { }

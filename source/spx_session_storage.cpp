@@ -2,7 +2,7 @@
 
 std::string
 SessionStorage::find_key(const std::string& c_key) const {
-	Table::const_iterator it = storage_.find(c_key);
+	storage_t::const_iterator it = storage_.find(c_key);
 	if (it == storage_.end())
 		return "";
 	return it->first;
@@ -10,7 +10,7 @@ SessionStorage::find_key(const std::string& c_key) const {
 
 std::string
 SessionStorage::find_value_by_key(const std::string& c_key) const {
-	Table::const_iterator it = storage_.find(c_key);
+	storage_t::const_iterator it = storage_.find(c_key);
 	if (it == storage_.end())
 		return "";
 	return it->second;
