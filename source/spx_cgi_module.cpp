@@ -190,10 +190,10 @@ CgiModule::made_env_for_cgi_(int status) {
 		}
 		vec_env_.push_back("REQUEST_URI=" + cgi_loc_.request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
 		vec_env_.push_back("SCRIPT_NAME=" + cgi_loc_.script_name_); // /blah/blah/blah.cgi
-		if (!cgi_loc_.path_info_.empty()){
+		if (!cgi_loc_.path_info_.empty()) {
 			vec_env_.push_back("PATH_INFO=" + cgi_loc_.path_info_); // remain /blah/blah
 		}
-		if (!cgi_loc_.query_string_.empty()){
+		if (!cgi_loc_.query_string_.empty()) {
 			vec_env_.push_back("QUERY_STRING=" + cgi_loc_.query_string_); // key=value&key=value&key=value
 		}
 		if (cgi_loc_info_ && !(cgi_loc_info_->save_path_.empty())){

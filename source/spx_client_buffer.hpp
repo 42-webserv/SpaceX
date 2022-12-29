@@ -59,6 +59,12 @@ enum e_read_status {
 	REQ_HOLD
 };
 
+enum e_cgi_state {
+	CGI_HEADER,
+	CGI_BODY_CHUNKED,
+	CGI_HOLD
+};
+
 enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
 				  READ_BODY_END = 1 << 1
 };
@@ -118,18 +124,23 @@ public:
 
 class ResField {
 public:
-	buffer_t	   cgi_buffer_;
-	buffer_t	   res_buffer_;
-	uri_resolved_t uri_resolv_;
-	std::string	   file_path_;
-	size_t		   buf_size_;
-	size_t		   body_read_;
-	size_t		   body_size_;
-	size_t		   sent_pos_;
-	int			   body_fd_;
-	int			   header_ready_;
-	int			   flag_;
-	int			   transfer_encoding_;
+	buffer_t						   cgi_buffer_;
+	buffer_t						   res_buffer_;
+	uri_resolved_t					   uri_resolv_;
+	std::string						   file_path_;
+	std::map<std::string, std::string> cgi_field_;
+	size_t							   buf_size_;
+	size_t							   body_read_;
+	size_t							   body_size_;
+	size_t							   sent_pos_;
+	size_t							   cgi_checked_;
+	size_t							   cgi_size_;
+	size_t							   cgi_read_;
+	int								   cgi_state_;
+	int								   flag_;
+	int								   body_fd_;
+	int								   header_ready_;
+	int								   transfer_encoding_;
 
 	/* RESPONSE*/
 	std::vector<header> headers_;
@@ -154,11 +165,16 @@ public:
 		, file_path_()
 		, buf_size_(0)
 		, body_read_(0)
+		, cgi_field_()
 		, body_size_(0)
 		, sent_pos_(0)
+		, cgi_checked_(0)
+		, cgi_size_(0)
+		, cgi_read_(0)
+		, cgi_state_(0)
+		, flag_(0)
 		, body_fd_(-1)
 		, header_ready_(0)
-		, flag_(0)
 		, transfer_encoding_(0)
 		, headers_()
 		, version_minor_(1)
@@ -206,13 +222,17 @@ public:
 
 	void disconnect_client(event_list_t& change_list);
 
+	bool write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>& change_list);
 	bool write_response(event_list_t& change_list);
 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
-	void cgi_handler(struct kevent* cur_event, event_list_t& change_list);
+	bool cgi_header_parser();
+	bool cgi_controller(int state);
+
+	bool cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
-	bool skip_body(ssize_t cont_len);
+	// bool skip_body(ssize_t cont_len);
 
 	bool host_check(std::string& host);
 

@@ -48,7 +48,7 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 	if (cur_event->ident == buf->client_fd_) {
 		spx_log_("read_event_handler - client_fd");
 		buf->read_to_client_buffer(change_list, cur_event);
-	} else if (buf->state_ == REQ_CGI) {
+	} else if (buf->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
 		// read from cgi output.
 		spx_log_("read_event_handler - cgi");
 		buf->read_to_cgi_buffer(change_list, cur_event);
@@ -94,6 +94,9 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
 			spx_log_("write_event_handler - disable write");
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
+			if (buf->req_res_queue_.size() == 0) {
+				buf->state_ = REQ_LINE_PARSING;
+			}
 		}
 		if (buf->state_ != REQ_HOLD) {
 			spx_log_("write_event_handler - not REQ_HOLD");
@@ -105,6 +108,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 			if (buf->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 				spx_log_("write_for_upload - chunked");
 				// chunked logic
+				buf->write_to_cgi(cur_event, change_list);
 			} else {
 				spx_log_("write_for_upload");
 				buf->write_for_upload(change_list, cur_event);

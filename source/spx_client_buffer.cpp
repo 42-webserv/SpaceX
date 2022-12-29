@@ -168,7 +168,7 @@ ClientBuffer::header_field_parser() {
 // 	return true;
 // }
 
-void
+bool
 ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	int	  write_to_cgi[2];
 	int	  read_from_cgi[2];
@@ -177,14 +177,14 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	if (pipe(write_to_cgi) == -1) {
 		// pipe error
 		std::cerr << "pipe error" << std::endl;
-		return;
+		return false;
 	}
 	if (pipe(read_from_cgi) == -1) {
 		// pipe error
 		close(write_to_cgi[0]);
 		close(write_to_cgi[1]);
 		std::cerr << "pipe error" << std::endl;
-		return;
+		return false;
 	}
 	pid = fork();
 	if (pid < 0) {
@@ -193,7 +193,7 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 		close(write_to_cgi[1]);
 		close(read_from_cgi[0]);
 		close(read_from_cgi[1]);
-		return;
+		return false;
 	}
 	if (pid == 0) {
 		// child. run cgi
@@ -202,12 +202,16 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 		close(read_from_cgi[0]);
 		dup2(read_from_cgi[1], STDOUT_FILENO);
 		// set_cgi_envp()
-		CgiModule cgi(*this->req_res_queue_.back().second.uri_resolv_.cgi_loc_, this->req_res_queue_.back().first.field_);
+		CgiModule cgi(this->req_res_queue_.back().second.uri_resolv_, this->req_res_queue_.back().first.field_);
 
-		cgi.made_env_for_cgi_();
-		char* const script[3] = { this->req_res_queue_.back().second.uri_resolv_.cgi_loc_->cgi_path_info.c_str(), this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(), NULL };
+		cgi.made_env_for_cgi_(this->req_res_queue_.back().first.req_type_);
 
-		execve(script[0], script, &cgi.env_for_cgi_[0]);
+		char const* script[3];
+		script[0] = this->req_res_queue_.back().second.uri_resolv_.cgi_loc_->cgi_path_info.c_str();
+		script[1] = this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str();
+		script[2] = NULL;
+
+		execve(script[0], const_cast<char* const*>(script), const_cast<char* const*>(&cgi.env_for_cgi_[0]));
 		exit(EXIT_FAILURE);
 	}
 	// parent
@@ -220,6 +224,7 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+	return true;
 }
 
 bool
@@ -303,6 +308,20 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			break;
 		} else if (this->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
 			// cgi case:
+			if (this->cgi_handler(cur_event, change_list) == false) {
+				this->make_error_response(HTTP_STATUS_INTERNAL_SERVER_ERROR);
+				if (this->req_res_queue_.back().second.body_fd_ != -1) {
+					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+				}
+				this->state_ = REQ_HOLD;
+			} else {
+				if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+					this->state_ = REQ_BODY_CHUNKED;
+				} else {
+					this->state_ = REQ_HOLD;
+				}
+			}
+			return false;
 		}
 
 		// spx_log_("req_uri set ok");
@@ -590,8 +609,19 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		return false;
 	}
 
-	case REQ_CGI:
-		break;
+		// case REQ_CGI: {
+		// 	req_field_t &req = this->req_res_queue_.back().first;
+		// 	res_field_t &res = this->req_res_queue_.back().second;
+
+		// 	if (req.transfer_encoding_ & TE_CHUNKED) {
+		// 		// chunked logic
+		// 	} else {
+		// 		if (req.content_length_ == 0) {
+
+		// 		}
+		// 	}
+		// 	break;
+		// }
 	}
 	// if (rdsaved_.size() != rdchecked_) {
 	// 	this->flag_ &= ~(RDBUF_CHECKED);
@@ -646,11 +676,91 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 	write_filter_enable(change_list, cur_event);
 }
 
+bool
+ClientBuffer::cgi_header_parser() {
+	std::string		   header_field_line;
+	res_field_t&	   res		= this->req_res_queue_.back().second;
+	buffer_t&		   cgi_buf	= res.cgi_buffer_;
+	buffer_t::iterator crlf_pos = cgi_buf.begin() + res.cgi_checked_;
+	int				   idx;
+
+	while (true) {
+		crlf_pos = std::find(crlf_pos, cgi_buf.end(), LF);
+		if (crlf_pos != cgi_buf.end()) {
+			if (*(--crlf_pos) != CR) {
+				this->flag_ |= E_BAD_REQ;
+				return false;
+			}
+			header_field_line.assign(cgi_buf.begin() + res.cgi_checked_, crlf_pos);
+			crlf_pos += 2;
+			res.cgi_checked_ = crlf_pos - cgi_buf.begin();
+			if (header_field_line.size() == 0) {
+				// request header parsed.
+				break;
+			}
+			if (spx_http_syntax_header_line(header_field_line) == -1) {
+				spx_log_("syntax error");
+				this->flag_ |= E_BAD_REQ;
+				// error_res();
+				return false;
+			}
+			idx = header_field_line.find(':');
+			if (idx != std::string::npos) {
+				for (std::string::iterator it = header_field_line.begin();
+					 it != header_field_line.begin() + idx; ++it) {
+					if (isalpha(*it)) {
+						*it = tolower(*it);
+					}
+				}
+				size_t tmp = idx + 1;
+				while (tmp < header_field_line.size() && syntax_(ows_, header_field_line[tmp])) {
+					++tmp;
+				}
+				res.cgi_field_[header_field_line.substr(0, idx)]
+					= header_field_line.substr(tmp, header_field_line.size() - tmp);
+			}
+			continue;
+		}
+		cgi_buf.erase(cgi_buf.begin(),
+					  cgi_buf.begin() + res.cgi_checked_);
+		res.cgi_checked_ = 0;
+		return false;
+	}
+}
+
+bool
+ClientBuffer::cgi_controller(int state) {
+	res_field_t& res = this->req_res_queue_.back().second;
+
+	switch (state) {
+	case CGI_HEADER:
+		if (this->cgi_header_parser() == false) {
+			// read more?
+			break;
+		}
+		std::map<std::string, std::string>::iterator it;
+
+		it = res.cgi_field_.find("content-length");
+		if (it != res.cgi_field_.end()) {
+			res.cgi_size_  = strtol(it->second.c_str(), NULL, 10);
+			res.cgi_state_ = CGI_HOLD;
+			// TODO: make_cgi_response_header.
+			// this->make_cgi_response_header();
+		} else {
+			// chunked case.
+			res.cgi_size_ = -1;
+		}
+	case CGI_BODY_CHUNKED:
+		// chunked logic
+	}
+}
+
 void
 ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event) {
 	int n_read = read(cur_event->ident, this->rdbuf_, BUFFER_SIZE);
 	if (n_read < 0) {
 		// TODO: error handle
+		this->disconnect_client(change_list);
 		return;
 	}
 	this->req_res_queue_.back().second.cgi_buffer_.insert(
@@ -840,7 +950,7 @@ ClientBuffer::write_for_upload(event_list_t& change_list, struct kevent* cur_eve
 		if (req.body_read_ == req.content_length_) {
 			this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-			this->state_ = REQ_LINE_PARSING;
+			this->state_ = REQ_HOLD;
 		}
 	} else {
 		buf_len	   = this->rdsaved_.size() - this->rdchecked_;
@@ -865,9 +975,68 @@ ClientBuffer::write_for_upload(event_list_t& change_list, struct kevent* cur_eve
 		}
 	}
 	if (this->req_res_queue_.back().first.body_read_ == this->req_res_queue_.back().first.body_size_) {
-		this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
+		close(cur_event->ident);
 		add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-		this->state_ = REQ_LINE_PARSING;
+		this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
+		this->state_ = REQ_HOLD;
+	}
+	return true;
+}
+
+bool
+ClientBuffer::write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>& change_list) {
+	req_field_t& req = this->req_res_queue_.back().first;
+	res_field_t& res = this->req_res_queue_.back().second;
+	size_t		 buf_len;
+	int			 n_write;
+
+	if (req.transfer_encoding_ & TE_CHUNKED) {
+		// unchunked to req.chunked_body_buffer
+		buf_len = req.chunked_body_buffer_.size() - req.chunked_checked_;
+		if (WRITE_BUFFER_MAX <= buf_len) {
+			spx_log_("write_to_cgi: MAX_BUF ");
+			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], WRITE_BUFFER_MAX);
+			req.body_read_ += n_write;
+		} else {
+			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], buf_len);
+			req.body_read_ += n_write;
+			if (req.chunked_checked_ == req.chunked_body_buffer_.size()) {
+				req.chunked_body_buffer_.clear();
+				req.chunked_checked_ = 0;
+			}
+		}
+		if (req.body_read_ == req.content_length_) {
+			this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
+			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			this->state_ = REQ_HOLD;
+		}
+	} else {
+		buf_len	   = this->rdsaved_.size() - this->rdchecked_;
+		size_t len = req.body_size_ - req.body_read_;
+		if (WRITE_BUFFER_MAX <= std::min(buf_len, len)) {
+			spx_log_("write_to_cgi: MAX_BUF ");
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], WRITE_BUFFER_MAX);
+		} else if (buf_len <= len) {
+			spx_log_("write_to_cgi: buf_len: ", buf_len);
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], buf_len);
+		} else {
+			spx_log_("write_to_cgi: len: ", len);
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], len);
+		}
+		// spx_log_("body_fd: ", req.body_fd_);
+		// spx_log_("write len: ", n_write);
+		req.body_read_ += n_write;
+		this->rdchecked_ += n_write;
+		if (this->rdsaved_.size() == this->rdchecked_) {
+			this->rdsaved_.clear();
+			this->rdchecked_ = 0;
+		}
+		if (this->req_res_queue_.back().first.body_read_ == this->req_res_queue_.back().first.body_size_) {
+			this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
+			close(cur_event->ident);
+			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			this->state_ = REQ_HOLD;
+		}
 	}
 	return true;
 }
