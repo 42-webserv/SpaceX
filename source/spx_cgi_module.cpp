@@ -4,6 +4,27 @@
 
 namespace {
 
+
+#define METHOD__MAP(XX)                               \
+	XX(1, GET)                               \
+	XX(2, POST)                          \
+	XX(3, PUT)    \
+	XX(4, DELETE)    \
+	XX(5, HEAD)    \
+
+	std::string
+	method_map_str_(int& status) {
+		switch (s) {
+#define XX(num, name) \
+	case #num: \
+		return #name;
+			METHOD__MAP(XX)
+#undef XX
+		default:
+			return "<unknown>";
+		}
+	};
+
 	inline status
 	error_(const char* msg) {
 #ifdef SYNTAX_DEBUG
@@ -144,9 +165,10 @@ namespace {
 
 } // namespace
 
-CgiModule::CgiModule(uri_location_t const& uri_loc, header_field_map const& req_header)
-	: cgi_loc_(uri_loc)
-	, header_map_(req_header) {
+CgiModule::CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& req_header, uri_location_t const* cgi_loc_info)
+	: cgi_loc_(org_cgi_loc)
+	, header_map_(req_header),
+	, cgi_loc_info_(cgi_loc_info){
 }
 
 void
@@ -162,29 +184,7 @@ CgiModule::made_env_for_cgi_(int status) {
 	}
 
 	{ // variable part
-	std::string method;
-		switch (status){
-			case REQ_GET:{
-				method = "GET";
-				break;
-			}
-			case REQ_POST:{
-				method = "POST";
-				break;
-			}
-			case REQ_PUT:{
-				method = "PUT";
-				break;
-			}
-			case REQ_DELETE:{
-				method = "DELETE";
-				break;
-			}
-			case REQ_HEAD:{
-				method = "HEAD";
-				break;
-			}
-		}
+	std::string method = method_map_str_(status)
 		if (!method.empty()){
 			vec_env_.push_back("REQUEST_METHOD=" + method); // GET|POST|...
 		}
@@ -195,6 +195,9 @@ CgiModule::made_env_for_cgi_(int status) {
 		}
 		if (!cgi_loc_.query_string_.empty()){
 			vec_env_.push_back("QUERY_STRING=" + cgi_loc_.query_string_); // key=value&key=value&key=value
+		}
+		if (cgi_loc_info_ && !(cgi_loc_info_->save_path_.empty())){
+			vec_env_.push_back("SAVED_PATH=" + cgi_loc_info_->save_path_); // /blah/blah/
 		}
 		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t
 		// vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
