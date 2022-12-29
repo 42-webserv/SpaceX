@@ -144,56 +144,6 @@ timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 }
 
 void
-cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
-	client_buf_t& buf = (client_buf_t&)cur_event->udata;
-	int			  write_to_cgi[2];
-	int			  read_from_cgi[2];
-	pid_t		  pid;
-
-	if (pipe(write_to_cgi) == -1) {
-		// pipe error
-		std::cerr << "pipe error" << std::endl;
-		return;
-	}
-	if (pipe(read_from_cgi) == -1) {
-		// pipe error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		std::cerr << "pipe error" << std::endl;
-		return;
-	}
-	pid = fork();
-	if (pid < 0) {
-		// fork error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		close(read_from_cgi[1]);
-		return;
-	}
-	if (pid == 0) {
-		// child. run cgi
-		dup2(write_to_cgi[0], STDIN_FILENO);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		dup2(read_from_cgi[1], STDOUT_FILENO);
-		// set_cgi_envp()
-		// execve();
-		exit(EXIT_FAILURE);
-	}
-	// parent
-	close(write_to_cgi[0]);
-	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
-	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
-	close(read_from_cgi[1]);
-	// buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
-	// buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
-	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
-}
-
-void
 kqueue_module(std::vector<port_info_t>& port_info) {
 	std::vector<struct kevent>		  change_list;
 	std::map<uintptr_t, client_buf_t> clients;

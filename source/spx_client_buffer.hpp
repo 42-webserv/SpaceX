@@ -209,6 +209,8 @@ public:
 	bool write_response(event_list_t& change_list);
 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
+	void cgi_handler(struct kevent* cur_event, event_list_t& change_list);
+
 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 	bool skip_body(ssize_t cont_len);
 
