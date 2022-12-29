@@ -70,6 +70,7 @@ main(void) {
 		char env1[100] = "CONTENT_TYPE=multipart/form-data; boundary=---------------------------735323031399963166993862150";
 		char env2[100] = "CONTENT_LENGTH=836";
 		char env3[100] = "REQUEST_METHOD=POST";
+		char env4[100] = "SAVED_PATH=./temp2";
 		char* envp[] = {env1,
 		env2,
 		env3,
