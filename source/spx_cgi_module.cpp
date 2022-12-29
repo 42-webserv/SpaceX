@@ -4,15 +4,12 @@
 #include <vector>
 
 CgiModule::CgiModule(uri_location_t const& uri_loc, header_field_map const& req_header)
-	: cgi_pass_(uri_loc.cgi_pass)
-	, cgi_path_info_(uri_loc.cgi_path_info)
-	, saved_path_(uri_loc.saved_path)
-	, root_path_(uri_loc.root)
+	: cgi_loc_(uri_loc)
 	, header_map_(req_header) {
 }
 
 void
-CgiModule::made_env_for_cgi_(void) {
+CgiModule::made_env_for_cgi_(int status) {
 
 	std::vector<std::string> vec_env_;
 
@@ -24,13 +21,42 @@ CgiModule::made_env_for_cgi_(void) {
 	}
 
 	{ // variable part
-		vec_env_.push_back("REQUEST_URI=" +); // /blah/blah/blah.cgi/remain/blah/blah
-		vec_env_.push_back("SCRIPT_NAME=" +); // /blah/blah/blah.cgi
-		vec_env_.push_back("PATH_INFO=" +); // remain /blah/blah
-		vec_env_.push_back("QUERY_STRING=" +); // key=value&key=value&key=value
-		vec_env_.push_back("REQUEST_METHOD=" +); // GET|POST|...
-		vec_env_.push_back("SERVER_NAME=" +); // server name from server_info_t
-		vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
+	std::string method;
+		switch (status){
+			case REQ_GET:{
+				method = "GET";
+				break;
+			}
+			case REQ_POST:{
+				method = "POST";
+				break;
+			}
+			case REQ_PUT:{
+				method = "PUT";
+				break;
+			}
+			case REQ_DELETE:{
+				method = "DELETE";
+				break;
+			}
+			case REQ_HEAD:{
+				method = "HEAD";
+				break;
+			}
+		}
+		if (!method.empty()){
+			vec_env_.push_back("REQUEST_METHOD=" + method); // GET|POST|...
+		}
+		vec_env_.push_back("REQUEST_URI=" + cgi_loc_.request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
+		vec_env_.push_back("SCRIPT_NAME=" + cgi_loc_.script_name_); // /blah/blah/blah.cgi
+		if (!cgi_loc_.path_info_.empty()){
+			vec_env_.push_back("PATH_INFO=" + cgi_loc_.path_info_); // remain /blah/blah
+		}
+		if (!cgi_loc_.query_string_.empty()){
+			vec_env_.push_back("QUERY_STRING=" + cgi_loc_.query_string_); // key=value&key=value&key=value
+		}
+		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t
+		// vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
 	}
 
 	for (header_field_map::const_iterator it = header_map_.begin(); it != header_map_.end(); ++it) {
