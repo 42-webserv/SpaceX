@@ -1,7 +1,148 @@
 #include "spx_cgi_module.hpp"
 #include "spx_core_type.hpp"
 #include <cstring>
-#include <vector>
+
+namespace {
+
+	inline status
+	error_(const char* msg) {
+#ifdef SYNTAX_DEBUG
+		std::cout << "\033[1;31m" << msg << "\033[0m"
+				  << " : "
+				  << "\033[1;33m"
+				  << ""
+				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
+#endif
+		return spx_error;
+	}
+
+	inline status
+	error_flag_(const char* msg, int& flag) {
+#ifdef SYNTAX_DEBUG
+		std::cout << "\033[1;31m" << msg << "\033[0m"
+				  << " : "
+				  << "\033[1;33m"
+				  << ""
+				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
+#endif
+		flag = REQ_UNDEFINED;
+		return spx_error;
+	}
+
+	status
+	check_content_type_(std::vector<std::string>& temp_header,
+						std::string& temp,
+						std::vector<char>& cgi_response,
+						std::vector<char>::const_iterator& it){
+
+		temp.push_back("Content-Type:");
+		while (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+			temp.push_back(*it);
+			++it;
+		}
+		if (it != cgi_response.end() && *it == '/'){
+			temp.push_back(*it);
+			++it;
+			while (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+				temp.push_back(*it);
+				++it;
+			}
+			if (it != cgi_response.end() && *it == '\n'){
+				temp_header.push_back(temp);
+				temp.clear();
+				++it;
+				return spx_ok;
+			}else if (it != cgi_response.end() && *it == ';'){
+				temp.push_back(*it);
+				++it;
+				if (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+
+					enum {
+						param_attr,
+						param_value,
+						param_quoted_open,
+						param_quoted_close,
+						param_semicolon,
+						param_almost_done,
+						param_done
+					} state;
+					state = param_attr;
+
+
+					while (state != param_done){
+						switch (state){
+							case param_attr:{
+								while (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+									temp.push_back(*it);
+									++it;
+								}
+								if (it != cgi_response.end() && *it == '='){
+									temp.push_back(*it);
+									++it;
+									state = param_value;
+								}else {
+									return error_("Content-Type syntax error : missing '='");
+								}
+								break;
+							}
+							case param_value:{
+								while (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+									temp.push_back(*it);
+									++it;
+								}
+								if (it != cgi_response.end()){
+									switch (*it){
+										case '"':{
+											temp.push_back(*it);
+											++it;
+											state = param_quoted_open;
+											break;
+										}
+										case ';':{
+											temp.push_back(*it);
+											++it;
+											state = param_semicolon;
+											break;
+										}
+										case '\n':{
+											state = param_almost_done;
+											break;
+										}
+										default:{
+											return error_("Content-Type syntax error : invalid parameter value end");
+										}
+									}
+								}else {
+									return error_("Content-Type syntax error : reached end of response");
+								}
+								break;
+							}
+							case pram_almost_done:{
+								if (it != cgi_response.end() && *it == '\n'){
+									++it;
+									state = param_done;
+								}else {
+									return error_("Content-Type syntax error : missing endline");
+								}
+								break;
+							}
+						}
+					}
+					return spx_ok;
+				}
+				return error_("Content-Type syntax error : missing parameter name");
+			}else {
+				return error_("Content-Type syntax error : missing endline");
+			}
+		}
+		return error_("Content-Type syntax error : missing '/'");
+	}
+
+} // namespace
 
 CgiModule::CgiModule(uri_location_t const& uri_loc, header_field_map const& req_header)
 	: cgi_pass_(uri_loc.cgi_pass)
@@ -227,7 +368,78 @@ CgiModule::made_env_for_cgi_(void) {
 	env_for_cgi_.push_back(NULL);
 }
 
-static void
-CgiModule::check_cgi_response(void){
+static status
+CgiModule::check_cgi_response(std::vector<char>& cgi_response,
+								std::vector<std::string>& cgi_header,
+								uint32_t& status_code,
+								uint64_t& body_pos){
 
+	if (cgi_response.size() < 2) {
+		return spx_error;
+	}
+	// check content-length
+	// if chunked, decode chunked
+
+	// check content-type
+
+	enum {
+		cgi__start, // check what response type
+		cgi__document,
+		cgi__status,
+		cgi__body,
+		cgi__location,
+		cgi__local_redirect,
+		cgi__client_redirect,
+		cgi__cliend_redirect_document,
+		cgi__almost_done,
+		cgi__done
+	} state, next_state;
+
+	body_pos = 0;
+
+	std::string location = "Location:";
+	std::string content_type = "Content-Type:";
+	std::string status = "Status:";
+	std::string temp;
+	std::vector<std::string> temp_header;
+
+	state = cgi__start;
+	std::vector<char>::const_iterator it = cgi_response.begin();
+
+	while (state != cgi__done) {
+		switch (state) {
+			case cgi__start:{
+				if (std::equal(location.begin(), location.end(), it)){
+					it += location.size();
+					state = cgi__location;
+					break;
+				}else if (std::equal(content_type.begin(), content_type.end(), it)){
+					it += content_type.size();
+					state = cgi__document;
+					break;
+				}
+				return error_("first cgi response line is not location or content-type");
+			}
+
+			case cgi__document:{
+				if (*it == '\n'){
+					temp_header.push_back(std::string("Content-Type:"))
+					++it;
+					state = cgi__status;
+					break;
+				}
+				if (it != cgi_response.end() && syntax_(name_token_, static_cast<uint8_t>(*it))){
+					if (check_content_type_(temp_header, temp, cgi_response, it) == spx_error){
+						return error_("Content-Type syntax error");
+					}
+					temp_header.push_back(temp);
+					temp.clear();
+					state = cgi__status;
+					break;
+				}
+				return error_("Content-Type syntax error");
+			}
+		}
+	}
+	return spx_ok;
 }
