@@ -12,8 +12,8 @@ SessionStorage::is_key_exsits(const std::string& c_key) const {
 Cookie
 SessionStorage::find_value_by_key(const std::string& c_key) const {
 	storage_t::const_iterator it = storage_.find(c_key);
-	if (it == storage_.end())
-		return;
+	// if (it == storage_.end())
+	// return ;
 	return it->second;
 }
 
@@ -36,6 +36,7 @@ void
 ResField::setCookieHeader(SessionStorage& storage) {
 	Cookie c;
 
+	// if(this->)
 	std::string session_id = "TMP_SESSION_VALUE1234";
 	c.content.insert(cookie_content("SessionID", session_id));
 	headers_.push_back(header("Set-Cookie", c.to_string()));
@@ -47,5 +48,5 @@ ResField::setCookieHeader(SessionStorage& storage) {
 void
 ClientBuffer::find_cookie(SessionStorage& storage) {
 	req_field_t& req = this->req_res_queue_.front().first;
-	req.storage.is_key_exsits()
+	// req.storage.is_key_exsits()
 }

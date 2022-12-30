@@ -314,11 +314,11 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		// NOTE :: add by space.
 		// if cookie exist in request
 		SessionStorage								 storage; // this is temporary
-		std::map<std::string, std::string>::iterator find_cookie = req->field_.find("Cookie");
-		if (find_cookie != req->field_.end()) {
-			std::string cookie_value = (*find_cookie).second;
-			if (!cookie_value.empty() && storage.is_key_exsits(cookie_value)) {
-				// asdf
+		std::map<std::string, std::string>::iterator req_cookie = req->field_.find("Cookie");
+		if (req_cookie != req->field_.end()) {
+			std::string req_cookie_value = (*req_cookie).second;
+			if (!req_cookie_value.empty() && storage.is_key_exsits(req_cookie_value)) {
+				this->req_res_queue_.back().first.req_cookie_ = storage.find_value_by_key(req_cookie_value);
 			}
 		}
 
