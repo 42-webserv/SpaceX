@@ -97,11 +97,10 @@ CgiModule::made_env_for_cgi_(int status) {
 		}
 		vec_env_.push_back("REQUEST_URI=" + cgi_resolved_.resolved_request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
 		vec_env_.push_back("SCRIPT_NAME=" + cgi_resolved_.script_name_); // /blah/blah/blah.cgi
-		if (!cgi_resolved_.path_info_.empty()) {
-			vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_); // remain /blah/blah
-		} else {
-			vec_env_.push_back("PATH_INFO=" + cgi_resolved_.resolved_request_uri_); // remain /blah/blah
-		}
+		vec_env_.push_back("PATH_INFO=" + cgi_resolved_.resolved_request_uri_); // remain /blah/blah //NOTE : in this req_uri = path_info is for intra cgi tester
+		// if (!cgi_resolved_.path_info_.empty()) { // NOTE : in Formal CGI, PATH_INFO is after SCRIPT_NAME's path
+		// 	vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_); // remain /blah/blah
+		// }
 		if (!cgi_resolved_.query_string_.empty()) {
 			vec_env_.push_back("QUERY_STRING=" + cgi_resolved_.query_string_); // key=value&key=value&key=value
 		}

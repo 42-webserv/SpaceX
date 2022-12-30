@@ -45,14 +45,18 @@ main(void) {
 			"CONTENT_LENGTH=13",
 			"SERVER_PROTOCOL=HTTP/1.1",
 			// "PATH_INFO=/directory/youpi.bla",
-			"REQUEST_URI=/directory///youpi.bla",
-			"PATH_INFO=/directory///youpi.bla",
-			"SCRIPT_NAME=/directory/bla",
 			"HTTP_HOST=localhost:8080",
 			"GATEWAY_INTERFACE=CGI/1.1",
 			"REMOTE_ADDR=127.0.0.1",
 			"SERVER_SOFTWARE=SPX/1.0",
 			"SERVER_PROTOCOL=HTTP/1.1",
+			"REQUEST_URI=/upload/isetn.py/rsitenrst",
+			"SCRIPT_NAME=/upload/isetn.py",
+			// "PATH_INFO=/rsitenrst",
+			"PATH_INFO=/upload/isetn.py/rsitenrst",
+			// "REQUEST_URI=/directory///youpi.bla",
+			// "PATH_INFO=/directory///youpi.bla",
+			// "SCRIPT_NAME=/directory/bla",
 			NULL
 		};
 
