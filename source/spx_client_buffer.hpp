@@ -244,6 +244,7 @@ public:
 	void make_error_response(http_status error_code);
 	void make_response_header();
 	void make_redirect_response();
+	void make_cgi_response_header();
 	/* RESPONSE END*/
 };
 

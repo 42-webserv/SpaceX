@@ -89,7 +89,10 @@ ClientBuffer::header_field_parser() {
 				this->flag_ |= E_BAD_REQ;
 				return false;
 			}
-			header_field_line.assign(this->rdsaved_.begin() + this->rdchecked_, crlf_pos);
+			header_field_line.clear();
+			if (this->rdsaved_.begin() + this->rdchecked_ != crlf_pos) {
+				header_field_line.assign(this->rdsaved_.begin() + this->rdchecked_, crlf_pos);
+			}
 			crlf_pos += 2;
 			this->rdchecked_ = crlf_pos - this->rdsaved_.begin();
 			if (header_field_line.size() == 0) {
@@ -216,12 +219,16 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 	}
 	// parent
 	close(write_to_cgi[0]);
-	fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
+	if (this->req_res_queue_.back().first.req_type_ & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
+		close(write_to_cgi[1]);
+	} else {
+		fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
+		add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	}
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	close(read_from_cgi[1]);
 	// buf.req_res_queue_.back().first.cgi_in_fd_	= write_to_cgi[1];
 	// buf.req_res_queue_.back().first.cgi_out_fd_ = read_from_cgi[0];
-	add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
 	return true;
@@ -241,15 +248,15 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 	switch (this->state_) {
 	case REQ_LINE_PARSING:
 		if (this->request_line_parser() == false) {
-			spx_log_("controller-req_line false. read more.");
 			this->state_ = REQ_LINE_PARSING;
+			spx_log_("controller-req_line false. read more.", this->state_);
 			return false;
 		}
 		spx_log_("controller-req_line ok");
 	case REQ_HEADER_PARSING: {
 		if (this->header_field_parser() == false) {
-			spx_log_("controller-header false. read more. state", this->state_);
 			this->state_ = REQ_HEADER_PARSING;
+			spx_log_("controller-header false. read more. state", this->state_);
 			return false;
 		}
 		spx_log_("controller-header ok");
@@ -317,12 +324,25 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				}
 				this->state_ = REQ_HOLD;
 			} else {
+				spx_log_("cgi true. forked, open pipes. flag", this->req_res_queue_.front().second.flag_ & WRITE_READY);
 				if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
-					this->state_ = REQ_BODY_CHUNKED;
+					if (this->req_res_queue_.back().first.req_type_ & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
+						this->state_ = REQ_SKIP_BODY_CHUNKED;
+					} else {
+						this->state_ = REQ_BODY_CHUNKED;
+					}
 				} else {
-					this->state_ = REQ_HOLD;
+					if (this->req_res_queue_.back().first.content_length_ != 0) {
+						if (this->req_res_queue_.back().first.req_type_ & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
+							this->state_ = REQ_SKIP_BODY;
+						} else {
+							this->state_ = REQ_HOLD;
+						}
+					}
 				}
 			}
+			spx_log_("queue size", this->req_res_queue_.size());
+			this->req_res_queue_.front().second.flag_ &= ~(WRITE_READY);
 			return false;
 		}
 
@@ -689,12 +709,11 @@ ClientBuffer::cgi_header_parser() {
 	while (true) {
 		crlf_pos = std::find(crlf_pos, cgi_buf.end(), LF);
 		if (crlf_pos != cgi_buf.end()) {
-			if (*(--crlf_pos) != CR) {
-				this->flag_ |= E_BAD_REQ;
-				return false;
+			header_field_line.clear();
+			if (cgi_buf.begin() + res.cgi_checked_ != crlf_pos) {
+				header_field_line.assign(cgi_buf.begin() + res.cgi_checked_, crlf_pos);
 			}
-			header_field_line.assign(cgi_buf.begin() + res.cgi_checked_, crlf_pos);
-			crlf_pos += 2;
+			++crlf_pos;
 			res.cgi_checked_ = crlf_pos - cgi_buf.begin();
 			if (header_field_line.size() == 0) {
 				// request header parsed.
@@ -754,9 +773,13 @@ ClientBuffer::cgi_controller(int state) {
 			res.cgi_state_ = CGI_BODY_CHUNKED;
 			res.cgi_size_  = -1;
 		}
+		this->make_cgi_response_header();
+		this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 	}
 	case CGI_BODY_CHUNKED:
 		// chunked logic
+		spx_log_("cgi body chunked");
+		res.cgi_state_ = CGI_HOLD;
 		break;
 	}
 	return true;
@@ -774,7 +797,9 @@ ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_e
 		this->req_res_queue_.back().second.cgi_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 
 	if (cgi_controller(this->req_res_queue_.back().second.cgi_state_) == false) {
+		return;
 	}
+	return;
 }
 
 void
@@ -914,6 +939,29 @@ ClientBuffer::make_response_header() {
 }
 
 void
+ClientBuffer::make_cgi_response_header() {
+	const req_field_t& req		  = req_res_queue_.back().first;
+	res_field_t&	   res		  = req_res_queue_.back().second;
+	int				   req_method = req.req_type_;
+
+	// Set Date Header
+	res.setDate();
+	spx_log_("make_cgi_res_header");
+	std::map<std::string, std::string>::iterator it;
+
+	it = res.cgi_field_.find("status");
+	if (it != res.cgi_field_.end()) {
+		res.status_code_ = strtol(it->second.c_str(), NULL, 10);
+	} else {
+		res.status_code_ = 200;
+	}
+	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
+	// settting response_header size  + content-length size to res_field
+	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+	res.write_to_response_buffer(res.make_to_string());
+}
+
+void
 ClientBuffer::make_redirect_response() {
 	const req_field_t& req
 		= req_res_queue_.front().first;
@@ -1000,10 +1048,10 @@ ClientBuffer::write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>&
 		buf_len = req.chunked_body_buffer_.size() - req.chunked_checked_;
 		if (WRITE_BUFFER_MAX <= buf_len) {
 			spx_log_("write_to_cgi: MAX_BUF ");
-			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], WRITE_BUFFER_MAX);
+			n_write = write(cur_event->ident, &req.chunked_body_buffer_[req.chunked_checked_], WRITE_BUFFER_MAX);
 			req.body_read_ += n_write;
 		} else {
-			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], buf_len);
+			n_write = write(cur_event->ident, &req.chunked_body_buffer_[req.chunked_checked_], buf_len);
 			req.body_read_ += n_write;
 			if (req.chunked_checked_ == req.chunked_body_buffer_.size()) {
 				req.chunked_body_buffer_.clear();
@@ -1053,8 +1101,10 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 	int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 						std::min((size_t)WRITE_BUFFER_MAX,
 								 res->res_buffer_.size() - res->sent_pos_));
-	write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
-		  std::min((size_t)WRITE_BUFFER_MAX, res->res_buffer_.size() - res->sent_pos_));
+	if (this->rdsaved_.size() != this->rdchecked_) {
+		write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
+			  std::min((size_t)WRITE_BUFFER_MAX, res->res_buffer_.size() - res->sent_pos_));
+	}
 	if (n_write < 0) {
 		spx_log_("write error");
 		// client fd error. maybe disconnected.
