@@ -234,9 +234,9 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 			"REQUEST_METHOD=GET",
 			// "REQUEST_URI=/directory/youpi.bla",
 			// "SCRIPT_NAME=/directory/youpi.bla",
-			"PATH_INFO=./cgi_bin",
+			"PATH_INFO=/cgi_bin",
 			"HTTP_ACCEPT_ENCODING=gzip",
-			// "HTTP_HOST=localhost:8080",
+			"HTTP_HOST=localhost:8080",
 			"HTTP_USER_AGENT=Go-http-client/1.1",
 			0
 		};
@@ -747,10 +747,12 @@ ClientBuffer::cgi_header_parser() {
 			if (cgi_buf.begin() + res.cgi_checked_ != crlf_pos) {
 				header_field_line.assign(cgi_buf.begin() + res.cgi_checked_, crlf_pos);
 			}
+			spx_log_("cgi header!!!", header_field_line);
 			++crlf_pos;
 			res.cgi_checked_ = crlf_pos - cgi_buf.begin();
-			if (header_field_line.size() == 0) {
+			if (header_field_line.size() < 2) {
 				// request header parsed.
+				spx_log_("cgi parsed!!!", header_field_line);
 				break;
 			}
 			// if (spx_http_syntax_header_line(header_field_line) == -1) {
@@ -785,37 +787,38 @@ ClientBuffer::cgi_header_parser() {
 }
 
 bool
-ClientBuffer::cgi_controller(int state) {
+ClientBuffer::cgi_controller() {
 	res_field_t& res = this->req_res_queue_.back().second;
 
-	switch (state) {
-	case CGI_HEADER: {
-		if (this->cgi_header_parser() == false) {
-			// read more?
-			break;
-		}
-		std::map<std::string, std::string>::iterator it;
+	// switch (state) {
+	// case CGI_HEADER: {
+	if (this->cgi_header_parser() == false) {
+		// read more?
+		spx_log_("cgi_header_parser false");
+		// break;
+	}
+	std::map<std::string, std::string>::iterator it;
 
-		it = res.cgi_field_.find("content-length");
-		if (it != res.cgi_field_.end()) {
-			res.cgi_size_  = strtol(it->second.c_str(), NULL, 10);
-			res.cgi_state_ = CGI_HOLD;
-			// TODO: make_cgi_response_header.
-			// this->make_cgi_response_header();
-		} else {
-			// chunked case.
-			res.cgi_state_ = CGI_BODY_CHUNKED;
-			res.cgi_size_  = -1;
-		}
-		this->make_cgi_response_header();
-		this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-	}
-	case CGI_BODY_CHUNKED:
-		// chunked logic
-		spx_log_("cgi body chunked");
+	it = res.cgi_field_.find("content-length");
+	if (it != res.cgi_field_.end()) {
+		res.cgi_size_  = strtol(it->second.c_str(), NULL, 10);
 		res.cgi_state_ = CGI_HOLD;
-		break;
+		// TODO: make_cgi_response_header.
+		// this->make_cgi_response_header();
+	} else {
+		// chunked case.
+		res.cgi_state_ = CGI_BODY_CHUNKED;
+		res.cgi_size_  = -1;
 	}
+	this->make_cgi_response_header();
+	// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+	// }
+	// case CGI_BODY_CHUNKED:
+	// 	// chunked logic
+	// 	spx_log_("cgi body chunked");
+	// 	res.cgi_state_ = CGI_HOLD;
+	// 	break;
+	// }
 	return true;
 }
 
@@ -832,9 +835,11 @@ ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_e
 	this->req_res_queue_.back().second.cgi_buffer_.insert(
 		this->req_res_queue_.back().second.cgi_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 
-	if (cgi_controller(this->req_res_queue_.back().second.cgi_state_) == false) {
-		return;
-	}
+	// if (cgi_controller(this->req_res_queue_.back().second.cgi_state_, change_list) == false) {
+	// 	spx_log_("cgi controller false");
+	// 	return;
+	// }
+	// spx_log_("cgi controller ok");
 	return;
 }
 
@@ -918,16 +923,20 @@ ClientBuffer::make_response_header() {
 	case REQ_HEAD:
 	case REQ_GET:
 		if (uri[uri.size() - 1] != '/') {
+			spx_log_("uri.cstr()", uri.c_str());
 			req_fd = res.file_open(uri.c_str());
-			spx_log_(uri.c_str());
 		} else {
 			spx_log_("folder skip");
+			// make_error_response(HTTP_STATUS_NOT_FOUND);
+			return;
 		}
 		spx_log_("uri_locations", req.uri_loc_);
+		spx_log_("req_fd", req_fd);
 		if (req_fd == 0) {
+			spx_log_("folder skip");
 			make_error_response(HTTP_STATUS_FORBIDDEN);
 			return;
-		} else if (req_fd == -1 && req.uri_loc_ == NULL) {
+		} else if (req_fd == -1 && (req.uri_loc_ == NULL || req.uri_loc_->autoindex_flag == Kautoindex_off)) {
 			make_error_response(HTTP_STATUS_NOT_FOUND);
 			return;
 		} else if (req_fd == -1 && req.uri_loc_->autoindex_flag == Kautoindex_on) {
@@ -994,6 +1003,9 @@ ClientBuffer::make_cgi_response_header() {
 	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 	// settting response_header size  + content-length size to res_field
 	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+	std::stringstream ss;
+	ss << res.cgi_buffer_.size() - res.cgi_checked_;
+	res.headers_.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
 	res.write_to_response_buffer(res.make_to_string());
 }
 
@@ -1137,10 +1149,11 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 	int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 						std::min((size_t)WRITE_BUFFER_MAX,
 								 res->res_buffer_.size() - res->sent_pos_));
-	if (this->rdsaved_.size() != this->rdchecked_) {
+	if (n_write) {
 		write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
 			  std::min((size_t)WRITE_BUFFER_MAX, res->res_buffer_.size() - res->sent_pos_));
 	}
+	spx_log_("write_bufsize: ", res->buf_size_);
 	if (n_write < 0) {
 		spx_log_("write error");
 		// client fd error. maybe disconnected.

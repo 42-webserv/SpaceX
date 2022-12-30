@@ -222,6 +222,8 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
 								spx_log_("cgi read close");
+								buf->cgi_controller();
+								add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
 							} else {
 								spx_log_("cgi write close");
 							}

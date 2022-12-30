@@ -227,7 +227,8 @@ public:
 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
 	bool cgi_header_parser();
-	bool cgi_controller(int state);
+	bool cgi_controller();
+	// bool cgi_controller(int state, event_list_t& change_list);
 
 	bool cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 
