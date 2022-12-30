@@ -1,5 +1,4 @@
 #pragma once
-#include "spx_port_info.hpp"
 #ifndef __SPX__CGI__MODULE__HPP
 #define __SPX__CGI__MODULE__HPP
 
@@ -14,9 +13,9 @@ typedef std::map<std::string, std::string> header_field_map;
 class CgiModule {
 
 private:
-	header_field_map const& 	header_map_;
-	uri_resolved_t const&		cgi_loc_;
-	uri_location_t *		cgi_loc_info_;
+	uri_resolved_t const&	cgi_resolved_;
+	header_field_map const& header_map_;
+	uri_location_t*			cgi_loc_info_;
 
 public:
 	std::vector<const char*> env_for_cgi_;
