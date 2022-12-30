@@ -21,14 +21,15 @@ ifdef DEBUG_FLAG
 endif
 
 SRC			=	spacex.cpp \
+				spx_autoindex_generator.cpp \
+				spx_cgi_module.cpp \
+				spx_client_buffer.cpp \
+				spx_core_util_box.cpp \
+				spx_kqueue_module.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \
-				spx_core_util_box.cpp \
 				spx_response_generator.cpp \
-				spx_autoindex_generator.cpp \
-				spx_syntax_checker.cpp \
-				spx_client_buffer.cpp \
-				spx_kqueue_module.cpp
+				spx_syntax_checker.cpp 
 
 
 SRC_DIR		=	source/

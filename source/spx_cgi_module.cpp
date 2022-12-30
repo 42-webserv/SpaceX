@@ -170,6 +170,8 @@ CgiModule::CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& 
 	, cgi_loc_info_(cgi_loc_info) {
 }
 
+CgiModule::~CgiModule() { }
+
 void
 CgiModule::made_env_for_cgi_(int status) {
 

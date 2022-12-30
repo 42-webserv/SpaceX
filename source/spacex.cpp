@@ -65,7 +65,7 @@ namespace {
 inline void
 main_info_t::port_info_print_(void) {
 	uint32_t i = 3;
-		std::cout << "------------------------------------" << std::endl;
+	std::cout << "------------------------------------" << std::endl;
 	while (i < this->socket_size) {
 		// std::cout << "listen_sd: " << port_info[i].listen_sd << std::endl;
 		// std::cout << "my_port: " << port_info[i].my_port << std::endl;
@@ -73,21 +73,20 @@ main_info_t::port_info_print_(void) {
 		// port_info[i].my_port_default_server.print_();
 		for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
 			// if ((it2->second.default_server_flag == Kother_server)) {
-				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
-				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
-				if (it2->second.default_server_flag == Kdefault_server){
-					std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
-				}
-				else{
+			std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
+			std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
+			if (it2->second.default_server_flag == Kdefault_server) {
+				std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
+			} else {
 
-					std::cout << std::endl;
-				}
-				// it2->second.print_();
+				std::cout << std::endl;
+			}
+			// it2->second.print_();
 			// }
 		}
 		++i;
 	}
-		std::cout << "------------------------------------" << std::endl;
+	std::cout << "------------------------------------" << std::endl;
 }
 
 #ifdef SPACE_RESPONSE_TEST
