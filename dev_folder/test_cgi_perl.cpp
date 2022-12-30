@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -8,16 +9,14 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
-#include <sstream>
-
 
 int
 main(void) {
 
-	int		pid;
-	int		status;
-	int		write_to_cgi[2];
-	int		read_from_cgi[2];
+	int pid;
+	int status;
+	int write_to_cgi[2];
+	int read_from_cgi[2];
 	pipe(write_to_cgi);
 	pipe(read_from_cgi);
 
@@ -57,7 +56,6 @@ main(void) {
 
 	if (pid == 0) {
 
-
 		dup2(write_to_cgi[0], STDIN_FILENO);
 		close(write_to_cgi[1]);
 		close(read_from_cgi[0]);
@@ -67,22 +65,22 @@ main(void) {
 		char filename[100] = "/usr/bin/perl";
 
 		// char script[100] = "upload_cgi.py";
-		char script[100] = "add_cgi.pl";
-		char* argv[] = {filename, script, NULL};
+		char  script[100] = "add_cgi.pl";
+		char* argv[]	  = { filename, script, NULL };
 
 		// char env1[100] = "CONTENT_TYPE=multipart/form-data; boundary=---------------------------735323031399963166993862150";
 		// char env2[100] = "CONTENT_LENGTH=836";
 		// char env3[100] = "REQUEST_METHOD=POST";
 
-		char env1[100] = "REQUEST_METHOD=POST";
-		char env2[100] = "QUERY_STRING=num1=4&num2=1777";
-		char env3[100] = "CONTENT_TYPE=application/x-www-form-urlencoded";
-		char env4[100] = "CONTENT_LENGTH=13";
-		char* envp[] = {env1,
-		env2,
-		env3,
-		env4,
-		NULL};
+		char  env1[100] = "REQUEST_METHOD=POST";
+		char  env2[100] = "QUERY_STRING=num1=4&num2=1777";
+		char  env3[100] = "CONTENT_TYPE=application/x-www-form-urlencoded";
+		char  env4[100] = "CONTENT_LENGTH=13";
+		char* envp[]	= { env1,
+							env2,
+							env3,
+							env4,
+							NULL };
 
 		execve(filename, argv, envp);
 		exit(1);
@@ -92,14 +90,14 @@ main(void) {
 		close(write_to_cgi[1]);
 		close(read_from_cgi[1]);
 		std::cout << "parent----------" << std::endl;
-		while (waitpid(pid, NULL, 0) != -1){
+		while (waitpid(pid, NULL, 0) != -1) {
 			std::cout << "waitpid" << std::endl;
 		}
 		std::cout << "end of while----------" << std::endl;
 		char temp[1024];
 
 		ssize_t i = read(read_from_cgi[0], temp, 1024);
-		while (i > 0){
+		while (i > 0) {
 			temp[i] = '\0';
 			printf("%s", temp);
 			i = read(read_from_cgi[0], temp, 1024);
