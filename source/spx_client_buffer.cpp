@@ -205,7 +205,8 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 		close(read_from_cgi[0]);
 		dup2(read_from_cgi[1], STDOUT_FILENO);
 		// set_cgi_envp()
-		CgiModule cgi(this->req_res_queue_.back().second.uri_resolv_, this->req_res_queue_.back().first.field_);
+		CgiModule cgi(this->req_res_queue_.back().second.uri_resolv_, this->req_res_queue_.back().first.field_,
+					  this->req_res_queue_.back().first.uri_loc_);
 
 		cgi.made_env_for_cgi_(this->req_res_queue_.back().first.req_type_);
 
