@@ -15,7 +15,7 @@ class CgiModule {
 private:
 	uri_resolved_t const&	cgi_resolved_;
 	header_field_map const& header_map_;
-	uri_location_t*			cgi_loc_info_;
+	uri_location_t const*	cgi_loc_info_;
 
 public:
 	std::vector<const char*> env_for_cgi_;
