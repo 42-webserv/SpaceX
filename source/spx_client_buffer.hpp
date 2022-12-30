@@ -248,6 +248,8 @@ public:
 	void make_response_header();
 	void make_redirect_response();
 
+	void find_cookie(SessionStorage& storage);
+
 	/* RESPONSE END*/
 };
 

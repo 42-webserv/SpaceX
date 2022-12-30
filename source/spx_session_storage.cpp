@@ -26,42 +26,26 @@ SessionStorage::find_cookie_to_string(const std::string& c_key) {
 }
 
 void
-SessionStorage::add_new_session(SessionID id, Cookie cookie) {
-	storage_.insert(session_key_val("val", cookie));
+SessionStorage::add_new_session(SessionID id, t_cookie cookie) {
+	storage_.insert(session_key_val(id, cookie));
 }
+
+// this code will moved to client_buf file
 
 void
 ResField::setCookieHeader(SessionStorage& storage) {
-	Cookie		c;
-	std::string tmp_session_id = "TMP_SESSION_VALUE1234";
-	c.content.insert(cookie_content("SessionID", tmp_session_id));
+	Cookie c;
+
+	std::string session_id = "TMP_SESSION_VALUE1234";
+	c.content.insert(cookie_content("SessionID", session_id));
 	headers_.push_back(header("Set-Cookie", c.to_string()));
-	storage.add_new_session(tmp_session_id, c);
 
 	// Server - Session register the session value
+	storage.add_new_session(session_id, c);
 }
 
-/*
 void
-SessionStorage::parse_cookie_header(const std::string& cookie_header) {
-	size_t start = 0;
-	while (start < cookie_header.size()) {
-		size_t end = cookie_header.find(';', start);
-		if (end == std::string::npos)
-			end = cookie_header.size();
-		std::string cookie	  = cookie_header.substr(start, end - start);
-		size_t		equal_pos = cookie.find('=');
-		size_t		key_pos	  = 0;
-		if (equal_pos != std::string::npos) {
-			std::string key	  = cookie.substr(key_pos, equal_pos);
-			std::string value = cookie.substr(equal_pos + 1);
-			if (!key.empty()) // additional valid check for key needed
-				storage_[key] = value;
-		}
-		start = end + 1;
-		while (cookie_header[start] == ' ')
-			++start;
-	}
+ClientBuffer::find_cookie(SessionStorage& storage) {
+	req_field_t& req = this->req_res_queue_.front().first;
+	req.storage.is_key_exsits()
 }
-*/
-// this will moved to spx_client_buffer.cpp

@@ -45,13 +45,14 @@ typedef struct Cookie {
 	}
 
 } t_cookie;
-class SessionStorage {
-	typedef typename std::string				  SessionID;
-	typedef typename std::string				  SessionValue;
-	typedef typename std::pair<SessionID, Cookie> session_key_val;
 
-	typedef std::map<SessionID, Cookie> storage_t;
-	storage_t							storage_;
+class SessionStorage {
+	typedef typename std::string					SessionID;
+	typedef typename std::string					SessionValue;
+	typedef typename std::pair<SessionID, t_cookie> session_key_val;
+
+	typedef std::map<SessionID, t_cookie> storage_t;
+	storage_t							  storage_;
 
 public:
 	SessionStorage() { }
@@ -60,7 +61,7 @@ public:
 	// void
 	//  parse_cookie_header(const std::string& cookie_header);
 	bool		is_key_exsits(const std::string& c_key) const;
-	Cookie		find_value_by_key(const std::string& c_key) const;
+	t_cookie	find_value_by_key(const std::string& c_key) const;
 	std::string find_cookie_to_string(const std::string& c_key);
-	void		add_new_session(SessionID id, Cookie cookie);
+	void		add_new_session(SessionID id, t_cookie cookie);
 };

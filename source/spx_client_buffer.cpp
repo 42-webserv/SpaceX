@@ -2,6 +2,8 @@
 #include "spx_cgi_module.hpp"
 #include "spx_kqueue_module.hpp"
 
+#include "spx_session_storage.hpp"
+
 ClientBuffer::ClientBuffer()
 	: req_res_queue_()
 	, rdsaved_()
@@ -270,6 +272,17 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 															 this->req_res_queue_.back().second.uri_resolv_);
 
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
+
+		// NOTE :: add by space.
+		// if cookie exist in request
+		SessionStorage								 storage; // this is temporary
+		std::map<std::string, std::string>::iterator find_cookie = req->field_.find("Cookie");
+		if (find_cookie != req->field_.end()) {
+			std::string cookie_value = (*find_cookie).second;
+			if (!cookie_value.empty() && storage.is_key_exsits(cookie_value)) {
+				// asdf
+			}
+		}
 
 		// spx_log_("uri_loc", req->uri_loc_);
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
