@@ -590,6 +590,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (flag_location_part & (Kflag_index | Kflag_autoindex | Kflag_redirect)) {
 						return error_("conf_location_zero", "index, autoindex, redirect can't be used in cgi location", line_number_count);
 					}
+					if (!(flag_location_part & Kflag_cgi_path_info)){
+						return error_("conf_location_zero", "cgi_path_info not defined", line_number_count);
+					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
