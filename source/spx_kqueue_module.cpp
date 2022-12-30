@@ -94,9 +94,9 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
 			spx_log_("write_event_handler - disable write");
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
-			if (buf->req_res_queue_.size() == 0) {
-				buf->state_ = REQ_LINE_PARSING;
-			}
+			// if (buf->req_res_queue_.size() == 0) {
+			// 	buf->state_ = REQ_LINE_PARSING;
+			// }
 		}
 		if (buf->state_ != REQ_HOLD) {
 			spx_log_("write_event_handler - not REQ_HOLD");
@@ -197,11 +197,12 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 				} else {
 					// eof close fd.
 					client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
-					if (cur_event->ident == ((client_buf_t*)cur_event->udata)->client_fd_) {
+					if (cur_event->ident == buf->client_fd_) {
 						std::cerr << "client socket eof" << std::endl;
 						buf->disconnect_client(change_list);
 						delete buf;
 					} else {
+						add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DISABLE | EV_DELETE, 0, 0, NULL);
 						// cgi? server file?
 					}
 				}
@@ -220,9 +221,11 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 				break;
 			case EVFILT_PROC:
 				// cgi end
+				spx_log_("event_cgi");
 				proc_event_handler(cur_event, change_list);
 				break;
 			case EVFILT_TIMER:
+				spx_log_("event_timer");
 				timer_event_handler(cur_event, change_list);
 				// TODO: timer
 				break;
