@@ -157,6 +157,9 @@ public:
 	std::string make_to_string() const;
 	void		write_to_response_buffer(const std::string& content);
 
+	/* COOKIE & SESSION */
+	void setCookieHeader(SessionStorage& storage);
+
 	/* RESPONSE END*/
 
 	ResField()
@@ -246,6 +249,8 @@ public:
 	void make_response_header();
 	void make_redirect_response();
 	void make_cgi_response_header();
+	void find_cookie(SessionStorage& storage);
+
 	/* RESPONSE END*/
 };
 
