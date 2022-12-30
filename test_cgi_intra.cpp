@@ -54,6 +54,7 @@ main(void) {
 			"SCRIPT_NAME=/upload/isetn.py",
 			// "PATH_INFO=/rsitenrst",
 			"PATH_INFO=/upload/isetn.py/rsitenrst",
+			"PATH_TRANSLATED=./YoupiBanane/rsitenrst___ ??",
 			// "REQUEST_URI=/directory///youpi.bla",
 			// "PATH_INFO=/directory///youpi.bla",
 			// "SCRIPT_NAME=/directory/bla",
