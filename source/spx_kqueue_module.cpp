@@ -138,7 +138,10 @@ void
 proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// need to check exit status??
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
-	waitpid(cur_event->ident, NULL, 0);
+	int			  status;
+	waitpid(cur_event->ident, &status, 0);
+	std::cout << "status: " << status << std::endl;
+
 	// close(buf->req_res_queue_.front().first.cgi_in_fd_);
 	// close(buf->req_res_queue_.front().first.cgi_out_fd_);
 	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);

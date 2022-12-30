@@ -18,6 +18,7 @@ private:
 	uri_location_t const*	cgi_loc_info_;
 
 public:
+	std::vector<std::string> vec_env_;
 	std::vector<const char*> env_for_cgi_;
 
 	CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& req_header, uri_location_t const* cgi_loc_info);

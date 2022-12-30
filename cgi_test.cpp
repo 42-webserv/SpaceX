@@ -48,13 +48,13 @@ func(char*& aaa) {
 
 int
 main(void) {
-	char* envp[10];
 	char* args[3];
 
 	args[0] = "./cgi_bin/42_cgi_tester";
-	args[1] = ".bla";
+	args[1] = "./YoupiBanane/youpi.bla";
 	args[2] = NULL;
 
+	char* envp[10];
 	envp[0] = "REQUEST_METHOD=GET";
 	envp[1] = "SERVER_PROTOCOL=HTTP/1.1";
 	envp[2] = "PATH_INFO=./cgi_bin";

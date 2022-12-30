@@ -5,23 +5,39 @@
 
 namespace {
 
-#define METHOD__MAP(XX) \
-	XX(1, GET)          \
-	XX(2, POST)         \
-	XX(3, PUT)          \
-	XX(4, DELETE)       \
-	XX(5, HEAD)
+	// #define METHOD__MAP(XX) \
+// 	XX(1, GET)          \
+// 	XX(2, POST)         \
+// 	XX(3, PUT)          \
+// 	XX(4, DELETE)       \
+// 	XX(5, HEAD)
+
+	// 	std::string
+	// 	method_map_str_(int const& status) {
+	// 		switch (status) {
+	// #define XX(num, name) \
+// 	case #num:        \
+// 		return #name; \
+// 		METHOD__MAP(XX)
+	// #undef XX
+	// 		default:
+	// 			return "<unknown>";
+	// 		}
+	// 	}
 
 	std::string
 	method_map_str_(int const& status) {
 		switch (status) {
-#define XX(num, name) \
-	case #num:        \
-		return #name; \
-		METHOD__MAP(XX)
-#undef XX
-		default:
-			return "<unknown>";
+		case REQ_GET:
+			return "GET";
+		case REQ_POST:
+			return "POST";
+		case REQ_PUT:
+			return "PUT";
+		case REQ_HEAD:
+			return "HEAD";
+		case REQ_DELETE:
+			return "DELETE";
 		}
 	}
 
@@ -175,8 +191,6 @@ CgiModule::~CgiModule() { }
 void
 CgiModule::made_env_for_cgi_(int status) {
 
-	std::vector<std::string> vec_env_;
-
 	{ // pixed part
 		vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
 		vec_env_.push_back("REMOTE_ADDR=127.0.0.1");
@@ -188,12 +202,17 @@ CgiModule::made_env_for_cgi_(int status) {
 		std::string method = method_map_str_(status);
 		if (!method.empty()) {
 			vec_env_.push_back("REQUEST_METHOD=" + method); // GET|POST|...
+			// spx_log_("vec_env_", vec_env_.back());
 		}
 		vec_env_.push_back("REQUEST_URI=" + cgi_resolved_.request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
 		vec_env_.push_back("SCRIPT_NAME=" + cgi_resolved_.script_name_); // /blah/blah/blah.cgi
-		if (!cgi_resolved_.path_info_.empty()) {
-			vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_); // remain /blah/blah
-		}
+		// if (!cgi_resolved_.path_info_.empty()) {
+		// 	vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_); // remain /blah/blah
+		// } else {
+		// default path
+		vec_env_.push_back("PATH_INFO=./cgi_bin"); // remain /blah/blah
+		spx_log_(vec_env_.back());
+		// }
 		if (!cgi_resolved_.query_string_.empty()) {
 			vec_env_.push_back("QUERY_STRING=" + cgi_resolved_.query_string_); // key=value&key=value&key=value
 		}
@@ -394,6 +413,7 @@ CgiModule::made_env_for_cgi_(int status) {
 
 	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
 		env_for_cgi_.push_back(vec_env_[i].c_str());
+		std::cout << vec_env_[i].c_str() << std::endl;
 	}
 	env_for_cgi_.push_back(NULL);
 }

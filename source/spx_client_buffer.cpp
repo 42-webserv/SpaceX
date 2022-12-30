@@ -215,7 +215,38 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 		script[1] = this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str();
 		script[2] = NULL;
 
-		execve(script[0], const_cast<char* const*>(script), const_cast<char* const*>(&cgi.env_for_cgi_[0]));
+		// char **envp = (char **)malloc(sizeof(char *) * (cgi.env_for_cgi_.size() + 1));
+		// std::cout << cgi.env_for_cgi_.size() << std::endl;
+		// for (int i = 0; i < cgi.env_for_cgi_.size(); i++) {
+		// 	std::cout << i << "     ";
+		// 	std::cout << cgi.env_for_cgi_[i] << std::endl;
+		// }
+		// execve(script[0], const_cast<char* const*>(script), const_cast<char* const*>(&cgi.env_for_cgi_[0]));
+
+		char* envp[] = {
+			// "REQUEST_METHOD=GET",
+			// "SERVER_PROTOCOL=HTTP/1.1",
+			// "PATH_INFO=./cgi_bin",
+			// "GATEWAY_INTERFACE=CGI/1.1",
+			"REMOTE_ADDR=127.0.0.1",
+			"SERVER_SOFTWARE=SPX/1.0",
+			"SERVER_PROTOCOL=HTTP/1.1",
+			"REQUEST_METHOD=GET",
+			// "REQUEST_URI=/directory/youpi.bla",
+			// "SCRIPT_NAME=/directory/youpi.bla",
+			"PATH_INFO=./cgi_bin",
+			"HTTP_ACCEPT_ENCODING=gzip",
+			// "HTTP_HOST=localhost:8080",
+			"HTTP_USER_AGENT=Go-http-client/1.1",
+			0
+		};
+
+		cgi.env_for_cgi_.clear();
+		// for (int i = 0; i < 12; i++) {
+		// 	cgi.env_for_cgi_.push_back(envp[i]);
+		// }
+
+		execve(script[0], const_cast<char* const*>(script), envp);
 		exit(EXIT_FAILURE);
 	}
 	// parent
@@ -339,6 +370,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 						} else {
 							this->state_ = REQ_HOLD;
 						}
+					} else {
+						this->state_ = REQ_LINE_PARSING;
 					}
 				}
 			}
@@ -695,7 +728,7 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 		this->req_res_controller(change_list, cur_event);
 		spx_log_("req_res_controller check finished. buf stat", this->state_);
 	};
-	spx_log_("enable write");
+	spx_log_("enable write", this->req_res_queue_.front().second.flag_ & WRITE_READY);
 	write_filter_enable(change_list, cur_event);
 }
 
@@ -720,12 +753,12 @@ ClientBuffer::cgi_header_parser() {
 				// request header parsed.
 				break;
 			}
-			if (spx_http_syntax_header_line(header_field_line) == -1) {
-				spx_log_("syntax error");
-				this->flag_ |= E_BAD_REQ;
-				// error_res();
-				return false;
-			}
+			// if (spx_http_syntax_header_line(header_field_line) == -1) {
+			// 	spx_log_("cgi syntax error");
+			// 	this->flag_ |= E_BAD_REQ;
+			// 	// error_res();
+			// 	return false;
+			// }
 			idx = header_field_line.find(':');
 			if (idx != std::string::npos) {
 				for (std::string::iterator it = header_field_line.begin();
@@ -789,6 +822,8 @@ ClientBuffer::cgi_controller(int state) {
 void
 ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event) {
 	int n_read = read(cur_event->ident, this->rdbuf_, BUFFER_SIZE);
+	spx_log_("read to cgi buffer. n_read", n_read);
+	write(STDOUT_FILENO, this->rdbuf_, n_read);
 	if (n_read < 0) {
 		// TODO: error handle
 		this->disconnect_client(change_list);
