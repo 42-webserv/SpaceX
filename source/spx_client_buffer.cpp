@@ -132,7 +132,7 @@ ClientBuffer::header_field_parser() {
 	if (it != field->end()) {
 		this->req_res_queue_.back().first.body_size_ = strtoul((it->second).c_str(), NULL, 10);
 		spx_log_("content-length", this->req_res_queue_.back().first.body_size_);
-		this->state_ = REQ_SKIP_BODY;
+		// this->state_ = REQ_SKIP_BODY;
 	}
 	it = field->find("transfer-encoding");
 	if (it != field->end()) {
@@ -142,7 +142,7 @@ ClientBuffer::header_field_parser() {
 		if (it->second.find("chunked") != std::string::npos) {
 			this->req_res_queue_.back().first.transfer_encoding_ |= TE_CHUNKED;
 			spx_log_("transfer-encoding - chunked set", this->req_res_queue_.back().first.transfer_encoding_);
-			this->state_ = REQ_SKIP_BODY;
+			// this->state_ = REQ_SKIP_BODY;
 		}
 	}
 	// uri_location_t
@@ -242,12 +242,14 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 	case REQ_LINE_PARSING:
 		if (this->request_line_parser() == false) {
 			spx_log_("controller-req_line false. read more.");
+			this->state_ = REQ_LINE_PARSING;
 			return false;
 		}
 		spx_log_("controller-req_line ok");
 	case REQ_HEADER_PARSING: {
 		if (this->header_field_parser() == false) {
-			spx_log_("controller-header false. read more.");
+			spx_log_("controller-header false. read more. state", this->state_);
+			this->state_ = REQ_HEADER_PARSING;
 			return false;
 		}
 		spx_log_("controller-header ok");
@@ -626,7 +628,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 	// if (rdsaved_.size() != rdchecked_) {
 	// 	this->flag_ &= ~(RDBUF_CHECKED);
 	// }
-	this->state_ = REQ_LINE_PARSING;
+	// this->state_ = REQ_LINE_PARSING;
 	return true;
 }
 
@@ -726,6 +728,7 @@ ClientBuffer::cgi_header_parser() {
 		res.cgi_checked_ = 0;
 		return false;
 	}
+	return true;
 }
 
 bool
@@ -733,7 +736,7 @@ ClientBuffer::cgi_controller(int state) {
 	res_field_t& res = this->req_res_queue_.back().second;
 
 	switch (state) {
-	case CGI_HEADER:
+	case CGI_HEADER: {
 		if (this->cgi_header_parser() == false) {
 			// read more?
 			break;
@@ -748,11 +751,15 @@ ClientBuffer::cgi_controller(int state) {
 			// this->make_cgi_response_header();
 		} else {
 			// chunked case.
-			res.cgi_size_ = -1;
+			res.cgi_state_ = CGI_BODY_CHUNKED;
+			res.cgi_size_  = -1;
 		}
+	}
 	case CGI_BODY_CHUNKED:
 		// chunked logic
+		break;
 	}
+	return true;
 }
 
 void
@@ -765,6 +772,9 @@ ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_e
 	}
 	this->req_res_queue_.back().second.cgi_buffer_.insert(
 		this->req_res_queue_.back().second.cgi_buffer_.end(), this->rdbuf_, this->rdbuf_ + n_read);
+
+	if (cgi_controller(this->req_res_queue_.back().second.cgi_state_) == false) {
+	}
 }
 
 void
@@ -844,18 +854,14 @@ ClientBuffer::make_response_header() {
 	// Set Date Header
 	res.setDate();
 	switch (req_method) {
-	case (REQ_HEAD):
-		// make_redirect_response();
-		// res.headers_.push_back(header(CONTENT_LENGTH, "0"));
-		break;
-	case (REQ_GET):
+	case REQ_HEAD:
+	case REQ_GET:
 		if (uri[uri.size() - 1] != '/') {
 			req_fd = res.file_open(uri.c_str());
 			spx_log_(uri.c_str());
 		} else {
 			spx_log_("folder skip");
 		}
-		res.body_fd_ = req_fd;
 		spx_log_("uri_locations", req.uri_loc_);
 		if (req_fd == 0) {
 			make_error_response(HTTP_STATUS_FORBIDDEN);
@@ -875,19 +881,19 @@ ClientBuffer::make_response_header() {
 				make_error_response(HTTP_STATUS_FORBIDDEN);
 				return;
 			}
-			// } else {
-			// make_error_response(HTTP_STATUS_NOT_FOUND);
-			// return;
-			// }
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");
 			res.setContentType(uri);
 			off_t content_length = res.setContentLength(req_fd);
-			if (req_method == REQ_GET)
+			if (req_method == REQ_GET) {
+				res.body_fd_ = req_fd;
 				res.buf_size_ += content_length;
+			} else {
+				res.body_fd_ = -1;
+				close(req_fd);
+			}
 			// res.headers_.push_back(header("Accept-Ranges", "bytes"));
-
 		} else {
 			// autoindex case?
 			res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
@@ -897,7 +903,6 @@ ClientBuffer::make_response_header() {
 		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
 		break;
 	}
-
 	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 
 	// settting response_header size  + content-length size to res_field

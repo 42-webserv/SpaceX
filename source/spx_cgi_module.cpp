@@ -8,6 +8,8 @@ CgiModule::CgiModule(uri_resolved_t const& uri_loc, header_field_map const& req_
 	, header_map_(req_header) {
 }
 
+CgiModule::~CgiModule() { }
+
 void
 CgiModule::made_env_for_cgi_(int status) {
 
