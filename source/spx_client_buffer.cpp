@@ -217,38 +217,7 @@ ClientBuffer::cgi_handler(struct kevent* cur_event, event_list_t& change_list) {
 		script[1] = this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str();
 		script[2] = NULL;
 
-		// char **envp = (char **)malloc(sizeof(char *) * (cgi.env_for_cgi_.size() + 1));
-		// std::cout << cgi.env_for_cgi_.size() << std::endl;
-		// for (int i = 0; i < cgi.env_for_cgi_.size(); i++) {
-		// 	std::cout << i << "     ";
-		// 	std::cout << cgi.env_for_cgi_[i] << std::endl;
-		// }
-		// execve(script[0], const_cast<char* const*>(script), const_cast<char* const*>(&cgi.env_for_cgi_[0]));
-
-		char* envp[] = {
-			// "REQUEST_METHOD=GET",
-			// "SERVER_PROTOCOL=HTTP/1.1",
-			// "PATH_INFO=./cgi_bin",
-			// "GATEWAY_INTERFACE=CGI/1.1",
-			"REMOTE_ADDR=127.0.0.1",
-			"SERVER_SOFTWARE=SPX/1.0",
-			"SERVER_PROTOCOL=HTTP/1.1",
-			"REQUEST_METHOD=GET",
-			// "REQUEST_URI=/directory/youpi.bla",
-			// "SCRIPT_NAME=/directory/youpi.bla",
-			"PATH_INFO=/cgi_bin",
-			"HTTP_ACCEPT_ENCODING=gzip",
-			"HTTP_HOST=localhost:8080",
-			"HTTP_USER_AGENT=Go-http-client/1.1",
-			0
-		};
-
-		cgi.env_for_cgi_.clear();
-		// for (int i = 0; i < 12; i++) {
-		// 	cgi.env_for_cgi_.push_back(envp[i]);
-		// }
-
-		execve(script[0], const_cast<char* const*>(script), envp);
+		execve(script[0], const_cast<char* const*>(script), const_cast<char* const*>(&cgi.env_for_cgi_[0]));
 		exit(EXIT_FAILURE);
 	}
 	// parent
@@ -276,6 +245,10 @@ ClientBuffer::host_check(std::string& host) {
 	return false;
 }
 
+// ClientBuffer::header_parsing(){
+
+// }
+
 bool
 ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								 struct kevent*				 cur_event) {
@@ -293,7 +266,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			spx_log_("controller-header false. read more. state", this->state_);
 			return false;
 		}
-		spx_log_("controller-header ok");
+		spx_log_("controller-header ok. queue size", this->req_res_queue_.size());
 
 		// write(STDOUT_FILENO, &this->rdsaved_[this->rdchecked_], this->rdsaved_.size() - rdchecked_);
 		req_field_t* req = &this->req_res_queue_.back().first;
@@ -322,8 +295,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 		}
 
-		// spx_log_("uri_loc", req->uri_loc_);
 		if (req->uri_loc_ == NULL || (req->uri_loc_->accepted_methods_flag & req->req_type_) == false) {
+			spx_log_("uri_loc == NULL or not allowed");
 			if (req->uri_loc_ == NULL) {
 				this->make_error_response(HTTP_STATUS_NOT_FOUND);
 				if (this->req_res_queue_.back().second.body_fd_ != -1) {
@@ -445,20 +418,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 			break;
 		case REQ_POST:
-			// POST - content len 0. (No body. error case?)
-			if ((this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) == false) {
-				if (this->req_res_queue_.back().first.body_size_ == 0) {
-					spx_log_("body size == 0");
-					this->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
-					if (this->req_res_queue_.back().second.body_fd_ != -1) {
-						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-					}
-					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-					return false;
-				}
-			}
 
-			spx_log_("file open");
 			this->req_res_queue_.back().first.file_path_ = this->req_res_queue_.back().second.uri_resolv_.script_filename_;
 			this->req_res_queue_.back().first.body_fd_	 = open(
 				  this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(),
@@ -475,30 +435,20 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 
 			spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
-			add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 			// this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
 			if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
-				this->state_ = REQ_BODY_CHUNKED;
+				this->req_res_queue_.back().first.content_length_ = -1;
+				this->state_									  = REQ_BODY_CHUNKED;
+				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, this);
+				return this->req_res_controller(change_list, cur_event);
 			} else {
+				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 				this->state_ = REQ_HOLD;
 			}
 			return false;
 
 		case REQ_PUT:
-			if ((this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) == false) {
-				if (this->req_res_queue_.back().first.body_size_ == 0) {
-					spx_log_("body size == 0");
-					this->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
-					if (this->req_res_queue_.back().second.body_fd_ != -1) {
-						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-					}
-					this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-					this->state_ = REQ_HOLD;
-					return false;
-				}
-			}
 
-			spx_log_("file open");
 			this->req_res_queue_.back().first.file_path_ = this->req_res_queue_.back().second.uri_resolv_.script_filename_;
 			this->req_res_queue_.back().first.body_fd_	 = open(
 				  this->req_res_queue_.back().second.uri_resolv_.script_filename_.c_str(),
@@ -515,15 +465,18 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 
 			spx_log_("control - REQ_PUT fd: ", this->req_res_queue_.back().first.body_fd_);
-			add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 			// this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
 			if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 				this->req_res_queue_.back().first.content_length_ = -1;
 				this->state_									  = REQ_BODY_CHUNKED;
+				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, this);
+				return this->req_res_controller(change_list, cur_event);
 			} else {
+				add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 				this->state_ = REQ_HOLD;
 			}
 			return false;
+
 		case REQ_DELETE:
 			if (this->req_res_queue_.back().second.header_ready_ == 0) {
 			}
@@ -540,52 +493,75 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		buffer_t::iterator crlf_pos = this->rdsaved_.begin() + this->rdchecked_;
 		uint32_t		   size		= 0;
 		int				   start_line_end;
+		req_field_t&	   req = this->req_res_queue_.back().first;
 
+		spx_log_("controller - req body chunked");
 		while (true) {
 			crlf_pos = std::find(crlf_pos, this->rdsaved_.end(), LF);
 			if (crlf_pos != this->rdsaved_.end()) {
 				start_line_end = crlf_pos - this->rdsaved_.begin() + 1;
-				if (spx_chunked_syntax_start_line(*this, size, this->req_res_queue_.back().first.field_) != -1) {
-					if (size != 0) {
-						if (this->rdsaved_.size() - start_line_end > size) {
+				if (spx_chunked_syntax_start_line(*this, size, req.field_) != -1) {
+					if (this->rdsaved_.size() >= start_line_end + size + 2) {
+						this->rdchecked_ = start_line_end + size;
+						req.body_size_ += size;
+						if (size != 0) {
 							// can parse chunked size.
-							this->req_res_queue_.back().first.chunked_body_buffer_.insert(this->req_res_queue_.back().first.chunked_body_buffer_.end(),
-																						  crlf_pos + 1, crlf_pos + 1 + size);
-							this->rdchecked_ = start_line_end + size;
-							this->req_res_queue_.back().first.body_size_ += size;
+							req.chunked_body_buffer_.insert(req.chunked_body_buffer_.end(), crlf_pos + 1, crlf_pos + 1 + size);
+							// chunked valid check
+							if (this->rdsaved_[this->rdchecked_++] != CR
+								|| this->rdsaved_[this->rdchecked_++] != LF) {
+								// chunked error
+								this->make_error_response(HTTP_STATUS_BAD_REQUEST);
+								if (this->req_res_queue_.back().second.body_fd_ != -1) {
+									add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+								}
+								return false;
+							}
+							crlf_pos = this->rdsaved_.begin() + rdchecked_;
+							spx_log_("chunked parsed ok");
 						} else {
-							// try next.
-							this->rdsaved_.erase(this->rdsaved_.begin(), this->rdsaved_.begin() + rdchecked_);
-							rdchecked_ = 0;
+							// chunked last
+							spx_log_("chunked last piece");
+							if (this->rdsaved_[start_line_end] == CR) {
+								spx_log_("chunked last no extension");
+								// no extention
+								this->rdchecked_ += 2;
+								req.content_length_ = req.body_size_;
+								this->state_		= REQ_LINE_PARSING;
+								add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+								break;
+							} else {
+								spx_log_("chunked extension");
+								// yoma's code..? end check..??
+							}
 						}
 					} else {
-						// chunked last
-						if (this->rdsaved_[start_line_end] == CR) {
-							// no extention
-							this->rdchecked_								  = start_line_end + 2;
-							this->req_res_queue_.back().first.content_length_ = this->req_res_queue_.back().first.body_size_;
-							this->state_									  = REQ_LINE_PARSING;
-							break;
-						} else {
-							// yoma's code..? end check..??
-						}
+						// try next.
+						spx_log_("chunked try next");
+						// this->rdsaved_.erase(this->rdsaved_.begin(), this->rdsaved_.begin() + rdchecked_);
+						// rdchecked_ = 0;
+						return false;
 					}
 				} else {
 					// chunked error
+					spx_log_("chunked error");
 					this->flag_ |= E_BAD_REQ;
 					this->make_error_response(HTTP_STATUS_BAD_REQUEST);
+					if (this->req_res_queue_.back().second.body_fd_ != -1) {
+						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+					}
 					return false;
 				}
 			} else {
 				// chunked start line not exist.
-				break;
+				return false;
 			}
 		}
-		if (this->req_res_queue_.back().first.body_size_ > this->req_res_queue_.back().first.body_limit_) {
+		if (req.body_size_ > req.body_limit_) {
 			// send over limit.
-			close(this->req_res_queue_.back().first.body_fd_);
-			remove(this->req_res_queue_.back().first.file_path_.c_str());
-			add_change_list(change_list, this->req_res_queue_.back().first.body_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			close(req.body_fd_);
+			remove(req.file_path_.c_str());
+			add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
 			this->state_ = REQ_LINE_PARSING;
 			this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
 			if (this->req_res_queue_.back().second.body_fd_ != -1) {
@@ -640,11 +616,13 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 							// try next.
 							this->rdsaved_.erase(this->rdsaved_.begin(), this->rdsaved_.begin() + rdchecked_);
 							rdchecked_ = 0;
+							break;
 						}
 					} else {
 						// chunked last
+						spx_log_("chunked last");
 						if (this->rdsaved_[start_line_end] == CR) {
-							spx_log_("chunked last");
+							spx_log_("chunked last no extension");
 							// no extention
 							this->rdchecked_ = start_line_end + 2;
 							// this->req_res_queue_.back().first.content_length_ = this->req_res_queue_.back().first.body_size_;
@@ -713,6 +691,7 @@ ClientBuffer::disconnect_client(std::vector<struct kevent>& change_list) {
 		}
 		this->req_res_queue_.pop();
 	}
+	// exit(1);
 	close(this->client_fd_);
 }
 
@@ -720,8 +699,7 @@ void
 ClientBuffer::write_filter_enable(event_list_t& change_list, struct kevent* cur_event) {
 	if (this->req_res_queue_.size() != 0
 		&& this->req_res_queue_.front().second.flag_ & WRITE_READY) {
-		add_change_list(change_list, cur_event->ident, EVFILT_WRITE,
-						EV_ENABLE, 0, 0, this);
+		add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
 	}
 }
 
@@ -734,14 +712,16 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 		// TODO: error handle
 		return;
 	}
+	write(STDOUT_FILENO, &this->rdbuf_, std::min(200, n_read));
 	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_, this->rdbuf_ + n_read);
-	write(STDOUT_FILENO, &this->rdsaved_[this->rdchecked_], this->rdsaved_.size() - rdchecked_);
-	spx_log_("read_to_client: ", n_read);
+	spx_log_("\nread_to_client", n_read);
+	spx_log_("read_to_client state", this->state_);
+	spx_log_("queue size", this->req_res_queue_.size());
 	if (this->state_ != REQ_HOLD) {
 		this->req_res_controller(change_list, cur_event);
 		spx_log_("req_res_controller check finished. buf stat", this->state_);
 	};
-	spx_log_("enable write", this->req_res_queue_.front().second.flag_ & WRITE_READY);
+	// spx_log_("enable write", this->req_res_queue_.front().second.flag_ & WRITE_READY);
 	write_filter_enable(change_list, cur_event);
 }
 
@@ -839,7 +819,7 @@ void
 ClientBuffer::read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event) {
 	int n_read = read(cur_event->ident, this->rdbuf_, BUFFER_SIZE);
 	spx_log_("read to cgi buffer. n_read", n_read);
-	write(STDOUT_FILENO, this->rdbuf_, n_read);
+	// write(STDOUT_FILENO, this->rdbuf_, n_read);
 	if (n_read < 0) {
 		// TODO: error handle
 		this->disconnect_client(change_list);
@@ -889,10 +869,17 @@ ClientBuffer::make_error_response(http_status error_code) {
 	else
 		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
-	std::string page_path = req.serv_info_->get_error_page_path_(error_code);
-	spx_log_("page_path = ", page_path);
-	int error_req_fd = open(page_path.c_str(), O_RDONLY);
-	spx_log_("error_req_fd : ", error_req_fd);
+	// page_path null case added..
+	std::string page_path;
+	int			error_req_fd;
+	if (req.serv_info_) {
+		page_path = req.serv_info_->get_error_page_path_(error_code);
+		spx_log_("page_path = ", page_path);
+		error_req_fd = open(page_path.c_str(), O_RDONLY);
+		spx_log_("error_req_fd : ", error_req_fd);
+	} else {
+		error_req_fd = -1;
+	}
 	if (error_req_fd < 0) {
 		std::stringstream ss;
 		const std::string error_page = generator_error_page_(error_code);
@@ -983,6 +970,7 @@ ClientBuffer::make_response_header() {
 		}
 		break;
 	case REQ_POST:
+	case REQ_PUT:
 		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
 		break;
 	}
@@ -1049,37 +1037,43 @@ ClientBuffer::write_for_upload(event_list_t& change_list, struct kevent* cur_eve
 	if (req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 		// chunked logic
 		buf_len = req.chunked_body_buffer_.size() - req.chunked_checked_;
+		// spx_log_("write_for_upload - content len", req.content_length_);
 		if (WRITE_BUFFER_MAX <= buf_len) {
 			spx_log_("write_for_upload: MAX_BUF ");
-			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], WRITE_BUFFER_MAX);
+			n_write = write(cur_event->ident, &req.chunked_body_buffer_[req.chunked_checked_], WRITE_BUFFER_MAX);
 			req.body_read_ += n_write;
+			req.chunked_checked_ += n_write;
 		} else {
-			n_write = write(req.body_fd_, &req.chunked_body_buffer_[req.chunked_checked_], buf_len);
+			n_write = write(cur_event->ident, &req.chunked_body_buffer_[req.chunked_checked_], buf_len);
+			spx_log_("write_for_upload: chunked_buf_len ", n_write);
 			req.body_read_ += n_write;
+			req.chunked_checked_ += n_write;
 			if (req.chunked_checked_ == req.chunked_body_buffer_.size()) {
 				req.chunked_body_buffer_.clear();
 				req.chunked_checked_ = 0;
 			}
 		}
 		if (req.body_read_ == req.content_length_) {
+			spx_log_("read_end. queue size", this->req_res_queue_.size());
 			this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
-			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			// add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
 			this->state_ = REQ_HOLD;
 		}
+		return true;
 	} else {
 		buf_len	   = this->rdsaved_.size() - this->rdchecked_;
 		size_t len = req.body_size_ - req.body_read_;
 		if (WRITE_BUFFER_MAX <= std::min(buf_len, len)) {
 			spx_log_("write_for_upload: MAX_BUF ");
-			n_write = write(req.body_fd_, &this->rdsaved_[this->rdchecked_], WRITE_BUFFER_MAX);
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], WRITE_BUFFER_MAX);
 		} else if (buf_len <= len) {
 			spx_log_("write_for_upload: buf_len: ", buf_len);
-			n_write = write(req.body_fd_, &this->rdsaved_[this->rdchecked_], buf_len);
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], buf_len);
 		} else {
 			spx_log_("write_for_upload: len: ", len);
-			n_write = write(req.body_fd_, &this->rdsaved_[this->rdchecked_], len);
+			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], len);
 		}
-		spx_log_("body_fd: ", req.body_fd_);
+		spx_log_("body_fd: ", cur_event->ident);
 		spx_log_("write len: ", n_write);
 		req.body_read_ += n_write;
 		this->rdchecked_ += n_write;
@@ -1147,9 +1141,9 @@ ClientBuffer::write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>&
 		}
 		if (this->req_res_queue_.back().first.body_read_ == this->req_res_queue_.back().first.body_size_) {
 			this->req_res_queue_.back().first.flag_ |= READ_BODY_END;
-			close(cur_event->ident);
-			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-			this->state_ = REQ_HOLD;
+			// close(cur_event->ident);
+			// add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			// this->state_ = REQ_HOLD;
 		}
 	}
 	return true;
@@ -1164,7 +1158,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 								 res->res_buffer_.size() - res->sent_pos_));
 	if (n_write) {
 		write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
-			  std::min((size_t)WRITE_BUFFER_MAX, res->res_buffer_.size() - res->sent_pos_));
+			  std::min((size_t)100, res->res_buffer_.size() - res->sent_pos_));
 	}
 	spx_log_("write_bufsize: ", res->buf_size_);
 	if (n_write < 0) {

@@ -436,6 +436,9 @@ spx_chunked_syntax_start_line(client_buf_t&						  buf,
 		next_state;
 
 	state = chunked_start;
+
+	// spx_log_("chunked start line");
+	// write(STDOUT_FILENO, &buf.rdsaved_[buf.rdchecked_], buf.rdsaved_.size() - buf.rdchecked_);
 	while (state != chunked_done) {
 		switch (state) {
 		case chunked_start: {
