@@ -118,8 +118,16 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 				spx_log_("write_for_upload - uploaded");
 				close(cur_event->ident);
 				add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+				spx_log_("queue size", buf->req_res_queue_.size());
 				buf->make_response_header();
-				buf->req_res_queue_.back().second.flag_ |= WRITE_READY;
+				buf->state_ = REQ_LINE_PARSING;
+				if (buf->rdsaved_.size() == buf->rdchecked_) {
+					buf->rdsaved_.clear();
+					buf->rdchecked_ = 0;
+				}
+				// write(STDOUT_FILENO, &buf->req_res_queue_.front().second.res_buffer_[0], buf->req_res_queue_.front().second.res_buffer_.size());
+				// add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
+				// buf->state_ = REQ_LINE_PARSING;
 			}
 		} else {
 			spx_log_("write_to_cgi");
@@ -196,11 +204,11 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 			error_exit_msg("kevent()");
 		}
 		change_list.clear();
-		spx_log_("event_len:", event_len);
+		// spx_log_("event_len:", event_len);
 		// std::cout << "current loop: " << l++ << std::endl;
 
-		spx_log_("cur->ident:", cur_event->ident);
-		spx_log_("cur->flags:", cur_event->flags);
+		// spx_log_("cur->ident:", cur_event->ident);
+		// spx_log_("cur->flags:", cur_event->flags);
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
