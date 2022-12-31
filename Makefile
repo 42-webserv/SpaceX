@@ -29,7 +29,7 @@ SRC			=	spacex.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \
 				spx_response_generator.cpp \
-				spx_syntax_checker.cpp 
+				spx_syntax_checker.cpp
 
 
 SRC_DIR		=	source/
@@ -57,7 +57,8 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 LEAK		=	-fsanitize=leak
 
 CXXFLAGS	+=	$(DEBUG) $(SNTZ)
-# CXXFLAGS	+=	-fno-sanitize-recover -fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
+# CXXFLAGS	+=	-fno-sanitize-recover
+# CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
 #==============================================================================
 #	Make Part
