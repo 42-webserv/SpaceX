@@ -134,6 +134,6 @@ public:
 	std::string find_session_to_string(const std::string& c_key);
 	// void		add_new_session(SessionID id, session_t session);
 	void		add_new_session(SessionID id);
-	std::string make_hash(uintptr_t& fd);
+	std::string make_hash(uintptr_t& seed_in);
 	void		addCount();
 };
