@@ -6,7 +6,10 @@
 bool
 SessionStorage::is_key_exsits(const std::string& c_key) const {
 	storage_t::const_iterator it = storage_.find(c_key);
-	it == storage_.end() ? false : true;
+	if (it == storage_.end()) {
+		return false;
+	}
+	return true;
 }
 
 session_t&

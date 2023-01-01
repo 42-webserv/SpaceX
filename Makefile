@@ -29,6 +29,7 @@ SRC			=	spacex.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \
 				spx_response_generator.cpp \
+				spx_session_storage.cpp \
 				spx_syntax_checker.cpp
 
 

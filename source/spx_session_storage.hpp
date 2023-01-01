@@ -10,8 +10,8 @@
 #define SESSIONID "sessionID"
 
 typedef struct Cookie {
-	typedef typename std::map<std::string, std::string> key_val_t;
-	key_val_t											content;
+	typedef std::map<std::string, std::string> key_val_t;
+	key_val_t								   content;
 
 	void
 	parse_cookie_header(const std::string& cookie_header) {
@@ -48,7 +48,7 @@ typedef struct Cookie {
 } cookie_t;
 
 typedef struct Session {
-	typedef typename std::pair<std::string, std::string> session_content;
+	typedef std::pair<std::string, std::string> session_content;
 	/*
 		key_val_t content;
 
@@ -112,10 +112,13 @@ typedef struct Session {
 } session_t;
 
 class SessionStorage {
-	typedef typename std::string					 SessionID;
-	typedef typename std::string					 SessionValue;
-	typedef typename std::pair<SessionID, session_t> session_key_val;
-	typedef std::map<SessionID, session_t>			 storage_t;
+	// typedef typename std::string					 SessionID;
+	// typedef typename std::string					 SessionValue;
+	// typedef typename std::pair<SessionID, session_t> session_key_val;
+	typedef std::string						SessionID;
+	typedef std::string						SessionValue;
+	typedef std::pair<SessionID, session_t> session_key_val;
+	typedef std::map<SessionID, session_t>	storage_t;
 
 	storage_t storage_;
 	int		  count;
