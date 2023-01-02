@@ -15,7 +15,7 @@ namespace {
 
 	inline void
 	close_socket_and_exit_(uint32_t const prev_socket_size, port_info_vec& port_info) {
-		for (uint32_t i = 0; i < prev_socket_size; ++i) {
+		for (uint32_t i = 0; i <= prev_socket_size; ++i) {
 			if (i == port_info[i].listen_sd) {
 				close(port_info[i].listen_sd);
 			}
