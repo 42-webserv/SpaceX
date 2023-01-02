@@ -1,19 +1,17 @@
-<!DOCTYPE html>
-<html><body>
-    <form enctype="multipart/form-data" id="myForm" action="/board/content/uploadFile.upload" method="post">
-        <p>File: <input type="file" id="fileInput"  onchange="updateFormAction()"></p>
-        <p><input type="submit" value="Upload"></p>
-    </form>
-    
-    <script>
-        function updateFormAction() {
-            var fileInput = document.getElementById('fileInput');
-            var form = document.getElementById('myForm');
-            
-            var fileName = fileInput.files[0].name;
-            
-            form.action = '/upload/' + fileName;
-        }
-      </script>
-    </body>
-    </html>
+<html>
+
+<body>
+	<center>
+		<h1>Upload a file</h1>
+		<form action="/cgi_bin/upload_cgi.py" method="post" enctype="multipart/form-data">
+			<label for="file">Select a file:</label>
+			<input type="file" id="file" name="file">
+			<br>
+			<br>
+			<input type="submit" value="Upload">
+		</form>
+	</center>
+
+</body>
+
+</html>

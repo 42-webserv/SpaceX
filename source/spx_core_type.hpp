@@ -3,14 +3,17 @@
 #define __SPX__CORE_TYPE_HPP__
 
 #include <cstdint>
-// typedef signed char		   int8_t;
-// typedef unsigned char	   uint8_t;
-// typedef short			   int16_t;
-// typedef unsigned short	   uint16_t;
-// typedef int				   int32_t;
-// typedef unsigned int	   uint32_t;
-// typedef long long		   int64_t;
-// typedef unsigned long long uint64_t;
+
+#ifndef _LIBCPP_CSTDINT
+typedef signed char		   int8_t;
+typedef unsigned char	   uint8_t;
+typedef short			   int16_t;
+typedef unsigned short	   uint16_t;
+typedef int				   int32_t;
+typedef unsigned int	   uint32_t;
+typedef long long		   int64_t;
+typedef unsigned long long uint64_t;
+#endif
 
 #define LF (u_char)'\n'
 #define CR (u_char)'\r'

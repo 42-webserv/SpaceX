@@ -73,7 +73,7 @@ namespace {
 #define XX(num, name, string) ERROR_PAGE_##name = num,
 		ERROR_PAGE_MAP(XX)
 #undef XX
-		ERROR_PAGE_LAST
+			ERROR_PAGE_LAST
 	} error_page_e;
 
 	inline std::string
@@ -103,18 +103,3 @@ generator_error_page_(uint32_t const& error_code) {
 	error_page += "</p></center>" CRLF "</body>" CRLF "</html>";
 	return error_page;
 }
-
-// std::string const
-// generator_error_page_(uint32_t const& error_code) {
-// 	std::string error_page;
-// 	error_page += "<html>" CRLF "<head><title>";
-// 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
-// 	error_page += "</title>";
-// 	error_page += "<style>html{background-color: #f1c40f;}body{color: #fefefe;}</style>";
-// 	error_page += "</head>" CRLF "<body>" CRLF "<center><h1>";
-// 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
-// 	error_page += "</h1><p>";
-// 	error_page += "SpaceX Default error page.";
-// 	error_page += "</p></center>" CRLF "</body>" CRLF "</html>";
-// 	return error_page;
-// }
