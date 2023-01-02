@@ -282,7 +282,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		req->uri_loc_ = req->serv_info_->get_uri_location_t_(req->req_target_,
 															 this->req_res_queue_.back().second.uri_resolv_);
 
+#ifdef DEBUG
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
+#endif
 
 		// NOTE :: add by space.
 		// if session exist in request
