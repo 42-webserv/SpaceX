@@ -257,12 +257,12 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 
 			DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
-			if (uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) {
+			if ((uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) && !temp_index.empty()) {
 				uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
-				if (dir) {
-					closedir(dir);
-				}
+			}
+			if (dir) {
+				closedir(dir);
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
@@ -384,7 +384,7 @@ server_info_t::print_(void) const {
 	}
 	std::cout << std::endl;
 
-	std::cout << "uri_case: " << uri_case.size() << std::endl;
+	std::cout << COLOR_RED << "uri_case: " << uri_case.size() << COLOR_RESET << std::endl;
 	uri_location_map_p::iterator it = uri_case.begin();
 	while (it != uri_case.end()) {
 		std::cout << "\n[ uri ] " << it->first << std::endl;
@@ -393,7 +393,7 @@ server_info_t::print_(void) const {
 	}
 	std::cout << std::endl;
 
-	std::cout << "cgi_case: " << cgi_case.size() << std::endl;
+	std::cout << COLOR_RED << "cgi_case: " << cgi_case.size() << COLOR_RESET << std::endl;
 	cgi_list_map_p::const_iterator it_cgi = cgi_case.begin();
 	while (it_cgi != cgi_case.end()) {
 		std::cout << "\n[ cgi ] " << it_cgi->first << std::endl;

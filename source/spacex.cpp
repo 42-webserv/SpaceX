@@ -55,32 +55,30 @@ namespace {
 		cur_path = buf;
 	}
 
-} // namespace
-
-inline void
-port_info_print_(main_info_t const& spx) {
-	uint32_t i = 3;
-	std::cout << "\n-------------- [ "
-			  << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
-			  << " ] -------------\n"
-			  << std::endl;
-	while (i < spx.socket_size) {
-		for (server_map_p::const_iterator it2 = spx.port_info[i].my_port_map.begin();
-			 it2 != spx.port_info[i].my_port_map.end(); ++it2) {
-			std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
-			std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
-			if (it2->second.default_server_flag == Kdefault_server) {
-				std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
-			} else {
-
-				std::cout << std::endl;
+	inline void
+	port_info_print_(main_info_t const& spx) {
+		uint32_t i = 3;
+		std::cout << "\n-------------- [ " << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
+				  << " ] -------------\n"
+				  << std::endl;
+		while (i < spx.socket_size) {
+			for (server_map_p::const_iterator it2 = spx.port_info[i].my_port_map.begin();
+				 it2 != spx.port_info[i].my_port_map.end(); ++it2) {
+				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
+				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
+				if (it2->second.default_server_flag == Kdefault_server) {
+					std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
+				} else {
+					std::cout << std::endl;
+				}
 			}
+			std::cout << std::endl;
+			++i;
 		}
-		std::cout << std::endl;
-		++i;
+		std::cout << "--------------------------------------------" << std::endl;
 	}
-	std::cout << "--------------------------------------------" << std::endl;
-}
+
+} // namespace
 
 int
 main(int argc, char const* argv[]) {
