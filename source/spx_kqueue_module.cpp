@@ -37,6 +37,9 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 void
 read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event,
 				   std::vector<struct kevent>& change_list) {
+	// debug
+	static long cgi_read = 0;
+
 	// server port will be updated.
 	if (cur_event->ident < port_info.size()) {
 		if (create_client_event(cur_event->ident, cur_event, change_list, port_info[cur_event->ident]) == false) {
@@ -50,7 +53,8 @@ read_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_event
 		buf->read_to_client_buffer(change_list, cur_event);
 	} else if (buf->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
 		// read from cgi output.
-		spx_log_("read_event_handler - cgi");
+		cgi_read++;
+		spx_log_("read_event_handler - cgi", cgi_read);
 		buf->read_to_cgi_buffer(change_list, cur_event);
 	} else {
 		spx_log_("read_event_handler - server_file");
@@ -87,10 +91,15 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
 	res_field_t*  res = &buf->req_res_queue_.front().second;
 
+	// debug
+	static long cgi_write = 0;
+
 	if (cur_event->ident == buf->client_fd_) {
 		spx_log_("write event handler - buf state", buf->state_);
 		if (buf->req_res_queue_.front().second.headers_.size()) {
-			buf->write_response(change_list);
+			if (buf->write_response(change_list) == false) {
+				return;
+			}
 			if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
 				spx_log_("write_event_handler - disable write");
 				add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
@@ -134,7 +143,8 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 				// buf->state_ = REQ_LINE_PARSING;
 			}
 		} else {
-			spx_log_("write_to_cgi");
+			cgi_write++;
+			spx_log_("write_to_cgi", cgi_write);
 			// cgi logic
 			buf->write_to_cgi(cur_event, change_list);
 
@@ -211,9 +221,9 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 		// std::cout << "current loop: " << l++ << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
-			spx_log_("event_len:", event_len);
-			spx_log_("cur->ident:", cur_event->ident);
-			spx_log_("cur->flags:", cur_event->flags);
+			// spx_log_("event_len:", event_len);
+			// spx_log_("cur->ident:", cur_event->ident);
+			// spx_log_("cur->flags:", cur_event->flags);
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
@@ -234,6 +244,7 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
 								spx_log_("cgi read close");
+								buf->req_res_queue_.back().second.cgi_checked_ = 0;
 								buf->cgi_controller();
 								add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
 							} else {
