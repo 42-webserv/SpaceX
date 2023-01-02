@@ -1,8 +1,8 @@
 *.pdf
 
-.vscode/!launch.json
 
 .vscode/*
+!.vscode/launch.json
 
 *.swp
 
