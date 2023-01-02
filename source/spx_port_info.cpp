@@ -419,7 +419,7 @@ uri_location_for_copy_stage_t::clear_(void) {
 	saved_path.clear();
 	cgi_pass.clear();
 	cgi_path_info.clear();
-	client_max_body_size = 0;
+	client_max_body_size = -1;
 }
 
 uri_location_t::uri_location(const uri_location_for_copy_stage_t from)

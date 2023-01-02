@@ -283,6 +283,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		req->uri_loc_ = req->serv_info_->get_uri_location_t_(req->req_target_,
 															 this->req_res_queue_.back().second.uri_resolv_);
 
+		if (req->uri_loc_) {
+			req->body_limit_ = req->uri_loc_->client_max_body_size;
+		}
 #ifdef DEBUG
 		spx_log_("\nreq->uri_loc_ : ", req->uri_loc_);
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
@@ -476,12 +479,18 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			// error case
 			if (this->req_res_queue_.back().first.body_fd_ < 0) {
 				// 405 not allowed error with keep-alive connection.
+				/*
 				this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
 				if (this->req_res_queue_.back().second.body_fd_ != -1) {
 					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 				}
-				// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 				return false;
+				*/
+				this->req_res_queue_.back().first.body_fd_ = open(
+					(this->req_res_queue_.back().second.uri_resolv_.script_filename_ + "index.html").c_str(),
+					O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
+				this->req_res_queue_.back().first.file_path_ = this->req_res_queue_.back().second.uri_resolv_.script_filename_ + "index.html";
+				// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 			}
 
 			spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
@@ -545,7 +554,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		int				   start_line_end;
 		req_field_t&	   req = this->req_res_queue_.back().first;
 
-		spx_log_("controller - req body chunked");
+		spx_log_("controller - req body chunked. body limit", req.body_limit_);
 		while (req.body_size_ <= req.body_limit_) {
 			crlf_pos = std::find(crlf_pos, this->rdsaved_.end(), LF);
 			if (crlf_pos != this->rdsaved_.end()) {
@@ -619,13 +628,13 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		close(req.body_fd_);
 		remove(req.file_path_.c_str());
 		add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-		this->state_ = REQ_HOLD;
-		this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+		this->make_error_response(HTTP_STATUS_PAYLOAD_TOO_LARGE);
 		if (this->req_res_queue_.back().second.body_fd_ != -1) {
 			add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 		}
+		this->state_ = REQ_SKIP_BODY_CHUNKED;
 		// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-		this->flag_ |= E_BAD_REQ;
+		// this->flag_ |= E_BAD_REQ;
 		// }
 		return false;
 	}
@@ -700,16 +709,20 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				break;
 			}
 		}
-		if (this->req_res_queue_.back().first.body_size_ > this->req_res_queue_.back().first.body_limit_) {
-			// send over limit.
-			close(this->req_res_queue_.back().first.body_fd_);
-			this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
-			if (this->req_res_queue_.back().second.body_fd_ != -1) {
-				add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-			}
-			// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-			this->flag_ |= E_BAD_REQ;
+		if (this->req_res_queue_.back().first.chunked_checked_ == this->req_res_queue_.back().first.content_length_) {
+			this->state_ = REQ_LINE_PARSING;
+			return true;
 		}
+		// if (this->req_res_queue_.back().first.body_size_ > this->req_res_queue_.back().first.body_limit_) {
+		// 	// send over limit.
+		// 	close(this->req_res_queue_.back().first.body_fd_);
+		// 	this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+		// 	if (this->req_res_queue_.back().second.body_fd_ != -1) {
+		// 		add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+		// 	}
+		// 	// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+		// 	this->flag_ |= E_BAD_REQ;
+		// }
 		return false;
 	}
 
@@ -923,10 +936,10 @@ ClientBuffer::make_error_response(http_status error_code) {
 
 	// res.headers_.push_back(header("Server", "SpaceX/12.26"));
 
-	if (error_code == HTTP_STATUS_BAD_REQUEST)
-		res.headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
-	else
-		res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+	// if (error_code == HTTP_STATUS_BAD_REQUEST)
+	// 	res.headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
+	// else
+	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
 
 	// page_path null case added..
 	std::string page_path;
@@ -1135,6 +1148,14 @@ ClientBuffer::write_for_upload(event_list_t& change_list, struct kevent* cur_eve
 	} else {
 		buf_len	   = this->rdsaved_.size() - this->rdchecked_;
 		size_t len = req.body_size_ - req.body_read_;
+
+		if (this->req_res_queue_.back().first.body_limit_ < this->req_res_queue_.back().first.body_size_) {
+			close(cur_event->ident);
+			remove(this->req_res_queue_.back().first.file_path_.c_str());
+			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			return false;
+		}
+
 		if (WRITE_BUFFER_MAX <= std::min(buf_len, len)) {
 			spx_log_("write_for_upload: MAX_BUF ");
 			n_write = write(cur_event->ident, &this->rdsaved_[this->rdchecked_], WRITE_BUFFER_MAX);

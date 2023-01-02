@@ -125,7 +125,14 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 
 			// } else {
 			spx_log_("write_for_upload");
-			buf->write_for_upload(change_list, cur_event);
+			if (buf->write_for_upload(change_list, cur_event) == false) {
+				spx_log_("too large file to upload");
+				buf->make_error_response(HTTP_STATUS_NOT_ACCEPTABLE);
+				if (buf->req_res_queue_.back().second.body_fd_ != -1) {
+					add_change_list(change_list, buf->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, buf);
+				}
+				return;
+			}
 			// }
 			if (buf->req_res_queue_.back().first.flag_ & READ_BODY_END) {
 				spx_log_("write_for_upload - uploaded");

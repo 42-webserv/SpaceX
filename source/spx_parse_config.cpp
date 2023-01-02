@@ -578,7 +578,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 					flag_location_part |= Kflag_root;
 				}
 				if (!(flag_location_part & Kflag_client_max_body_size)) {
-					temp_uri_location_info.client_max_body_size = 8124;
+					temp_uri_location_info.client_max_body_size = -1;
 				}
 				if (!(flag_location_part & Kflag_accepted_methods)) {
 					return error_("conf_location_zero", "accepted_methods not defined", line_number_count);
