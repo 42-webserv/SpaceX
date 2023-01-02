@@ -136,7 +136,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				}
 				uri_resolved_sets.script_name_ += temp;
 			}
-			// uri_resolved_sets.script_name_ += temp; // NOTE: different from nginx
 			temp.clear();
 			state = next_state;
 			break;
@@ -329,7 +328,7 @@ uri_resolved_t::print_(void) const {
 	spx_log_("path_info: ", path_info_);
 	spx_log_("path_translated: ", path_translated_);
 	spx_log_("query_string: ", query_string_);
-	spx_log_("----------------------------");
+	spx_log_("----------------------------\n");
 }
 
 void
