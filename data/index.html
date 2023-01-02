@@ -1,1 +1,18 @@
-index
+<html>
+
+<head>
+	<title>index of SpaceX</title>
+</head>
+
+<body>
+	<div id="result"></div>
+	<button onclick="counting()"> count</button>
+</body>
+<script>
+	function counting() {
+		var value = document.cookie.match('(^|;) ?' + 'sessionID' + '=([^;]*)(;|$)');
+		document.getElementById("result").innerText = value;
+	}
+</script>
+
+</html>
