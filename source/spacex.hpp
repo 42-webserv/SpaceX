@@ -14,11 +14,6 @@
 typedef struct main_info {
 	uint32_t	  socket_size;
 	port_info_vec port_info;
-	// server_info_t const& search_server_config_(std::string const& host_name);
-	// port_info[n].search_server_config_(host_name);
-
-	void port_info_print_(void);
-
 } main_info_t;
 
 void kqueue_main(port_info_vec& serv_info);

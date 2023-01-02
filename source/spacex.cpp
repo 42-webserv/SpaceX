@@ -1,5 +1,6 @@
 #include "spacex.hpp"
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 #include "spx_port_info.hpp"
 #include <vector>
 
@@ -59,11 +60,15 @@ namespace {
 } // namespace
 
 inline void
-main_info_t::port_info_print_(void) {
+port_info_print_(main_info_t const& spx) {
 	uint32_t i = 3;
-	std::cout << "------------------------------------" << std::endl;
-	while (i < this->socket_size) {
-		for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
+	std::cout << "\n-------------- [ "
+			  << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
+			  << " ] -------------\n"
+			  << std::endl;
+	while (i < spx.socket_size) {
+		for (server_map_p::const_iterator it2 = spx.port_info[i].my_port_map.begin();
+			 it2 != spx.port_info[i].my_port_map.end(); ++it2) {
 			std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
 			std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
 			if (it2->second.default_server_flag == Kdefault_server) {
@@ -73,95 +78,33 @@ main_info_t::port_info_print_(void) {
 				std::cout << std::endl;
 			}
 		}
+		std::cout << std::endl;
 		++i;
 	}
-	std::cout << "------------------------------------" << std::endl;
+	std::cout << "--------------------------------------------" << std::endl;
 }
-
-#ifdef SPACE_RESPONSE_TEST
-void
-buffer_print_header(buffer_t buf) {
-	size_t cnt	= 0;
-	bool   flag = false;
-	for (buffer_t::iterator it = buf.begin(); it != buf.end(); ++it) {
-		cnt++;
-		if (*it == '\n' && *(it + 1) == '\r')
-			flag = true;
-		std::cout << *it;
-		if (flag) {
-			flag = false;
-			std::cout << "====header END====\n";
-			std::cout << "header_size = " << cnt << std::endl;
-			cnt = 0;
-		}
-	}
-	std::cout << "\nbody_size = " << cnt << std::endl;
-	// write(1, &buf[0], 56);
-}
-void
-buffer_print(buffer_t buf) {
-	for (buffer_t::iterator it = buf.begin(); it != buf.end(); ++it) {
-		std::cout << *it;
-	}
-	std::cout << "\nbuffer size = " << buf.size() << std::endl;
-}
-void
-test_check(ClientBuffer& cb) {
-	res_field_t& response = cb.req_res_queue_.back().second;
-	std::cout << "body_fd: " << response.body_fd_ << "\n"
-			  << "buf_size: " << response.buf_size_ << "\n";
-	buffer_print_header(response.res_buffer_);
-	// buffer_print(response.res_buffer_);
-}
-#endif
 
 int
 main(int argc, char const* argv[]) {
+
 #ifdef LEAK
 	atexit(ft_handler_leak_);
 #endif
+
 	if (argc <= 2) {
 		std::string cur_dir;
 		get_current_path_(cur_dir);
 
 		total_port_server_map_p config_info = config_file_open_(argc, argv, cur_dir);
-		spx_log_("config file open success");
 
 		main_info_t spx;
 		spx.socket_size = 0;
 
 		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
-		spx_log_("socket per port_info success");
-		spx.port_info_print_();
+		port_info_print_(spx);
 
 		kqueue_module(spx.port_info);
 
-#ifdef SPACE_RESPONSE_TEST
-		ResField							res;
-		ClientBuffer						c;
-		std::pair<req_field_t, res_field_t> one_set;
-		ReqField&							req = one_set.first;
-
-		uri_location_for_copy_stage stage;
-		stage.autoindex_flag = Kautoindex_on;
-		stage.uri			 = "/Users/spacechae/Desktop/webserv/SpaceX";
-		stage.root			 = "/Users/spacechae/Desktop/webserv/SpaceX";
-
-		server_info_for_copy_stage serv_info_stage;
-
-		uri_location* uri_loc_tmp	  = new uri_location(stage);
-		server_info*  server_info_tmp = new server_info(serv_info_stage);
-
-		req.uri_loc_   = uri_loc_tmp;
-		req.serv_info_ = server_info_tmp;
-
-		req.req_type_  = REQ_GET;
-		req.file_path_ = "/Users/spacechae/Desktop/webserv/SpaceX";
-		c.req_res_queue_.push(one_set);
-		res.make_response_header(c);
-		test_check(c);
-
-#endif
 	} else {
 		error_exit_msg("usage: ./spacex [config_file]");
 	}
