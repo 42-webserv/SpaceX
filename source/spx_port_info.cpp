@@ -4,11 +4,12 @@
 #include "spx_parse_config.hpp"
 #include <cstddef>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <iostream>
 
+#include <dirent.h>
 namespace {
 
 } // namespace
@@ -72,15 +73,15 @@ server_info_t::get_error_page_path_(uint32_t const& error_code) const {
 
 uri_location_t const*
 server_info_t::get_uri_location_t_(std::string const& uri,
-								   uri_resolved_t&	  uri_resolved_sets) const {
+								   uri_resolved_t&	  uri_resolved_sets) const { // TODO :: make more readable
 	uri_location_t*				return_location = NULL;
 	std::string					temp;
 	std::string					temp_root;
 	std::string					temp_location;
 	std::string					temp_extension;
 	std::string					temp_index;
-	uint16_t						flag_check_dup = 0;
-	uint16_t						root_uri_flag  = 0;
+	uint16_t					flag_check_dup = 0;
+	uint16_t					root_uri_flag  = 0;
 	std::string::const_iterator it			   = uri.begin();
 
 	uri_resolved_sets.is_cgi_			= false;
@@ -130,7 +131,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					temp_location	= it_->second.uri;
 					root_uri_flag |= 1;
 
-				}else {
+				} else {
 					temp_root = this->root;
 				}
 				uri_resolved_sets.script_name_ += temp;
@@ -179,7 +180,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				++it;
 			}
 			if (!(flag_check_dup & Kuri_cgi)) {
-				if (temp.size() != 1){
+				if (flag_check_dup & Kuri_same_uri) {
+					flag_check_dup |= Kuri_inner_uri;
+				}
+				if (temp.size() != 1) {
 					flag_check_dup &= ~Kuri_same_uri;
 					uri_resolved_sets.script_name_ += temp;
 				}
@@ -244,23 +248,22 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_done: {
-			// XXX : if set saved_path, then use saved_path // not recommend this time
-			// TODO: cgi's saved_path isn't defined yet
 			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
 				uri_resolved_sets.is_same_location_ = true;
 			}
-			if (flag_check_dup & Kuri_path_info) {
-				if (root_uri_flag & 1) {
-					return_location = NULL;
+			if (flag_check_dup & Kuri_path_info && root_uri_flag & 1) {
+				return_location = NULL;
+			}
+			uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
+			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
+
+			DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
+			if (uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) {
+				uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
+				uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
+				if (dir) {
+					closedir(dir);
 				}
-				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
-				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
-			} else if (uri_resolved_sets.is_same_location_){
-				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_ + "/" + temp_index);
-				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_ + "/" + temp_index);
-			}else {
-				uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
-				uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
@@ -277,32 +280,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	} // while end
 	return return_location;
 }
-
-// uri_location_t const*
-// server_info_t::get_uri_location_t_(std::string const& uri,
-// 								   std::string&		  output_resolved_uri) const {
-// 	std::string basic_location, remain_uri, final_uri, first_resolved_uri;
-// 	first_resolved_uri = path_resolve_(uri);
-// 	find_slash_then_divide_(first_resolved_uri, basic_location, remain_uri);
-
-// 	uri_location_map_p::const_iterator it = uri_case.find(basic_location);
-// 	if (it != uri_case.end()) {
-// 		final_uri += it->second.root;
-// 		if (remain_uri.empty()) {
-// 			if (!it->second.index.empty()) {
-// 				final_uri += '/' + it->second.index;
-// 			}
-// 		} else {
-// 			final_uri += '/' + remain_uri;
-// 		}
-// 		output_resolved_uri = path_resolve_(final_uri);
-// 		return &it->second;
-// 	} else {
-// 		final_uri += this->root + '/' + uri;
-// 	}
-// 	output_resolved_uri = path_resolve_(final_uri);
-// 	return NULL;
-// }
 
 std::string const
 server_info_t::path_resolve_(std::string const& unvalid_path) {
@@ -341,9 +318,9 @@ uri_resolved_t::print_(void) const {
 	spx_log_("is_cgi: ", is_cgi_);
 	spx_log_("is_same_location: ", is_same_location_);
 	if (cgi_loc_ == NULL) {
-	spx_log_("cgi_location_t: NULL");
+		spx_log_("cgi_location_t: NULL");
 	} else {
-	spx_log_("cgi_location_t: ON");
+		spx_log_("cgi_location_t: ON");
 	}
 	spx_log_("request_uri: ", request_uri_);
 	spx_log_("resolved_request_uri: ", resolved_request_uri_);

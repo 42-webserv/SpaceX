@@ -105,24 +105,39 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 		}
 	} else {
 		if (cur_event->ident == buf->req_res_queue_.back().first.body_fd_) {
-			if (buf->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
-				spx_log_("write_for_upload - chunked");
-				// chunked logic
-				buf->write_to_cgi(cur_event, change_list);
-			} else {
-				spx_log_("write_for_upload");
-				buf->write_for_upload(change_list, cur_event);
-			}
+			// file upload case
+			// if (buf->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
+			// 	spx_log_("write_for_upload - chunked");
+			// 	// chunked logic
+
+			// } else {
+			spx_log_("write_for_upload");
+			buf->write_for_upload(change_list, cur_event);
+			// }
 			if (buf->req_res_queue_.back().first.flag_ & READ_BODY_END) {
 				spx_log_("write_for_upload - uploaded");
 				close(cur_event->ident);
 				add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+				spx_log_("queue size", buf->req_res_queue_.size());
 				buf->make_response_header();
-				buf->req_res_queue_.back().second.flag_ |= WRITE_READY;
+				buf->state_ = REQ_LINE_PARSING;
+				if (buf->rdsaved_.size() == buf->rdchecked_) {
+					buf->rdsaved_.clear();
+					buf->rdchecked_ = 0;
+				}
+				// write(STDOUT_FILENO, &buf->req_res_queue_.front().second.res_buffer_[0], buf->req_res_queue_.front().second.res_buffer_.size());
+				// add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
+				// buf->state_ = REQ_LINE_PARSING;
 			}
 		} else {
-			spx_log_("write_for_cgi");
+			spx_log_("write_to_cgi");
 			// cgi logic
+			buf->write_to_cgi(cur_event, change_list);
+
+			// if (buf->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
+			// 	// write from req->chunked body buffer
+			// 	cgi_
+			// }
 		}
 	}
 }
@@ -131,7 +146,10 @@ void
 proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// need to check exit status??
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
-	waitpid(cur_event->ident, NULL, 0);
+	int			  status;
+	waitpid(cur_event->ident, &status, 0);
+	std::cout << "status: " << status << std::endl;
+
 	// close(buf->req_res_queue_.front().first.cgi_in_fd_);
 	// close(buf->req_res_queue_.front().first.cgi_out_fd_);
 	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
@@ -186,9 +204,11 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 			error_exit_msg("kevent()");
 		}
 		change_list.clear();
-		spx_log_("event_len:", event_len);
+		// spx_log_("event_len:", event_len);
 		// std::cout << "current loop: " << l++ << std::endl;
 
+		// spx_log_("cur->ident:", cur_event->ident);
+		// spx_log_("cur->flags:", cur_event->flags);
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
@@ -202,14 +222,26 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 						buf->disconnect_client(change_list);
 						delete buf;
 					} else {
-						add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-						// cgi? server file?
+						if (cur_event->filter == EVFILT_PROC) {
+							// proc
+							spx_log_("event_proc");
+							proc_event_handler(cur_event, change_list);
+						} else {
+							// cgi case. server file does not return EV_EOF.
+							if (cur_event->filter == EVFILT_READ) {
+								spx_log_("cgi read close");
+								buf->cgi_controller();
+								add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
+							} else {
+								spx_log_("cgi write close");
+							}
+							close(cur_event->ident);
+							add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+						}
 					}
 				}
 				continue;
 			}
-			spx_log_("cur->ident:", cur_event->ident);
-			spx_log_("cur->flags:", cur_event->flags);
 			switch (cur_event->filter) {
 			case EVFILT_READ:
 				spx_log_("event_read");

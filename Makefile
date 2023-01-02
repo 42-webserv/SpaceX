@@ -8,7 +8,7 @@ NAME		= spacex
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK, LOG_MODE
 # DEBUG_FLAG	+=	LEAK
 DEBUG_FLAG	+=	DEBUG
-DEBUG_FLAG	+= SYNTAX_DEBUG
+# DEBUG_FLAG	+= SYNTAX_DEBUG
 # DEBUG_FLAG	+=	YOMA_SEARCH_DEBUG
 # DEBUG_FLAG	+=  SOCKET_DEBUG
 # DEBUG_FLAG  +=  SPACE_RESPONSE_TEST
@@ -16,7 +16,10 @@ DEBUG_FLAG	+= SYNTAX_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 DEBUG_FLAG += LOG_MODE
 
-LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
+ifdef DEBUG_FLAG
+	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
+endif
+
 SRC			=	spacex.cpp \
 				spx_autoindex_generator.cpp \
 				spx_cgi_module.cpp \
@@ -26,7 +29,8 @@ SRC			=	spacex.cpp \
 				spx_parse_config.cpp \
 				spx_port_info.cpp \
 				spx_response_generator.cpp \
-				spx_syntax_checker.cpp 
+				spx_session_storage.cpp \
+				spx_syntax_checker.cpp
 
 
 SRC_DIR		=	source/
@@ -43,9 +47,7 @@ CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-# CXXFLAGS	+=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 CXXFLAGS	+=	$(LOG)
-# CXXFLAGS	+=	-Wc++11-extensions
 
 RM			=	rm -f
 
@@ -54,9 +56,10 @@ SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
-CXXFLAGS	+=	$(SNTZ)
 
-# CXXFLAGS	+=	-fno-sanitize-recover -fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
+CXXFLAGS	+=	$(DEBUG) $(SNTZ)
+# CXXFLAGS	+=	-fno-sanitize-recover
+# CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
 #==============================================================================
 #	Make Part

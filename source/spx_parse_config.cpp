@@ -50,7 +50,7 @@ namespace {
 #define XX(num, name, string) CONFIG_STATE_##name = num,
 		CONFIG_STATE_MAP(XX)
 #undef XX
-		CONFIG_STATE_LAST
+			CONFIG_STATE_LAST
 	} config_state_e;
 
 	std::string
@@ -590,6 +590,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (flag_location_part & (Kflag_index | Kflag_autoindex | Kflag_redirect)) {
 						return error_("conf_location_zero", "index, autoindex, redirect can't be used in cgi location", line_number_count);
 					}
+					if (!(flag_location_part & Kflag_cgi_path_info)) {
+						return error_("conf_location_zero", "cgi_path_info not defined", line_number_count);
+					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
@@ -612,13 +615,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 				} else {
 					return error_("conf_location_zero", "location uri syntax error", line_number_count);
 				}
-				// check_dup.
-#ifdef CONFIG_DEBUG
-				std::cout << std::endl;
-				spx_log_(check_dup.first->first.c_str());
-				check_dup.first->second.print_();
-				std::cout << std::endl;
-#endif
 			}
 			temp_uri_location_info.clear_();
 			flag_location_part = 0;
@@ -877,11 +873,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						break;
 					}
 					if (temp_string.compare("ALL") == KSame) {
-						temp_uri_location_info.accepted_methods_flag |= KGet;
-						temp_uri_location_info.accepted_methods_flag |= KPut;
-						temp_uri_location_info.accepted_methods_flag |= KPost;
-						temp_uri_location_info.accepted_methods_flag |= KHead;
-						temp_uri_location_info.accepted_methods_flag |= KDelete;
+						temp_uri_location_info.accepted_methods_flag |= (KGet | KPut | KPost | KHead | KDelete);
 						break;
 					}
 					return error_("conf_accepted_methods", "syntax error", line_number_count);

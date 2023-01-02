@@ -23,6 +23,8 @@
 #include "spx_response_generator.hpp"
 #include "spx_syntax_checker.hpp"
 
+#include "spx_session_storage.hpp"
+
 #define SERV_PORT 1234
 #define SERV_SOCK_BACKLOG 10
 #define EVENT_CHANGE_BUF 10
@@ -31,6 +33,7 @@
 #define MAX_EVENT_LOOP 20
 // #define BUFFER_MAX 80 * 1024
 
+class SessionStorage;
 // struct Response;
 enum e_request_method {
 	REQ_GET		  = 1 << 1,
@@ -100,6 +103,7 @@ public:
 	int								   flag_;
 	int								   req_type_;
 	int								   transfer_encoding_;
+	std::string						   session_id; // session
 
 	ReqField()
 		: chunked_body_buffer_()
@@ -116,10 +120,8 @@ public:
 		, content_length_(0)
 		, flag_(0)
 		, req_type_(0)
-		, transfer_encoding_(0) {
-	}
-	~ReqField() {
-	}
+		, transfer_encoding_(0) { }
+	~ReqField() { }
 };
 
 class ResField {
@@ -157,6 +159,8 @@ public:
 	std::string make_to_string() const;
 	void		write_to_response_buffer(const std::string& content);
 
+	/* session & SESSION */
+	void setSessionHeader(std::string session_id);
 	/* RESPONSE END*/
 
 	ResField()
@@ -198,6 +202,7 @@ private:
 	ClientBuffer& operator=(const ClientBuffer& buf);
 
 public:
+	SessionStorage									 storage; // add by space
 	std::queue<std::pair<req_field_t, res_field_t> > req_res_queue_;
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
@@ -227,7 +232,8 @@ public:
 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
 	bool cgi_header_parser();
-	bool cgi_controller(int state);
+	bool cgi_controller();
+	// bool cgi_controller(int state, event_list_t& change_list);
 
 	bool cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 
@@ -244,6 +250,7 @@ public:
 	void make_error_response(http_status error_code);
 	void make_response_header();
 	void make_redirect_response();
+	void make_cgi_response_header();
 	/* RESPONSE END*/
 };
 

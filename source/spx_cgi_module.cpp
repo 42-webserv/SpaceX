@@ -1,19 +1,87 @@
 #include "spx_cgi_module.hpp"
 #include "spx_core_type.hpp"
 #include <cstring>
-#include <vector>
+#include <string>
 
-CgiModule::CgiModule(uri_resolved_t const& uri_loc, header_field_map const& req_header)
-	: cgi_loc_(uri_loc)
-	, header_map_(req_header) {
+namespace {
+
+#define METHOD__MAP(XX) \
+	XX(1, GET)          \
+	XX(2, POST)         \
+	XX(3, PUT)          \
+	XX(4, DELETE)       \
+	XX(5, HEAD)
+
+	std::string
+	method_map_str_(int const& status) {
+		switch (status) {
+#define XX(num, name) \
+	case REQ_##name:  \
+		return #name;
+			METHOD__MAP(XX)
+#undef XX
+		default:
+			return "<unknown>";
+		}
+	}
+
+	// std::string
+	// method_map_str_(int const& status) {
+	// 	switch (status) {
+	// 	case REQ_GET:
+	// 		return "GET";
+	// 	case REQ_POST:
+	// 		return "POST";
+	// 	case REQ_PUT:
+	// 		return "PUT";
+	// 	case REQ_HEAD:
+	// 		return "HEAD";
+	// 	case REQ_DELETE:
+	// 		return "DELETE";
+	// 	}
+	// }
+
+	inline status
+	error_(const char* msg) {
+#ifdef SYNTAX_DEBUG
+		std::cout << "\033[1;31m" << msg << "\033[0m"
+				  << " : "
+				  << "\033[1;33m"
+				  << ""
+				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
+#endif
+		return spx_error;
+	}
+
+	inline status
+	error_flag_(const char* msg, int& flag) {
+#ifdef SYNTAX_DEBUG
+		std::cout << "\033[1;31m" << msg << "\033[0m"
+				  << " : "
+				  << "\033[1;33m"
+				  << ""
+				  << "\033[0m" << std::endl;
+#else
+		(void)msg;
+#endif
+		flag = REQ_UNDEFINED;
+		return spx_error;
+	}
+
+} // namespace
+
+CgiModule::CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& req_header, uri_location_t const* cgi_loc_info)
+	: cgi_resolved_(org_cgi_loc)
+	, header_map_(req_header)
+	, cgi_loc_info_(cgi_loc_info) {
 }
 
 CgiModule::~CgiModule() { }
 
 void
 CgiModule::made_env_for_cgi_(int status) {
-
-	std::vector<std::string> vec_env_;
 
 	{ // pixed part
 		vec_env_.push_back("GATEWAY_INTERFACE=CGI/1.1");
@@ -23,41 +91,23 @@ CgiModule::made_env_for_cgi_(int status) {
 	}
 
 	{ // variable part
-		std::string method;
-		switch (status) {
-		case REQ_GET: {
-			method = "GET";
-			break;
-		}
-		case REQ_POST: {
-			method = "POST";
-			break;
-		}
-		case REQ_PUT: {
-			method = "PUT";
-			break;
-		}
-		case REQ_DELETE: {
-			method = "DELETE";
-			break;
-		}
-		case REQ_HEAD: {
-			method = "HEAD";
-			break;
-		}
-		}
-		if (!method.empty()) {
+		std::string method = method_map_str_(status);
+		if (method != "<unknown>") {
 			vec_env_.push_back("REQUEST_METHOD=" + method); // GET|POST|...
 		}
-		vec_env_.push_back("REQUEST_URI=" + cgi_loc_.request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
-		vec_env_.push_back("SCRIPT_NAME=" + cgi_loc_.script_name_); // /blah/blah/blah.cgi
-		if (!cgi_loc_.path_info_.empty()) {
-			vec_env_.push_back("PATH_INFO=" + cgi_loc_.path_info_); // remain /blah/blah
+		vec_env_.push_back("REQUEST_URI=" + cgi_resolved_.resolved_request_uri_); // /blah/blah/blah.cgi/remain/blah/blah
+		vec_env_.push_back("SCRIPT_NAME=" + cgi_resolved_.script_name_); // /blah/blah/blah.cgi
+		vec_env_.push_back("PATH_INFO=" + cgi_resolved_.resolved_request_uri_); // remain /blah/blah //NOTE : in this req_uri = path_info is for intra cgi tester
+		// if (!cgi_resolved_.path_info_.empty()) { // NOTE : in Formal CGI, PATH_INFO is after SCRIPT_NAME's path
+		// 	vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_); // remain /blah/blah
+		// }
+		if (!cgi_resolved_.query_string_.empty()) {
+			vec_env_.push_back("QUERY_STRING=" + cgi_resolved_.query_string_); // key=value&key=value&key=value
 		}
-		if (!cgi_loc_.query_string_.empty()) {
-			vec_env_.push_back("QUERY_STRING=" + cgi_loc_.query_string_); // key=value&key=value&key=value
+		if (cgi_loc_info_ && !(cgi_loc_info_->saved_path.empty())) {
+			vec_env_.push_back("SAVED_PATH=" + cgi_loc_info_->saved_path); // /blah/blah/
 		}
-		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t
+		// vec_env_.push_back("SERVER_NAME=" + ); // server name from server_info_t //TODO : need to add server_name
 		// vec_env_.push_back("SERVER_PORT=" +); // server port from server_info_t
 	}
 
@@ -249,14 +299,9 @@ CgiModule::made_env_for_cgi_(int status) {
 		}
 	}
 
-	// env_for_cgi_ = new (std::nothrow) char*[vec_env_.size() + 1];
 	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
 		env_for_cgi_.push_back(vec_env_[i].c_str());
+		std::cout << vec_env_[i].c_str() << std::endl;
 	}
 	env_for_cgi_.push_back(NULL);
 }
-
-// static void
-// CgiModule::check_cgi_response(void){
-
-// }
