@@ -77,10 +77,10 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 					   << "<td " << TD_STYLE << ">";
 				filename = path_info.script_filename_ + filename;
 				spx_log_("foler_name", filename);
-				if (stat(full_path.c_str(), &file_status) == 0) {
+				if (stat(filename.c_str(), &file_status) == 0) {
 					result << get_file_timetable(file_status);
 				}
-				spx_log_("STDERR", strerror(errno));
+				spx_log_("DIRECTORY_STDERR", strerror(errno));
 
 				result << "</td>"
 					   << "</tr>" << CRLF;
@@ -112,6 +112,8 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				if (stat(filename.c_str(), &file_status) == 0) {
 					result << get_file_timetable(file_status);
 				}
+				spx_log_("FILE_STDERR", strerror(errno));
+
 				result << "</td>"
 					   << "</tr>" << CRLF;
 			}
