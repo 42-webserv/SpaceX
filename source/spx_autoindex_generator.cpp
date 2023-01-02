@@ -27,13 +27,16 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	std::string&	  path = path_info.script_filename_;
 	std::string		  full_path;
 
+	spx_log_("======================================================");
+	path_info.print_();
+	spx_log_("======================================================");
+
 	char* base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << path_info.script_name_ << HTML_BEFORE_LIST;
 	result << "<table>";
 	if ((dir = opendir(path.c_str())) != NULL) {
 		entry = readdir(dir);
 		while ((entry = readdir(dir)) != NULL) {
-			spx_log_("HERERERERE==============================REREE");
 			if (entry->d_type & DT_DIR) {
 				// get the name of the file
 				std::string filename = entry->d_name;
@@ -75,7 +78,7 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				struct stat file_status;
 				result << filename << "/" << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">";
-				filename = path_info.script_filename_ + filename;
+				filename = path_info.script_filename_ + "/" + filename;
 				spx_log_("foler_name", filename);
 				if (stat(filename.c_str(), &file_status) == 0) {
 					result << get_file_timetable(file_status);
@@ -108,7 +111,7 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				struct stat file_status;
 				result << filename << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">";
-				filename = path_info.script_filename_ + filename;
+				filename = path_info.script_filename_ + "/" + filename;
 				if (stat(filename.c_str(), &file_status) == 0) {
 					result << get_file_timetable(file_status);
 				}
