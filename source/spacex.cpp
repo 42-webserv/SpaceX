@@ -1,13 +1,11 @@
 #include "spacex.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include "spx_port_info.hpp"
 #include <vector>
 
 #include "spx_client_buffer.hpp"
 #include "spx_kqueue_module.hpp"
-
-#include "spx_autoindex_generator.hpp"
+#include "spx_port_info.hpp"
 
 namespace {
 
