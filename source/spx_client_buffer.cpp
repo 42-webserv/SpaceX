@@ -542,7 +542,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		req_field_t&	   req = this->req_res_queue_.back().first;
 
 		spx_log_("controller - req body chunked");
-		while (true) {
+		while (req.body_size_ <= req.body_limit_) {
 			crlf_pos = std::find(crlf_pos, this->rdsaved_.end(), LF);
 			if (crlf_pos != this->rdsaved_.end()) {
 				start_line_end = crlf_pos - this->rdsaved_.begin() + 1;
@@ -561,6 +561,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								if (this->req_res_queue_.back().second.body_fd_ != -1) {
 									add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 								}
+								this->state_ = REQ_HOLD;
 								return false;
 							}
 							crlf_pos = this->rdsaved_.begin() + rdchecked_;
@@ -575,10 +576,11 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								req.content_length_ = req.body_size_;
 								this->state_		= REQ_LINE_PARSING;
 								add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
-								break;
+								return false;
 							} else {
 								spx_log_("chunked extension");
 								// yoma's code..? end check..??
+								return false;
 							}
 						}
 					} else {
@@ -596,6 +598,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 					if (this->req_res_queue_.back().second.body_fd_ != -1) {
 						add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 					}
+					this->state_ = REQ_HOLD;
 					return false;
 				}
 			} else {
@@ -603,19 +606,19 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				return false;
 			}
 		}
-		if (req.body_size_ > req.body_limit_) {
-			// send over limit.
-			close(req.body_fd_);
-			remove(req.file_path_.c_str());
-			add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-			this->state_ = REQ_LINE_PARSING;
-			this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
-			if (this->req_res_queue_.back().second.body_fd_ != -1) {
-				add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-			}
-			this->req_res_queue_.back().second.flag_ |= WRITE_READY;
-			this->flag_ |= E_BAD_REQ;
+		// if (req.body_size_ > req.body_limit_) {
+		// send over limit.
+		close(req.body_fd_);
+		remove(req.file_path_.c_str());
+		add_change_list(change_list, req.body_fd_, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+		this->state_ = REQ_HOLD;
+		this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+		if (this->req_res_queue_.back().second.body_fd_ != -1) {
+			add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 		}
+		this->req_res_queue_.back().second.flag_ |= WRITE_READY;
+		this->flag_ |= E_BAD_REQ;
+		// }
 		return false;
 	}
 
