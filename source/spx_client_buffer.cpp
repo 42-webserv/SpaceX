@@ -298,18 +298,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		// 	2-1. increase session value
 		//  2-2. save session value
 		// 3. storage - save session state
-
-		// SessionStorage								 storage; // this is temporary
-
 		cookie_t									 cookie;
 		std::map<std::string, std::string>::iterator req_cookie
 			= req->field_.find("cookie");
-		/*
-				for (std::map<std::string, std::string>::iterator iter = req->field_.begin(); iter != req->field_.end(); iter++) {
-					std::cout << (*iter).first << " " << (*iter).second << std::endl;
-				}
-		*/
-
 		if (req_cookie != req->field_.end()) {
 			spx_log_("COOKIE", "FOUND");
 			std::string req_cookie_value = (*req_cookie).second;
@@ -317,16 +308,11 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			if (!req_cookie_value.empty()) {
 				cookie.parse_cookie_header(req_cookie_value);
 				cookie_t::key_val_t::iterator find_cookie = cookie.content.find("sessionID");
-				if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty()) {
+				if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty() || !storage.is_key_exsits((*find_cookie).second)) {
 					spx_log_("COOKIE ERROR ", "Invalid_COOKIE");
 					spx_log_("MAKING NEW SESSION");
-					// 1. storage - make session hash ( using fd )
 					std::string hash_value = storage.make_hash(client_fd_);
-					// 2. session - init value
-					// 3. storage - register session_hash & session pair
 					storage.add_new_session(hash_value);
-					// 4. response - setCookie to Session
-
 					req->session_id = SESSIONID + hash_value;
 				} else {
 					session_t& session = storage.find_value_by_key((*find_cookie).second);
@@ -338,12 +324,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		} else // if first connection or (no session id on cookie)
 		{
 			spx_log_("MAKING NEW SESSION");
-			// 1. storage - make session hash ( using fd )
 			std::string hash_value = storage.make_hash(client_fd_);
-			// 2. session - init value
-			// 3. storage - register session_hash & session pair
 			storage.add_new_session(hash_value);
-			// 4. response - setCookie to Session
 			req->session_id = hash_value;
 		}
 
