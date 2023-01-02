@@ -313,7 +313,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			spx_log_("REQ_COOKIE_VALUE", req_cookie_value);
 			if (!req_cookie_value.empty()) {
 				cookie.parse_cookie_header(req_cookie_value);
-				cookie_t::key_val_t::iterator find_cookie = cookie.content.find(SESSIONID);
+				cookie_t::key_val_t::iterator find_cookie = cookie.content.find("sessionID");
 				if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty()) {
 					spx_log_("COOKIE ERROR ", "Invalid_COOKIE");
 					spx_log_("MAKING NEW SESSION");
@@ -323,7 +323,8 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 					// 3. storage - register session_hash & session pair
 					storage.add_new_session(hash_value);
 					// 4. response - setCookie to Session
-					req->session_id = hash_value;
+
+					req->session_id = SESSIONID + hash_value;
 				} else {
 					session_t& session = storage.find_value_by_key((*find_cookie).second);
 					session.count_++;
@@ -979,6 +980,8 @@ ClientBuffer::make_response_header() {
 
 	// Set Date Header
 	res.setDate();
+	if (!req.session_id.empty())
+		res.headers_.push_back(header("Set-Cookie", req.session_id));
 
 	// Redirect
 	if (req.uri_loc_ != NULL && !(req.uri_loc_->redirect.empty())) {
