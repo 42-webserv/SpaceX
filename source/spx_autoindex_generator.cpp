@@ -19,6 +19,40 @@ get_file_timetable(struct stat file_status) {
 	return result.str();
 }
 
+void
+generate_file_status(std::stringstream& result, std::string& filename, uri_resolved_t& path_info) {
+	struct stat file_status;
+	filename = path_info.script_filename_ + "/" + filename;
+	if (stat(filename.c_str(), &file_status) == 0) {
+		result << get_file_timetable(file_status);
+	}
+}
+
+void
+generate_root_path(std::string& full_path, uri_resolved_t& path_info) {
+	if (path_info.resolved_request_uri_.size() != 1) {
+		full_path = path_info.resolved_request_uri_;
+	}
+	if (full_path.size() != 0) {
+		size_t original_size = full_path.size();
+		full_path.erase(full_path.begin() + full_path.find_last_of('/'), full_path.end());
+		if (full_path.size() == original_size - 1)
+			full_path.erase(full_path.begin() + full_path.find_last_of('/'), full_path.end());
+	}
+	if (full_path.size() == 0) {
+		full_path = "/";
+	}
+}
+
+void
+generate_file_path(std::string& full_path, std::string& filename, uri_resolved_t& path_info) {
+	if (path_info.resolved_request_uri_.size() != 1) {
+		full_path = path_info.resolved_request_uri_ + "/" + filename;
+	} else {
+		full_path = filename;
+	}
+}
+
 std::string
 generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	DIR*			  dir;
@@ -27,10 +61,6 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	std::string&	  path = path_info.script_filename_;
 	std::string		  full_path;
 
-	spx_log_("======================================================");
-	path_info.print_();
-	spx_log_("======================================================");
-
 	char* base_name = basename((char*)path.c_str());
 	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << path_info.script_name_ << HTML_BEFORE_LIST;
 	result << "<table>";
@@ -38,53 +68,22 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 		entry = readdir(dir);
 		while ((entry = readdir(dir)) != NULL) {
 			if (entry->d_type & DT_DIR) {
-				// get the name of the file
 				std::string filename = entry->d_name;
-				// TODO : optimize this if statement
-				// if (filename.size() > 1 && filename[0] == '.' && filename[1] != '.')
-				// 	continue;
 				result << "<tr>";
-				// get the full path of the file
 				result << "<td>";
 				// TODO : this is something wrong
 				if (filename.compare("..") == 0) {
-					spx_log_("req_uri", path_info.resolved_request_uri_);
-					if (path_info.resolved_request_uri_.size() != 1) {
-						full_path = path_info.resolved_request_uri_;
-					}
-					spx_log_("BEF_full_path", full_path);
-					if (full_path.size() != 0) {
-						size_t original_size = full_path.size();
-						full_path.erase(full_path.begin() + full_path.find_last_of('/'), full_path.end());
-						if (full_path.size() == original_size - 1)
-							full_path.erase(full_path.begin() + full_path.find_last_of('/'), full_path.end());
-					}
-					if (full_path.size() == 0) {
-						full_path = "/";
-					}
-					spx_log_("ATR_full_path", full_path);
+					generate_root_path(full_path, path_info);
 					result << A_TAG_START << full_path << A_TAG_END;
 					result << filename << CLOSE_A_TAG << CRLF;
 					continue;
 				} else {
-					if (path_info.resolved_request_uri_.size() != 1) {
-						full_path = path_info.resolved_request_uri_ + "/" + filename;
-						spx_log_("full_path_path", full_path);
-					} else {
-						full_path = filename;
-					}
+					generate_file_path(full_path, filename, path_info);
 					result << A_TAG_START << full_path << A_TAG_END;
 				}
-				struct stat file_status;
 				result << filename << "/" << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">";
-				filename = path_info.script_filename_ + "/" + filename;
-				spx_log_("foler_name", filename);
-				if (stat(filename.c_str(), &file_status) == 0) {
-					result << get_file_timetable(file_status);
-				}
-				spx_log_("DIRECTORY_STDERR", strerror(errno));
-
+				generate_file_status(result, filename, path_info);
 				result << "</td>"
 					   << "</tr>" << CRLF;
 			}
@@ -98,24 +97,17 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				if (filename.size() > 1 && filename[0] == '.' && filename[1] != '.')
 					continue;
 				result << "<tr>";
-				// get the full path of the file
 				result << "<td>";
-				// TODO : this is something wrong
 				if (path_info.resolved_request_uri_.size() != 1) {
 					full_path = path_info.resolved_request_uri_ + "/" + filename;
 				} else {
 					full_path = filename;
 				}
 				result << A_TAG_START << full_path << A_TAG_END;
-
-				struct stat file_status;
 				result << filename << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">";
-				filename = path_info.script_filename_ + "/" + filename;
-				if (stat(filename.c_str(), &file_status) == 0) {
-					result << get_file_timetable(file_status);
-				}
-				spx_log_("FILE_STDERR", strerror(errno));
+
+				generate_file_status(result, filename, path_info);
 
 				result << "</td>"
 					   << "</tr>" << CRLF;

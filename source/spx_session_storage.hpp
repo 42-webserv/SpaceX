@@ -7,7 +7,7 @@
 #include <string>
 #include <time.h>
 
-#define SESSIONID "sessionID"
+#define SESSIONID "sessionID="
 
 typedef struct Cookie {
 	typedef std::map<std::string, std::string> key_val_t;
