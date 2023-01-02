@@ -17,9 +17,9 @@ typedef struct main_info {
 	port_info_vec port_info;
 } main_info_t;
 
-void kqueue_main(port_info_vec& serv_info);
-void add_change_list(std::vector<struct kevent>& change_list,
-					 uintptr_t ident, int64_t filter, uint16_t flags,
-					 uint32_t fflags, intptr_t data, void* udata);
+// void kqueue_main(port_info_vec& serv_info);
+// void add_change_list(std::vector<struct kevent>& change_list,
+// 					 uintptr_t ident, int64_t filter, uint16_t flags,
+// 					 uint32_t fflags, intptr_t data, void* udata);
 
 #endif

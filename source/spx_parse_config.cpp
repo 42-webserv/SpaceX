@@ -1042,7 +1042,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		case conf_almost_done: {
-			// NOTE: what do we do here?
 			state = next_state;
 			break;
 		}

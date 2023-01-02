@@ -98,8 +98,6 @@ generator_error_page_(uint32_t const& error_code) {
 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
 	error_page += "</title></head>" CRLF "<body>" CRLF "<center><h1>";
 	error_page += error_page_str_(static_cast<error_page_e>(error_code));
-	error_page += "</h1><p>";
-	error_page += "SpaceX Default error page.";
-	error_page += "</p></center>" CRLF "</body>" CRLF "</html>";
+	error_page += "</h1><p>SpaceX Default error page.</p></center>" CRLF "</body>" CRLF "</html>";
 	return error_page;
 }
