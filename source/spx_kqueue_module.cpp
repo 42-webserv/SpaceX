@@ -89,19 +89,23 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 
 	if (cur_event->ident == buf->client_fd_) {
 		spx_log_("write event handler - buf state", buf->state_);
-		buf->write_response(change_list);
-
-		if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
-			spx_log_("write_event_handler - disable write");
+		if (buf->req_res_queue_.front().second.headers_.size()) {
+			buf->write_response(change_list);
+			if (buf->req_res_queue_.size() == 0 || (res->flag_ & WRITE_READY) == false) {
+				spx_log_("write_event_handler - disable write");
+				add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
+				// if (buf->req_res_queue_.size() == 0) {
+				// 	buf->state_ = REQ_LINE_PARSING;
+				// }
+			}
+			if (buf->state_ != REQ_HOLD) {
+				spx_log_("write_event_handler - not REQ_HOLD");
+				spx_log_("write event handler - buf state", buf->state_);
+				buf->req_res_controller(change_list, cur_event);
+			}
+		} else {
+			spx_log_("empty!!!!!");
 			add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE, 0, 0, buf);
-			// if (buf->req_res_queue_.size() == 0) {
-			// 	buf->state_ = REQ_LINE_PARSING;
-			// }
-		}
-		if (buf->state_ != REQ_HOLD) {
-			spx_log_("write_event_handler - not REQ_HOLD");
-			spx_log_("write event handler - buf state", buf->state_);
-			buf->req_res_controller(change_list, cur_event);
 		}
 	} else {
 		if (cur_event->ident == buf->req_res_queue_.back().first.body_fd_) {
@@ -125,8 +129,8 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 					buf->rdsaved_.clear();
 					buf->rdchecked_ = 0;
 				}
+				add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
 				// write(STDOUT_FILENO, &buf->req_res_queue_.front().second.res_buffer_[0], buf->req_res_queue_.front().second.res_buffer_.size());
-				// add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
 				// buf->state_ = REQ_LINE_PARSING;
 			}
 		} else {
@@ -204,12 +208,12 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 			error_exit_msg("kevent()");
 		}
 		change_list.clear();
-		// spx_log_("event_len:", event_len);
 		// std::cout << "current loop: " << l++ << std::endl;
 
-		// spx_log_("cur->ident:", cur_event->ident);
-		// spx_log_("cur->flags:", cur_event->flags);
 		for (int i = 0; i < event_len; ++i) {
+			spx_log_("event_len:", event_len);
+			spx_log_("cur->ident:", cur_event->ident);
+			spx_log_("cur->flags:", cur_event->flags);
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
@@ -248,6 +252,10 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 				read_event_handler(port_info, cur_event, change_list);
 				break;
 			case EVFILT_WRITE:
+				// if (cur_event->flags & EV_DISABLE) {
+				// 	spx_log_("event_write disabled!!");
+				// 	break;
+				// }
 				spx_log_("event_write");
 				write_event_handler(port_info, cur_event, change_list);
 				break;

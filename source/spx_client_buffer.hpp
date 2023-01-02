@@ -141,6 +141,7 @@ public:
 	int								   cgi_state_;
 	int								   flag_;
 	int								   body_fd_;
+	int								   cgi_write_fd_;
 	int								   header_ready_;
 	int								   transfer_encoding_;
 
@@ -178,6 +179,7 @@ public:
 		, cgi_state_(0)
 		, flag_(0)
 		, body_fd_(-1)
+		, cgi_write_fd_(0)
 		, header_ready_(0)
 		, transfer_encoding_(0)
 		, headers_()
