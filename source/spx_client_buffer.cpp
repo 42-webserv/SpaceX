@@ -578,7 +578,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								// no extention
 								this->rdchecked_ += 2;
 								req.content_length_ = req.body_size_;
-								this->state_		= REQ_LINE_PARSING;
+								// this->state_		= REQ_LINE_PARSING;
 								if (this->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
 									add_change_list(change_list, this->req_res_queue_.back().second.cgi_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
 								} else {
@@ -1079,8 +1079,8 @@ ClientBuffer::make_cgi_response_header() {
 	} else {
 		std::stringstream ss;
 		ss << (res.cgi_buffer_.size() - res.cgi_checked_);
-		// res.headers_.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
-		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
+		res.headers_.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
+		// res.headers_.push_back(header(CONTENT_LENGTH, "0"));
 	}
 	res.write_to_response_buffer(res.make_to_string());
 }
@@ -1258,7 +1258,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 			// this->flag_ &= ~(RDBUF_CHECKED);
 		}
 	} else {
-		if (res->headers_.size()) {
+		if (res->res_buffer_.size()) {
 			int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 								std::min((size_t)WRITE_BUFFER_MAX,
 										 res->res_buffer_.size() - res->sent_pos_));
@@ -1279,7 +1279,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 				res->res_buffer_.clear();
 				res->sent_pos_ = 0;
 			}
-			if (res->cgi_buffer_.size() == 0 && res->cgi_buffer_.empty()) {
+			if (res->res_buffer_.size() == 0 && res->cgi_buffer_.size() == res->cgi_checked_) {
 				this->req_res_queue_.pop();
 				return true;
 			}
@@ -1288,9 +1288,15 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 			int n_write = write(this->client_fd_, &res->cgi_buffer_[res->cgi_checked_],
 								std::min((size_t)WRITE_BUFFER_MAX,
 										 res->cgi_buffer_.size() - res->cgi_checked_));
+			if (n_write) {
+				write(STDOUT_FILENO, &res->cgi_buffer_[res->cgi_checked_],
+					  std::min((size_t)150, res->cgi_buffer_.size() - res->cgi_checked_));
+			}
+			spx_log_("cgi body write", n_write);
 			res->cgi_checked_ += n_write;
 			if (res->cgi_buffer_.size() == res->cgi_checked_) {
 				this->req_res_queue_.pop();
+				this->state_ = REQ_LINE_PARSING;
 			}
 		}
 	}

@@ -248,7 +248,16 @@ CgiModule::made_env_for_cgi_(int status) {
 				break;
 			}
 			default: {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				std::string tmp;
+				for (std::string::const_iterator ite = it->first.begin(); ite < it->first.end(); ite++) {
+					if (*ite == '-') {
+						tmp += '_';
+					} else {
+						tmp += toupper(*ite);
+					}
+				}
+				vec_env_.push_back("HTTP_" + tmp + "=" + it->second);
+				// vec_env_.push_back(it->first + "=" + it->second);
 			}
 			}
 		}

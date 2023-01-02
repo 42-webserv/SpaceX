@@ -96,7 +96,7 @@ write_event_handler(std::vector<port_info_t>& port_info, struct kevent* cur_even
 
 	if (cur_event->ident == buf->client_fd_) {
 		spx_log_("write event handler - buf state", buf->state_);
-		if (buf->req_res_queue_.front().second.headers_.size()) {
+		if (buf->req_res_queue_.front().second.res_buffer_.size() || buf->req_res_queue_.front().second.cgi_buffer_.size() - buf->req_res_queue_.front().second.cgi_checked_) {
 			if (buf->write_response(change_list) == false) {
 				return;
 			}
@@ -243,10 +243,21 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 						} else {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
-								spx_log_("cgi read close");
-								buf->req_res_queue_.back().second.cgi_checked_ = 0;
-								buf->cgi_controller();
-								add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
+								int n_read = read(cur_event->ident, buf->rdbuf_, BUFFER_SIZE);
+								if (n_read < 0) {
+									// TODO: error handle
+									// buf->disconnect_client(change_list);
+									return;
+								} else if (n_read == 0) {
+									spx_log_("cgi read close");
+									buf->req_res_queue_.back().second.cgi_checked_ = 0;
+									buf->cgi_controller();
+									add_change_list(change_list, buf->client_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, buf);
+								} else {
+									buf->req_res_queue_.back().second.cgi_buffer_.insert(
+										buf->req_res_queue_.back().second.cgi_buffer_.end(), buf->rdbuf_, buf->rdbuf_ + n_read);
+									break;
+								}
 							} else {
 								spx_log_("cgi write close");
 							}
