@@ -977,6 +977,13 @@ ClientBuffer::make_response_header() {
 
 	// Set Date Header
 	res.setDate();
+
+	// Redirect
+	if (req.uri_loc_ != NULL && !(req.uri_loc_->redirect.empty())) {
+		make_redirect_response();
+		return;
+	}
+
 	switch (req_method) {
 	case REQ_HEAD:
 	case REQ_GET:
@@ -1075,11 +1082,7 @@ ClientBuffer::make_redirect_response() {
 	res_field_t& res
 		= req_res_queue_.front().second;
 
-	res.setDate();
-	if (req.uri_loc_ == NULL || req.uri_loc_->redirect.empty()) {
-		make_error_response(HTTP_STATUS_NOT_FOUND);
-		return;
-	};
+	spx_log_("uri_loc->redirect", req.uri_loc_->redirect);
 	res.status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
 	res.status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
 	res.headers_.push_back(header("Location", req.uri_loc_->redirect));
