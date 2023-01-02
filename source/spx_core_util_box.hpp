@@ -22,7 +22,7 @@ std::string const generator_error_page_(uint32_t const& error_code);
 template <typename T>
 inline void
 spx_log_(T msg) {
-#ifdef LOG_MODE
+#ifdef LOG_FILE_MODE
 	std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::app);
 	if (file.is_open()) {
@@ -41,7 +41,7 @@ spx_log_(T msg) {
 template <typename T>
 inline void
 spx_log_(std::string id, T msg) {
-#ifdef LOG_MODE
+#ifdef LOG_FILE_MODE
 	std::fstream file;
 	file.open("./log/request.log", std::ios::out | std::ios::app);
 	if (file.is_open()) {
@@ -58,13 +58,17 @@ spx_log_(std::string id, T msg) {
 }
 
 inline void
-error_exit(std::string err, int (*func)(int), int fd) {
+main_log_(std::string const& msg, std::string const& color = COLOR_WHITE) {
+	std::cout << color << msg << COLOR_RESET << std::endl;
+}
+
+inline void
+error_fn(std::string err, int (*func)(int), int fd) {
 	if (func != NULL) {
 		func(fd);
 	}
 	std::cerr << errno << std::endl;
 	perror(err.c_str());
-	exit(spx_error);
 }
 
 inline void

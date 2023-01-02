@@ -65,9 +65,9 @@ namespace {
 			for (server_map_p::const_iterator it2 = spx.port_info[i].my_port_map.begin();
 				 it2 != spx.port_info[i].my_port_map.end(); ++it2) {
 				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
-				std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
+				std::cout << "\t| name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
 				if (it2->second.default_server_flag == Kdefault_server) {
-					std::cout << COLOR_RED << " <---- default server" << COLOR_RESET << std::endl;
+					std::cout << COLOR_RED << "\t <---- default server" << COLOR_RESET << std::endl;
 				} else {
 					std::cout << std::endl;
 				}

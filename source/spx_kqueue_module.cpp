@@ -169,7 +169,7 @@ proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	client_buf_t* buf = (client_buf_t*)cur_event->udata;
 	int			  status;
 	waitpid(cur_event->ident, &status, 0);
-	std::cout << "status: " << status << std::endl;
+	spx_log_("status: ", status);
 
 	// close(buf->req_res_queue_.front().first.cgi_in_fd_);
 	// close(buf->req_res_queue_.front().first.cgi_out_fd_);

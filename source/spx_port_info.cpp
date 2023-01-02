@@ -10,7 +10,18 @@
 #include <vector>
 
 #include <dirent.h>
+
 namespace {
+
+	inline void
+	close_socket_and_exit_(uint32_t const prev_socket_size, port_info_vec& port_info) {
+		for (uint32_t i = 0; i < prev_socket_size; ++i) {
+			if (i == port_info[i].listen_sd) {
+				close(port_info[i].listen_sd);
+			}
+		}
+		error_exit_msg_perror("socket error");
+	}
 
 } // namespace
 
@@ -517,14 +528,16 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
 				if (temp_port_info.listen_sd < 0) {
-					error_exit("socket", NULL, 0);
+					close_socket_and_exit_(prev_socket_size, port_info);
 				}
 				int opt(1);
 				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) { // NOTE:: SO_REUSEPORT
-					error_exit("setsockopt", close, temp_port_info.listen_sd);
+					error_fn("setsockopt", close, temp_port_info.listen_sd);
+					close_socket_and_exit_(prev_socket_size, port_info);
 				}
 				if (fcntl(temp_port_info.listen_sd, F_SETFL, O_NONBLOCK) == -1) {
-					error_exit("fcntl", close, temp_port_info.listen_sd);
+					error_fn("fcntl", close, temp_port_info.listen_sd);
+					close_socket_and_exit_(prev_socket_size, port_info);
 				}
 				temp_port_info.addr_server.sin_family	   = AF_INET;
 				temp_port_info.addr_server.sin_port		   = htons(temp_port_info.my_port);
@@ -533,10 +546,12 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					std::stringstream ss;
 					ss << temp_port_info.my_port;
 					std::string err = "bind port " + ss.str() + " ";
-					error_exit(err, close, temp_port_info.listen_sd);
+					error_fn(err, close, temp_port_info.listen_sd);
+					close_socket_and_exit_(prev_socket_size, port_info);
 				}
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
-					error_exit("listen", close, temp_port_info.listen_sd);
+					error_fn("listen", close, temp_port_info.listen_sd);
+					close_socket_and_exit_(prev_socket_size, port_info);
 				}
 				if (prev_socket_size == 0) {
 					uint32_t i = 0;
@@ -558,7 +573,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 		}
 		if (it2 == it->second.end()) {
 			std::cerr << "no default server in port " << it->first << std::endl;
-			error_exit_msg("");
+			close_socket_and_exit_(prev_socket_size, port_info);
 		}
 	}
 	if (socket_size == 0) {
