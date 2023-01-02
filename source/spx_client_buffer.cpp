@@ -283,6 +283,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 															 this->req_res_queue_.back().second.uri_resolv_);
 
 #ifdef DEBUG
+		spx_log_("\nreq->uri_loc_ : ", req->uri_loc_);
 		this->req_res_queue_.back().second.uri_resolv_.print_(); // NOTE :: add by yoma.
 #endif
 
