@@ -7,7 +7,6 @@
 #include "spx_kqueue_module.hpp"
 
 #include "spx_autoindex_generator.hpp"
-// #include "spx_response_generator.hpp"
 
 namespace {
 
@@ -41,9 +40,6 @@ namespace {
 			error_exit_msg_perror("file read error");
 		}
 		file.close();
-#ifdef MAIN_DEBUG
-		std::cout << ss.str() << std::endl;
-#endif
 		total_port_server_map_p temp_config;
 		if (spx_config_syntax_checker(ss.str(), temp_config, cur_path) != spx_ok) {
 			error_exit_msg("config syntax error");
@@ -67,12 +63,7 @@ main_info_t::port_info_print_(void) {
 	uint32_t i = 3;
 	std::cout << "------------------------------------" << std::endl;
 	while (i < this->socket_size) {
-		// std::cout << "listen_sd: " << port_info[i].listen_sd << std::endl;
-		// std::cout << "my_port: " << port_info[i].my_port << std::endl;
-		// std::cout << "default_server info print: " << std::endl;
-		// port_info[i].my_port_default_server.print_();
 		for (server_map_p::const_iterator it2 = port_info[i].my_port_map.begin(); it2 != port_info[i].my_port_map.end(); ++it2) {
-			// if ((it2->second.default_server_flag == Kother_server)) {
 			std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
 			std::cout << " | name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
 			if (it2->second.default_server_flag == Kdefault_server) {
@@ -81,8 +72,6 @@ main_info_t::port_info_print_(void) {
 
 				std::cout << std::endl;
 			}
-			// it2->second.print_();
-			// }
 		}
 		++i;
 	}

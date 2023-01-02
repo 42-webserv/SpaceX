@@ -196,9 +196,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 						return error_("conf_zero", "server name is already exist", line_number_count);
 					}
 				}
-
-#ifdef CONFIG_DEBUG
-#endif
 			}
 			temp_uri_location_info.clear_();
 			temp_basic_server_info.clear_();
@@ -338,7 +335,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				size_count = 0;
 				break;
 			}
-			return error_("conf_waiting_value", "isspace not found - syntax error", line_number_count);
+			return error_("conf_waiting_value", "isspace not found or plz close curly bracket - syntax error", line_number_count);
 		}
 
 		case conf_server: {

@@ -25,22 +25,6 @@ namespace {
 		}
 	}
 
-	// std::string
-	// method_map_str_(int const& status) {
-	// 	switch (status) {
-	// 	case REQ_GET:
-	// 		return "GET";
-	// 	case REQ_POST:
-	// 		return "POST";
-	// 	case REQ_PUT:
-	// 		return "PUT";
-	// 	case REQ_HEAD:
-	// 		return "HEAD";
-	// 	case REQ_DELETE:
-	// 		return "DELETE";
-	// 	}
-	// }
-
 	inline status
 	error_(const char* msg) {
 #ifdef SYNTAX_DEBUG
