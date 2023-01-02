@@ -190,7 +190,7 @@ void
 kqueue_module(std::vector<port_info_t>& port_info) {
 	std::vector<struct kevent>		  change_list;
 	std::map<uintptr_t, client_buf_t> clients;
-	struct kevent					  event_list[8];
+	struct kevent					  event_list[MAX_EVENT_LIST];
 	int								  kq;
 
 	kq = kqueue();

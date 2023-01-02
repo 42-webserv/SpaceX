@@ -487,9 +487,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 				return false;
 				*/
 				this->req_res_queue_.back().first.body_fd_ = open(
-					(this->req_res_queue_.back().second.uri_resolv_.script_filename_ + "index.html").c_str(),
+					(this->req_res_queue_.back().second.uri_resolv_.script_filename_).c_str(),
 					O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
-				this->req_res_queue_.back().first.file_path_ = this->req_res_queue_.back().second.uri_resolv_.script_filename_ + "index.html";
+				this->req_res_queue_.back().first.file_path_ = this->req_res_queue_.back().second.uri_resolv_.script_filename_;
 				// this->req_res_queue_.back().second.flag_ |= WRITE_READY;
 			}
 
