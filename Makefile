@@ -5,7 +5,6 @@
 NAME		= spacex
 
 
-Q := $(if $(filter 1,$(V)),,@)
 
 # VPATH		:=	$(shell ls -R)
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK, LOG_MODE
@@ -16,7 +15,7 @@ Q := $(if $(filter 1,$(V)),,@)
 # DEBUG_FLAG	+=	LEAK
 # DEBUG_FLAG	+= LOG_FILE_MODE
 # DEBUG_FLAG	+= LOG_MODE
-DEBUG_FLAG	+=	DEBUG
+# DEBUG_FLAG	+=	DEBUG
 
 ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
@@ -59,7 +58,11 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
+<<<<<<< HEAD
 # CXXFLAGS	+=	$(DEBUG) $(SNTZ)
+=======
+CXXFLAGS	+=	$(DEBUG) #$(SNTZ)
+>>>>>>> a762ba5ced59dd8cbc538b603b76ff82150c7210
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 

@@ -571,6 +571,9 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 								this->rdchecked_ += 2;
 								req.content_length_ = req.body_size_;
 								// this->state_		= REQ_LINE_PARSING;
+								if (req.content_length_ > req.body_limit_) {
+									break;
+								}
 								if (this->req_res_queue_.back().second.uri_resolv_.is_cgi_) {
 									add_change_list(change_list, this->req_res_queue_.back().second.cgi_write_fd_, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
 								} else {
@@ -765,7 +768,9 @@ ClientBuffer::read_to_client_buffer(std::vector<struct kevent>& change_list,
 		// TODO: error handle
 		return;
 	}
+#ifdef DEBUG
 	write(STDOUT_FILENO, &this->rdbuf_, std::min(200, n_read));
+#endif
 	this->rdsaved_.insert(this->rdsaved_.end(), this->rdbuf_, this->rdbuf_ + n_read);
 	spx_log_("\nread_to_client", n_read);
 	spx_log_("read_to_client state", this->state_);
@@ -1241,10 +1246,12 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 		int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 							std::min((size_t)WRITE_BUFFER_MAX,
 									 res->res_buffer_.size() - res->sent_pos_));
+		// #ifdef DEBUG
 		if (n_write) {
 			write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
 				  std::min((size_t)100, res->res_buffer_.size() - res->sent_pos_));
 		}
+		// #endif
 		spx_log_("write_bufsize: ", res->buf_size_);
 		if (n_write < 0) {
 			spx_log_("write error");
@@ -1268,10 +1275,12 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 			int n_write = write(this->client_fd_, &res->res_buffer_[res->sent_pos_],
 								std::min((size_t)WRITE_BUFFER_MAX,
 										 res->res_buffer_.size() - res->sent_pos_));
+#ifdef DEBUG
 			if (n_write) {
 				write(STDOUT_FILENO, &res->res_buffer_[res->sent_pos_],
 					  std::min((size_t)150, res->res_buffer_.size() - res->sent_pos_));
 			}
+#endif
 			// res->headers_.erase(res->headers_.begin(), res->headers_.begin() + n_write);
 			if (n_write < 0) {
 				spx_log_("write error");
@@ -1294,10 +1303,12 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 			int n_write = write(this->client_fd_, &res->cgi_buffer_[res->cgi_checked_],
 								std::min((size_t)WRITE_BUFFER_MAX,
 										 res->cgi_buffer_.size() - res->cgi_checked_));
+#ifdef DEBUG
 			if (n_write) {
 				write(STDOUT_FILENO, &res->cgi_buffer_[res->cgi_checked_],
 					  std::min((size_t)150, res->cgi_buffer_.size() - res->cgi_checked_));
 			}
+#endif
 			spx_log_("cgi body write", n_write);
 			res->cgi_checked_ += n_write;
 			if (res->cgi_buffer_.size() == res->cgi_checked_) {

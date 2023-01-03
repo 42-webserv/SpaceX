@@ -215,7 +215,7 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 	// int            l = 0;
 	while (true) {
 		event_len = kevent(kq, change_list.begin().base(), change_list.size(),
-						   event_list, MAX_EVENT_LOOP, NULL);
+						   event_list, MAX_EVENT_LIST, NULL);
 		if (event_len == -1) {
 			for (int i = 0; i < port_info.size(); i++) {
 				if (port_info[i].listen_sd == i) {
@@ -239,7 +239,7 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 					// eof close fd.
 					client_buf_t* buf = static_cast<client_buf_t*>(cur_event->udata);
 					if (cur_event->ident == buf->client_fd_) {
-						std::cerr << "client socket eof" << std::endl;
+						main_log_("client socket eof", COLOR_PURPLE);
 						buf->disconnect_client(change_list);
 						delete buf;
 					} else {
