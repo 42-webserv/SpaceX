@@ -191,7 +191,7 @@ typedef struct server_info {
  */
 
 #ifndef LISTEN_BACKLOG_SIZE
-#define LISTEN_BACKLOG_SIZE 10
+#define LISTEN_BACKLOG_SIZE 500
 #endif
 
 typedef struct port_info {

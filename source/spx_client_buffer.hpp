@@ -28,10 +28,10 @@
 #define SERV_PORT 1234
 #define SERV_SOCK_BACKLOG 10
 #define EVENT_CHANGE_BUF 10
-#define BUFFER_SIZE 40 * 1024
-#define WRITE_BUFFER_MAX 40 * 1024
-#define MAX_EVENT_LOOP 20
-#define MAX_EVENT_LIST 100
+#define BUFFER_SIZE 32 * 1024
+#define WRITE_BUFFER_MAX 32 * 1024
+
+#define MAX_EVENT_LIST 200
 // #define BUFFER_MAX 80 * 1024
 
 class SessionStorage;
