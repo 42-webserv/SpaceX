@@ -15,6 +15,7 @@
 typedef struct main_info {
 	uint32_t	  socket_size;
 	port_info_vec port_info;
+
 } main_info_t;
 
 // void kqueue_main(port_info_vec& serv_info);
