@@ -1,5 +1,4 @@
 #include "spx_session_storage.hpp"
-#include <cstdlib>
 
 // temp
 #include "spx_client_buffer.hpp"
@@ -41,28 +40,23 @@ SessionStorage::make_hash(uintptr_t& seed_in) {
 	std::bitset<8>	right(seed_in);
 
 	if (left[0]) {
-		if (left[4]) {
-			std::bitset<16> tmp;
-			int				i = 15;
-			while (i >= 0) {
-				tmp[i] = left[15 - i];
-				--i;
-			}
-			left = tmp;
+		std::bitset<16> tmp;
+		int				i = 15;
+		while (i >= 0) {
+			tmp[i] = left[15 - i];
+			--i;
 		}
-		left.flip();
+		left = tmp;
 	}
+
 	if (right[0]) {
-		if (right[4]) {
-			std::bitset<8> tmp;
-			int			   i = 7;
-			while (i >= 0) {
-				tmp[i] = right[7 - i];
-				--i;
-			}
-			right = tmp;
+		std::bitset<8> tmp;
+		int			   i = 7;
+		while (i >= 0) {
+			tmp[i] = right[7 - i];
+			--i;
 		}
-		right.flip();
+		right = tmp;
 	}
 
 	uint32_t rand_seed;
@@ -75,18 +69,23 @@ SessionStorage::make_hash(uintptr_t& seed_in) {
 
 	std::bitset<24> total(rand_seed);
 	std::string		hash_str;
-	int				i = 24;
+	int				i = 23;
 	while (i >= 0) {
-		if (total[i]) {
+		if (r & (1 << i)) {
 			hash_str += "abcdefghijklmnopqrstuvwxyz"[i];
 		} else {
 			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i];
 		}
-		if ((1 << i) & r) {
-			hash_str += "1^2&3*4(5)"[i % 10];
-		} else {
-			hash_str += "0!8@6#7$9%"[i % 10];
-		}
+		// if (total[i]) {
+		// 	hash_str += "abcdefghijklmnopqrstuvwxyz"[i];
+		// } else {
+		// 	hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i];
+		// }
+		// if ((1 << i) & r) {
+		// 	hash_str += "1^2&3*4(5)"[i % 10];
+		// } else {
+		// 	hash_str += "0!8@6#7$9%"[i % 10];
+		// }
 		--i;
 	}
 	return hash_str;

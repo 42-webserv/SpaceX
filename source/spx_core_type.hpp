@@ -2,7 +2,14 @@
 #ifndef __SPX__CORE_TYPE_HPP__
 #define __SPX__CORE_TYPE_HPP__
 
+#include <iostream>
+#include <sstream>
+
 #include <cstdint>
+#include <string>
+
+#include <map>
+#include <vector>
 
 #ifndef _LIBCPP_CSTDINT
 typedef signed char		   int8_t;

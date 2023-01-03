@@ -1,10 +1,13 @@
 #pragma once
-#include "spacex.hpp"
+#ifndef __SPX__SESSION__STORAGE__HPP
+#define __SPX__SESSION__STORAGE__HPP
+
+#include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 
 /* for hashfuncs*/
 #include <bitset>
 #include <cstdint>
-#include <string>
 #include <time.h>
 
 #define SESSIONID "sessionID="
@@ -137,3 +140,5 @@ public:
 	std::string make_hash(uintptr_t& seed_in);
 	void		addCount();
 };
+
+#endif

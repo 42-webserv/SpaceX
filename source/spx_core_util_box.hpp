@@ -3,10 +3,12 @@
 #define __SPACEX__CORE_UTIL_BOX_HPP__
 
 #include "spx_core_type.hpp"
-#include <cerrno>
+
 #include <fstream>
-#include <iostream>
-#include <string>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
 #define COLOR_RED "\033[1;31m"
 #define COLOR_GREEN "\033[1;32m"

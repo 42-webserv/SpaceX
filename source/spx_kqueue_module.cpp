@@ -1,5 +1,4 @@
 #include "spx_kqueue_module.hpp"
-#include "spx_client_buffer.hpp"
 
 void
 add_change_list(std::vector<struct kevent>& change_list,

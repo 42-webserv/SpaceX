@@ -2,14 +2,13 @@
 #ifndef __SPX_AUTOINDEX_GENERATOR_HPP__
 #define __SPX_AUTOINDEX_GENERATOR_HPP__
 
+#include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
+
 #include <dirent.h>
-#include <iostream>
 #include <libgen.h> //basename
-#include <sstream>
-#include <string>
 #include <sys/stat.h>
 
-#include "spacex.hpp"
 #include "spx_response_generator.hpp"
 
 #define HTML_HEAD_TITLE "<html>\r\n<head><title>Index of "
@@ -26,4 +25,3 @@ std::string
 generate_autoindex_page(int& req_fd, uri_resolved_t& path);
 
 #endif
-
