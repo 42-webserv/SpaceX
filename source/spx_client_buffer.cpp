@@ -463,7 +463,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			if (this->req_res_queue_.back().first.body_fd_ < 0) {
 				// 405 not allowed error with keep-alive connection.
 				/*
-				this->make_error_response(HTTP_STATUS_METHOD_NOT_ALLOWED);
+				this->make_error_response(HTTP__statusMETHOD_NOT_ALLOWED);
 				if (this->req_res_queue_.back().second.body_fd_ != -1) {
 					add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 				}
@@ -477,7 +477,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 
 			spx_log_("control - REQ_POST fd: ", this->req_res_queue_.back().first.body_fd_);
-			// this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
+			// this->req_res_queue_.back().first.flag_ |= REQ_file_open_;
 			if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 				this->req_res_queue_.back().first.content_length_ = -1;
 				this->state_									  = REQ_BODY_CHUNKED;
@@ -507,7 +507,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			}
 
 			spx_log_("control - REQ_PUT fd: ", this->req_res_queue_.back().first.body_fd_);
-			// this->req_res_queue_.back().first.flag_ |= REQ_FILE_OPEN;
+			// this->req_res_queue_.back().first.flag_ |= REQ_file_open_;
 			if (this->req_res_queue_.back().first.transfer_encoding_ & TE_CHUNKED) {
 				this->req_res_queue_.back().first.content_length_ = -1;
 				this->state_									  = REQ_BODY_CHUNKED;
@@ -702,7 +702,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 		// if (this->req_res_queue_.back().first.body_size_ > this->req_res_queue_.back().first.body_limit_) {
 		// 	// send over limit.
 		// 	close(this->req_res_queue_.back().first.body_fd_);
-		// 	this->make_error_response(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+		// 	this->make_error_response(HTTP__statusRANGE_NOT_SATISFIABLE);
 		// 	if (this->req_res_queue_.back().second.body_fd_ != -1) {
 		// 		add_change_list(change_list, this->req_res_queue_.back().second.body_fd_, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
 		// 	}
@@ -919,15 +919,15 @@ ClientBuffer::make_error_response(http_status error_code) {
 	res_field_t& res = req_res_queue_.front().second;
 	req_field_t& req = req_res_queue_.front().first;
 
-	res.status_		 = http_status_str(error_code);
-	res.status_code_ = error_code;
+	res._status		 = http_status_str(error_code);
+	res._status_code = error_code;
 
-	// res.headers_.push_back(header("Server", "SpaceX/12.26"));
+	// res._headers.push_back(header("Server", "SpaceX/12.26"));
 
-	// if (error_code == HTTP_STATUS_BAD_REQUEST)
-	// 	res.headers_.push_back(header(CONNECTION, CONNECTION_CLOSE));
+	// if (error_code == HTTP__statusBAD_REQUEST)
+	// 	res._headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
 	// else
-	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
 
 	// page_path null case added..
 	std::string page_path;
@@ -946,23 +946,23 @@ ClientBuffer::make_error_response(http_status error_code) {
 		const std::string error_page = generator_error_page_(error_code);
 
 		ss << error_page.length();
-		res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
-		res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
-		std::string tmp = res.make_to_string();
-		res.write_to_response_buffer(tmp);
+		res._headers.push_back(header(CONTENT_LENGTH, ss.str()));
+		res._headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+		std::string tmp = res.make_to_string_();
+		res.write_to_response_buffer_(tmp);
 		if (req.req_type_ != REQ_HEAD)
-			res.write_to_response_buffer(error_page);
+			res.write_to_response_buffer_(error_page);
 		return;
 	}
 	res.body_fd_ = error_req_fd;
 
-	res.setContentType(page_path);
+	res.set_content_type_(page_path);
 	int	  req_method	 = req.req_type_;
-	off_t content_length = res.setContentLength(error_req_fd);
+	off_t content_length = res.set_content_length_(error_req_fd);
 
 	if (req_method == REQ_GET)
 		res.buf_size_ += content_length;
-	res.write_to_response_buffer(res.make_to_string());
+	res.write_to_response_buffer_(res.make_to_string_());
 }
 
 // this is main logic to make response
@@ -979,9 +979,9 @@ ClientBuffer::make_response_header() {
 	std::string		   content;
 
 	// Set Date Header
-	res.setDate();
+	res.set_date_();
 	if (!req.session_id.empty())
-		res.headers_.push_back(header("Set-Cookie", req.session_id));
+		res._headers.push_back(header("Set-Cookie", req.session_id));
 
 	// Redirect
 	if (req.uri_loc_ != NULL && !(req.uri_loc_->redirect.empty())) {
@@ -994,10 +994,10 @@ ClientBuffer::make_response_header() {
 	case REQ_GET:
 		if (uri[uri.size() - 1] != '/') {
 			spx_log_("uri.cstr()", uri.c_str());
-			req_fd = res.file_open(uri.c_str());
+			req_fd = res.file_open_(uri.c_str());
 		} else {
 			spx_log_("folder skip");
-			// make_error_response(HTTP_STATUS_NOT_FOUND);
+			// make_error_response(HTTP__statusNOT_FOUND);
 			// return;
 		}
 		spx_log_("uri_locations", req.uri_loc_);
@@ -1015,7 +1015,7 @@ ClientBuffer::make_response_header() {
 			content = generate_autoindex_page(req_fd, res.uri_resolv_);
 			std::stringstream ss;
 			ss << content.size();
-			res.headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+			res._headers.push_back(header(CONTENT_LENGTH, ss.str()));
 			// ???? autoindex fail case?
 			if (content.empty()) {
 				make_error_response(HTTP_STATUS_FORBIDDEN);
@@ -1024,8 +1024,8 @@ ClientBuffer::make_response_header() {
 		}
 		if (req_fd != -1) {
 			spx_log_("res_header");
-			res.setContentType(uri);
-			off_t content_length = res.setContentLength(req_fd);
+			res.set_content_type_(uri);
+			off_t content_length = res.set_content_length_(req_fd);
 			if (req_method == REQ_GET) {
 				res.body_fd_ = req_fd;
 				res.buf_size_ += content_length;
@@ -1033,24 +1033,24 @@ ClientBuffer::make_response_header() {
 				res.body_fd_ = -1;
 				close(req_fd);
 			}
-			// res.headers_.push_back(header("Accept-Ranges", "bytes"));
+			// res._headers.push_back(header("Accept-Ranges", "bytes"));
 		} else {
 			// autoindex case?
-			res.headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+			res._headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		}
 		break;
 	case REQ_POST:
 	case REQ_PUT:
-		res.headers_.push_back(header(CONTENT_LENGTH, "0"));
+		res._headers.push_back(header(CONTENT_LENGTH, "0"));
 		break;
 	}
-	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
+	// res._headers.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 
 	// settting response_header size  + content-length size to res_field
-	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
-	res.write_to_response_buffer(res.make_to_string());
+	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
+	res.write_to_response_buffer_(res.make_to_string_());
 	if (!content.empty()) {
-		res.write_to_response_buffer(content);
+		res.write_to_response_buffer_(content);
 	}
 }
 
@@ -1061,31 +1061,31 @@ ClientBuffer::make_cgi_response_header() {
 	int				   req_method = req.req_type_;
 
 	// Set Date Header
-	res.setDate();
+	res.set_date_();
 	spx_log_("make_cgi_res_header");
 	std::map<std::string, std::string>::iterator it;
 
-	res.headers_.clear();
+	res._headers.clear();
 	it = res.cgi_field_.find("status");
 	if (it != res.cgi_field_.end()) {
-		res.status_code_ = strtol(it->second.c_str(), NULL, 10);
+		res._status_code = strtol(it->second.c_str(), NULL, 10);
 	} else {
-		res.status_code_ = 200;
+		res._status_code = 200;
 	}
-	// res.headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
+	// res._headers.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 	// settting response_header size  + content-length size to res_field
-	res.headers_.push_back(header(CONNECTION, KEEP_ALIVE));
+	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
 
 	it = res.cgi_field_.find("content-length");
 	if (it != res.cgi_field_.end()) {
-		res.headers_.push_back(header(CONTENT_LENGTH, it->second));
+		res._headers.push_back(header(CONTENT_LENGTH, it->second));
 	} else {
 		std::stringstream ss;
 		ss << (res.cgi_buffer_.size() - res.cgi_checked_);
-		res.headers_.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
-		// res.headers_.push_back(header(CONTENT_LENGTH, "0"));
+		res._headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
+		// res._headers.push_back(header(CONTENT_LENGTH, "0"));
 	}
-	res.write_to_response_buffer(res.make_to_string());
+	res.write_to_response_buffer_(res.make_to_string_());
 }
 
 void
@@ -1096,10 +1096,10 @@ ClientBuffer::make_redirect_response() {
 		= req_res_queue_.front().second;
 
 	spx_log_("uri_loc->redirect", req.uri_loc_->redirect);
-	res.status_code_ = HTTP_STATUS_MOVED_PERMANENTLY;
-	res.status_		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
-	res.headers_.push_back(header("Location", req.uri_loc_->redirect));
-	res.write_to_response_buffer(res.make_to_string());
+	res._status_code = HTTP_STATUS_MOVED_PERMANENTLY;
+	res._status		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
+	res._headers.push_back(header("Location", req.uri_loc_->redirect));
+	res.write_to_response_buffer_(res.make_to_string_());
 }
 
 bool
@@ -1281,7 +1281,7 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 					  std::min((size_t)150, res->res_buffer_.size() - res->sent_pos_));
 			}
 #endif
-			// res->headers_.erase(res->headers_.begin(), res->headers_.begin() + n_write);
+			// res->_headers.erase(res->_headers.begin(), res->_headers.begin() + n_write);
 			if (n_write < 0) {
 				spx_log_("write error");
 				// client fd error. maybe disconnected.
@@ -1321,26 +1321,26 @@ ClientBuffer::write_response(std::vector<struct kevent>& change_list) {
 }
 
 void
-ResField::write_to_response_buffer(const std::string& content) {
+ResField::write_to_response_buffer_(const std::string& content) {
 	res_buffer_.insert(res_buffer_.end(), content.begin(), content.end());
 	buf_size_ += content.size();
 	this->flag_ |= WRITE_READY;
 }
 
 std::string
-ResField::make_to_string() const {
+ResField::make_to_string_() const {
 	std::stringstream stream;
-	stream << "HTTP/" << version_major_ << "." << version_minor_ << " " << status_code_ << " " << status_
+	stream << "HTTP/" << _version_major << "." << _version_major << " " << _status_code << " " << _status
 		   << CRLF;
-	for (std::vector<header>::const_iterator it = headers_.begin();
-		 it != headers_.end(); ++it)
+	for (std::vector<header>::const_iterator it = _headers.begin();
+		 it != _headers.end(); ++it)
 		stream << it->first << ": " << it->second << CRLF;
 	stream << CRLF;
 	return stream.str();
 }
 
 int
-ResField::file_open(const char* dir) const {
+ResField::file_open_(const char* dir) const {
 	struct stat buf;
 
 	stat(dir, &buf);
@@ -1353,7 +1353,7 @@ ResField::file_open(const char* dir) const {
 }
 
 off_t
-ResField::setContentLength(int fd) {
+ResField::set_content_length_(int fd) {
 	if (fd < 0)
 		return 0;
 	off_t length = lseek(fd, 0, SEEK_END);
@@ -1363,12 +1363,12 @@ ResField::setContentLength(int fd) {
 	ss << length;
 	body_size_ += length;
 
-	headers_.push_back(header(CONTENT_LENGTH, ss.str()));
+	_headers.push_back(header(CONTENT_LENGTH, ss.str()));
 	return length;
 }
 
 void
-ResField::setContentType(std::string uri) {
+ResField::set_content_type_(std::string uri) {
 
 	std::string::size_type uri_ext_size = uri.find_last_of('.');
 	std::string			   ext;
@@ -1377,25 +1377,25 @@ ResField::setContentType(std::string uri) {
 		ext = uri.substr(uri_ext_size + 1);
 	}
 	if (ext == "html" || ext == "htm")
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 	else if (ext == "png")
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_PNG));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_PNG));
 	else if (ext == "jpg")
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_JPG));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_JPG));
 	else if (ext == "jpeg")
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_JPEG));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_JPEG));
 	else if (ext == "txt")
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_TEXT));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_TEXT));
 	else
-		headers_.push_back(header(CONTENT_TYPE, MIME_TYPE_DEFUALT));
+		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_DEFUALT));
 }
 
 void
-ResField::setDate(void) {
+ResField::set_date_(void) {
 	std::time_t now			 = std::time(nullptr);
 	std::tm*	current_time = std::gmtime(&now);
 
 	char date_buf[32];
 	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
-	headers_.push_back(header("Date", date_buf));
+	_headers.push_back(header("Date", date_buf));
 }
