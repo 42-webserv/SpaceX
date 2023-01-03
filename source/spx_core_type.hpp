@@ -3,10 +3,12 @@
 #define __SPX__CORE_TYPE_HPP__
 
 #include <cstdint>
+
 #include <iostream>
-#include <map>
 #include <sstream>
 #include <string>
+
+#include <map>
 #include <vector>
 
 #ifndef _LIBCPP_CSTDINT

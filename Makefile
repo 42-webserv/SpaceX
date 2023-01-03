@@ -10,11 +10,11 @@ NAME		= spacex
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK, LOG_MODE
 # DEBUG_FLAG	+= SYNTAX_DEBUG
 # DEBUG_FLAG	+=  SPACE_RESPONSE_TEST
-# DEBUG_FLAG 	+= CONFIG_DEBUG
 # DEBUG_FLAG 	+= CONFIG_STATE_DEBUG
 # DEBUG_FLAG	+=	LEAK
 # DEBUG_FLAG	+= LOG_FILE_MODE
 # DEBUG_FLAG	+= LOG_MODE
+# DEBUG_FLAG 	+= CONFIG_DEBUG
 DEBUG_FLAG	+=	DEBUG
 
 ifdef DEBUG_FLAG
@@ -43,12 +43,12 @@ OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 #	Compile Flags
 #==============================================================================
 CXX			=	c++
-CXX_WARN_FLAGS	=	#all extra error
+# CXX_WARN_FLAGS	=	all extra error // NOTE: Need to uncomment later
 CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-# CXXFLAGS	+=	$(LOG)
+CXXFLAGS	+=	$(LOG)
 
 RM			=	rm -f
 
@@ -85,6 +85,6 @@ $(OBJ)		:	| $(OBJ_DIR)
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
 		$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(SNTZ)"
+sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(DEBUG) $(SNTZ)"
 
 log			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG)"

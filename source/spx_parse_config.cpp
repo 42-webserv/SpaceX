@@ -1,19 +1,8 @@
 #include "spx_parse_config.hpp"
-#include "spx_core_util_box.hpp"
-#include "spx_port_info.hpp"
-
-#ifdef CONFIG_DEBUG
-#include <iostream>
-#endif
-
-#ifdef CONFIG_STATE_DEBUG
-#include <iostream>
-#endif
 
 namespace {
 
 #ifdef CONFIG_STATE_DEBUG
-#include <string>
 
 #define CONFIG_STATE_MAP(XX)                               \
 	XX(0, ZERO, Continue)                                  \
@@ -64,20 +53,14 @@ namespace {
 		default:
 			return "<unknown>";
 		}
-	};
+	}
 #endif
 
 	inline status
 	error_(const char* msg, const char* msg2, uint32_t const& line_number) {
-#ifdef DEBUG
 		std::cout << "\033[1;31merror line: " << line_number << " : " << msg << "\033[0m"
 				  << " : "
 				  << "\033[1;33m" << msg2 << "\033[0m" << std::endl;
-#else
-		(void)msg;
-		(void)msg2;
-		(void)line_number;
-#endif
 		return spx_error;
 	}
 
@@ -148,8 +131,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 	while (state != conf_done) {
 
 #ifdef CONFIG_STATE_DEBUG
-		std::cout << "state : "
-				  << "\033[1;33m" << config_state_str_(static_cast<config_state_e>(state)) << "\033[0m" << std::endl;
+		if (state == conf_start) {
+			std::cout << "state : "
+					  << COLOR_WHITE << config_state_str_(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
+		} else {
+			std::cout << "state : "
+					  << COLOR_YELLOW << config_state_str_(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
+		}
 #endif
 		switch (state) {
 
@@ -569,17 +557,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_location_zero: {
 			if (location_count != 0) {
-				if (!(flag_location_part & Kflag_root)) {
-					if (temp_basic_server_info.root.empty()) {
-						temp_uri_location_info.root = cur_path + temp_uri_location_info.uri;
-					} else {
-						temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
-					}
-					flag_location_part |= Kflag_root;
-				}
-				if (!(flag_location_part & Kflag_client_max_body_size)) {
-					temp_uri_location_info.client_max_body_size = -1;
-				}
 				if (!(flag_location_part & Kflag_accepted_methods)) {
 					return error_("conf_location_zero", "accepted_methods not defined", line_number_count);
 				}
@@ -601,6 +578,16 @@ spx_config_syntax_checker(std::string const&	   buf,
 						return error_("conf_location_zero", "module_state already defined", line_number_count);
 					}
 				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
+					if (!(flag_location_part & Kflag_root)) {
+						if (temp_basic_server_info.root.empty()) {
+							temp_uri_location_info.root = cur_path + temp_uri_location_info.uri;
+						} else {
+							temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
+						}
+					}
+					if (temp_uri_location_info.accepted_methods_flag & (KPost | KPut) && !(flag_location_part & Kflag_saved_path)) {
+						return error_("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);
+					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
@@ -718,6 +705,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 						next_state = conf_cgi_path_info;
 						break;
 					}
+					if (temp_string.compare("max_body_size") == KSame) {
+						if (flag_location_part & Kflag_client_max_body_size) {
+							return error_("conf_waiting_location_value", "max_body_size is already set", line_number_count);
+						}
+						next_state = conf_client_max_body_size;
+						break;
+					}
 					return error_("conf_waiting_location_value", "13 - syntax error", line_number_count);
 				}
 				case 16: {
@@ -729,16 +723,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 						break;
 					}
 					return error_("conf_waiting_location_value", "16 - syntax error", line_number_count);
-				}
-				case 20: {
-					if (temp_string.compare("client_max_body_size") == KSame) {
-						if (flag_location_part & Kflag_client_max_body_size) {
-							return error_("conf_waiting_location_value", "client_max_body_size is already set", line_number_count);
-						}
-						next_state = conf_client_max_body_size;
-						break;
-					}
-					return error_("conf_waiting_location_value", "20 - syntax error", line_number_count);
 				}
 				default: {
 					return error_("conf_waiting_location_value", "syntax error", line_number_count);
@@ -980,9 +964,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 				state							= conf_start;
 				next_state						= conf_waiting_location_value;
 				flag_location_part |= Kflag_redirect;
-				// if (temp_uri_location_info.module_state == Kmodule_none) {
-				// 	temp_uri_location_info.module_state = Kmodule_redirect;
-				// }
 				temp_uri_location_info.module_state = Kmodule_redirect;
 				temp_string.clear();
 				break;
@@ -1051,13 +1032,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 		}
 	}
+
 #ifdef CONFIG_DEBUG
-	std::cout << "\n\033[1;31m"
-			  << " -- config file parsed successfully -- "
-			  << "\033[0m\n"
-			  << std::endl;
+	std::cout << COLOR_RED << " -- config file parsed successfully -- " << COLOR_RESET << std::endl;
 	for (total_port_server_map_p::iterator print = saved_total_port_map_3.begin(); print != saved_total_port_map_3.end(); ++print) {
-		std::cout << "port: " << print->first << std::endl;
 		for (server_map_p::iterator print2 = print->second.begin(); print2 != print->second.end(); ++print2) {
 			print2->second.print_();
 		}

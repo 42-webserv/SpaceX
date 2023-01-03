@@ -2,7 +2,8 @@
 
 #include "spx_client_buffer.hpp"
 #include "spx_kqueue_module.hpp"
-#include "spx_port_info.hpp"
+
+// #include <cstdio>
 
 namespace {
 
@@ -14,7 +15,7 @@ namespace {
 #endif
 
 	inline total_port_server_map_p
-	config_file_open_(int argc, char const* argv[], std::string const& cur_path) {
+	config_file_open__(int argc, char const* argv[], std::string const& cur_path) {
 		std::fstream file;
 		switch (argc) {
 		case 1:
@@ -44,7 +45,7 @@ namespace {
 	}
 
 	inline void
-	get_current_path_(std::string& cur_path) {
+	get_current_path__(std::string& cur_path) {
 		char buf[8192];
 		if (getcwd(buf, sizeof(buf)) == NULL) {
 			error_exit_msg_perror("getcwd error");
@@ -53,7 +54,7 @@ namespace {
 	}
 
 	inline void
-	port_info_print_(main_info_t const& spx) {
+	port_info_print__(main_info_t const& spx) {
 		uint32_t i = 3;
 		std::cout << "\n-------------- [ " << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
 				  << " ] -------------\n"
@@ -86,15 +87,15 @@ main(int argc, char const* argv[]) {
 
 	if (argc <= 2) {
 		std::string cur_dir;
-		get_current_path_(cur_dir);
+		get_current_path__(cur_dir);
 
-		total_port_server_map_p config_info = config_file_open_(argc, argv, cur_dir);
+		total_port_server_map_p config_info = config_file_open__(argc, argv, cur_dir);
 
 		main_info_t spx;
 		spx.socket_size = 0;
 
 		socket_init_and_build_port_info(config_info, spx.port_info, spx.socket_size);
-		port_info_print_(spx);
+		port_info_print__(spx);
 
 		kqueue_module(spx.port_info);
 
