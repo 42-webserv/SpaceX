@@ -2,22 +2,21 @@
 #ifndef __SPX__CLIENT_BUFFER__HPP
 #define __SPX__CLIENT_BUFFER__HPP
 
+#include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
+
 #include <algorithm>
+
 #include <arpa/inet.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <iostream>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <string>
 #include <sys/event.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <map>
 #include <queue>
-#include <vector>
 
 #include "spacex.hpp"
 #include "spx_response_generator.hpp"

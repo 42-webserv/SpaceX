@@ -6,9 +6,10 @@
 #include "spx_core_util_box.hpp"
 
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <sys/event.h>
 #include <sys/socket.h>
+
+#include <fcntl.h>
 #include <unistd.h>
 
 typedef enum {

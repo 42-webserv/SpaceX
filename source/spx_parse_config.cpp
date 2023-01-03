@@ -43,7 +43,7 @@ namespace {
 	} config_state_e;
 
 	std::string
-	config_state_str_(config_state_e s) {
+	config_state_str__(config_state_e s) {
 		switch (s) {
 #define XX(num, name, string) \
 	case CONFIG_STATE_##name: \
@@ -57,10 +57,9 @@ namespace {
 #endif
 
 	inline status
-	error_(const char* msg, const char* msg2, uint32_t const& line_number) {
-		std::cout << "\033[1;31merror line: " << line_number << " : " << msg << "\033[0m"
-				  << " : "
-				  << "\033[1;33m" << msg2 << "\033[0m" << std::endl;
+	error__(const char* msg, const char* msg2, uint32_t const& line_number) {
+		std::cout << COLOR_RED << "error line: " << line_number << " : " << msg << COLOR_RESET
+				  << " : " << COLOR_YELLOW << msg2 << COLOR_RESET << std::endl;
 		return spx_error;
 	}
 
@@ -133,10 +132,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 #ifdef CONFIG_STATE_DEBUG
 		if (state == conf_start) {
 			std::cout << "state : "
-					  << COLOR_WHITE << config_state_str_(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
+					  << COLOR_WHITE << config_state_str__(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
 		} else {
 			std::cout << "state : "
-					  << COLOR_YELLOW << config_state_str_(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
+					  << COLOR_YELLOW << config_state_str__(static_cast<config_state_e>(state)) << COLOR_RESET << std::endl;
 		}
 #endif
 		switch (state) {
@@ -154,7 +153,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (check_default_server == saved_total_port_map_3.end()) {
 					temp_basic_server_info.default_server_flag = Kdefault_server;
 				} else if (temp_basic_server_info.default_server_flag == Kdefault_server) {
-					return error_("conf_zero", "default server already exist", line_number_count);
+					return error__("conf_zero", "default server already exist", line_number_count);
 				}
 
 				temp_basic_server_info.uri_case		   = saved_location_uri_map_1; // STEP 1: saved_uri_ to server
@@ -168,20 +167,20 @@ spx_config_syntax_checker(std::string const&	   buf,
 					std::pair<std::map<const uint32_t, server_map_p>::iterator, bool> check_dup; // check server name dup case
 					check_dup = saved_total_port_map_3.insert(std::make_pair(temp_basic_server_info.port, saved_server_name_map_2));
 					if (check_dup.second == false) {
-						return error_("conf_zero", "server_map_p insert fail", line_number_count);
+						return error__("conf_zero", "server_map_p insert fail", line_number_count);
 					}
 				} else { // STEP3: saved map to total map (port exist case)
 					if (temp_basic_server_info.default_server_flag == Kdefault_server) { // check default server dup case
 						for (server_map_p::iterator it = check_port_map->second.begin(); it != check_port_map->second.end(); ++it) {
 							if (it->second.default_server_flag == Kdefault_server) {
-								return error_("conf_zero", "default server is already exist", line_number_count);
+								return error__("conf_zero", "default server is already exist", line_number_count);
 							}
 						}
 					}
 					std::pair<std::map<const std::string, server_info_t>::iterator, bool> check_dup; // check server name dup case
 					check_dup = check_port_map->second.insert(std::make_pair(temp_basic_server_info.server_name, temp_basic_server_info));
 					if (check_dup.second == false) {
-						return error_("conf_zero", "server name is already exist", line_number_count);
+						return error__("conf_zero", "server name is already exist", line_number_count);
 					}
 				}
 			}
@@ -239,7 +238,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				state	   = conf_start;
 				break;
 			}
-			return error_("conf_endline", "??", line_number_count);
+			return error__("conf_endline", "??", line_number_count);
 		}
 
 		case conf_waiting_default_value: {
@@ -256,7 +255,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 					next_state = conf_start;
 					break;
 				}
-				return error_("conf_waiting_default_value", "end of line ; - syntax error", line_number_count);
+				return error__("conf_waiting_default_value", "end of line ; - syntax error", line_number_count);
 			}
 			if (size_count == 0 && *it == '}') {
 				prev_state = state;
@@ -269,53 +268,53 @@ spx_config_syntax_checker(std::string const&	   buf,
 				case 4: {
 					if (temp_string.compare("root") == KSame) {
 						if (flag_default_part & Kflag_root) {
-							return error_("conf_waiting_default_value", "root is already set", line_number_count);
+							return error__("conf_waiting_default_value", "root is already set", line_number_count);
 						}
 						next_state = conf_main_root;
 						break;
 					}
-					return error_("conf_waiting_default_value", "4 - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "4 - syntax error", line_number_count);
 				}
 				case 6: {
 					if (temp_string.compare("listen") == KSame) {
 						if (flag_default_part & Kflag_listen) {
-							return error_("conf_waiting_default_value", "listen is already set", line_number_count);
+							return error__("conf_waiting_default_value", "listen is already set", line_number_count);
 						}
 						next_state = conf_listen;
 						break;
 					}
-					return error_("conf_waiting_default_value", "6 - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "6 - syntax error", line_number_count);
 				}
 				case 8: {
 					if (temp_string.compare("location") == KSame) {
 						if (!(flag_default_part & Kflag_listen)) {
-							return error_("conf_waiting_default_value",
-										  "need to set default value before location - syntax error", line_number_count);
+							return error__("conf_waiting_default_value",
+										   "need to set default value before location - syntax error", line_number_count);
 						}
 						next_state = conf_location_uri;
 						break;
 					}
-					return error_("conf_waiting_default_value", "8 - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "8 - syntax error", line_number_count);
 				}
 				case 10: {
 					if (temp_string.compare("error_page") == KSame) {
 						next_state = conf_error_page_number;
 						break;
 					}
-					return error_("conf_waiting_default_value", "10 - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "10 - syntax error", line_number_count);
 				}
 				case 11: {
 					if (temp_string.compare("server_name") == KSame) {
 						if (flag_default_part & Kflag_server_name) {
-							return error_("conf_waiting_default_value", "server_name is already set", line_number_count);
+							return error__("conf_waiting_default_value", "server_name is already set", line_number_count);
 						}
 						next_state = conf_server_name;
 						break;
 					}
-					return error_("conf_waiting_default_value", "11 - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "11 - syntax error", line_number_count);
 				}
 				default:
-					return error_("conf_waiting_default_value", "not allowed default value - syntax error", line_number_count);
+					return error__("conf_waiting_default_value", "not allowed default value - syntax error", line_number_count);
 				}
 				prev_state = state;
 				state	   = conf_start;
@@ -323,7 +322,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				size_count = 0;
 				break;
 			}
-			return error_("conf_waiting_value", "isspace not found or plz close curly bracket - syntax error", line_number_count);
+			return error__("conf_waiting_value", "isspace not found or plz close curly bracket - syntax error", line_number_count);
 		}
 
 		case conf_server: {
@@ -336,13 +335,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 			}
 			if (it == buf.end()) {
 				if (server_count == 0) {
-					return error_("conf_server", "empty config file - syntax error", line_number_count);
+					return error__("conf_server", "empty config file - syntax error", line_number_count);
 				}
 				state	   = conf_almost_done;
 				next_state = conf_done;
 				break;
 			}
-			return error_("conf_server", "syntax error", line_number_count);
+			return error__("conf_server", "syntax error", line_number_count);
 		}
 
 		case conf_server_CB_open: {
@@ -354,7 +353,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				++server_count;
 				break;
 			}
-			return error_("conf_server_CB_open", "syntax error", line_number_count);
+			return error__("conf_server_CB_open", "syntax error", line_number_count);
 		}
 
 		case conf_server_CB_close: {
@@ -364,14 +363,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 				state	   = conf_zero;
 				next_state = conf_start;
 				if (location_count == 0) {
-					return error_("conf_server_CB_close", "empty server block - syntax error", line_number_count);
+					return error__("conf_server_CB_close", "empty server block - syntax error", line_number_count);
 				}
 				if (!(flag_default_part & Kflag_listen)) {
-					return error_("conf_server_CB_close", "missing must value set - syntax error", line_number_count);
+					return error__("conf_server_CB_close", "missing must value set - syntax error", line_number_count);
 				}
 				break;
 			}
-			return error_("conf_server_CB_close", "syntax error", line_number_count);
+			return error__("conf_server_CB_close", "syntax error", line_number_count);
 		}
 
 		case conf_main_root: {
@@ -388,7 +387,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				flag_default_part |= Kflag_root;
 				break;
 			}
-			return error_("conf_main_root", "syntax error", line_number_count);
+			return error__("conf_main_root", "syntax error", line_number_count);
 		}
 
 		case conf_listen: {
@@ -406,7 +405,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						if (std::isdigit(*temp_it)) {
 							temp_it++;
 						} else {
-							return error_("conf_listen", "syntax error", line_number_count);
+							return error__("conf_listen", "syntax error", line_number_count);
 						}
 					}
 				} else if (10 <= size_count && size_count <= 15) { // IP:PORT case / 127.0.0.1:80808 - 15 / localhost:80808 - 15
@@ -419,22 +418,22 @@ spx_config_syntax_checker(std::string const&	   buf,
 								temp_it++;
 								temp_cycle--;
 							} else {
-								return error_("conf_listen invalid PORT", "syntax error", line_number_count);
+								return error__("conf_listen invalid PORT", "syntax error", line_number_count);
 							}
 						}
 						temp_string.erase(0, 10);
 					} else { // NOTE:: may need to parse the IP address
-						return error_("conf_listen we didn't supported specific IP:", "syntax error", line_number_count);
+						return error__("conf_listen we didn't supported specific IP:", "syntax error", line_number_count);
 					}
 				} else {
-					return error_("conf_listen invalid IP:PORT", "syntax error", line_number_count);
+					return error__("conf_listen invalid IP:PORT", "syntax error", line_number_count);
 				}
 			} else {
-				return error_("conf_listen invalid IP:PORT", "syntax error", line_number_count);
+				return error__("conf_listen invalid IP:PORT", "syntax error", line_number_count);
 			}
 			uint32_t temp_port = std::atoi(temp_string.c_str());
 			if (temp_port > 65535 | temp_port <= 0) {
-				return error_("conf_listen invalid PORT", "syntax error", line_number_count);
+				return error__("conf_listen invalid PORT", "syntax error", line_number_count);
 			}
 			temp_basic_server_info.port = temp_port;
 			prev_state					= state;
@@ -463,7 +462,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state = conf_waiting_default_value;
 				break;
 			}
-			return error_("conf_listen_default", "syntax error", line_number_count);
+			return error__("conf_listen_default", "syntax error", line_number_count);
 		}
 
 		case conf_server_name: {
@@ -480,7 +479,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_server_name", "syntax error", line_number_count);
+			return error__("conf_server_name", "syntax error", line_number_count);
 		}
 
 		case conf_error_page_number: {
@@ -501,7 +500,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 					state	   = conf_error_page;
 					break;
 				} else {
-					return error_("conf_error_page_number : how can you reach here", "syntax error", line_number_count);
+					return error__("conf_error_page_number : how can you reach here", "syntax error", line_number_count);
 				}
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it))) {
@@ -514,10 +513,10 @@ spx_config_syntax_checker(std::string const&	   buf,
 					next_state = conf_error_page_number;
 					break;
 				} else {
-					return error_("conf_error_page_number : ONLY 3 DIGIT", "syntax error", line_number_count);
+					return error__("conf_error_page_number : ONLY 3 DIGIT", "syntax error", line_number_count);
 				}
 			}
-			return error_("conf_error_page_number", "syntax error", line_number_count);
+			return error__("conf_error_page_number", "syntax error", line_number_count);
 		}
 
 		case conf_error_page: {
@@ -533,7 +532,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						temp_basic_server_info.default_error_page = temp_string;
 						flag_error_page_default					  = 0;
 					} else {
-						return error_("conf_error_page : default error page already exist", "syntax error", line_number_count);
+						return error__("conf_error_page : default error page already exist", "syntax error", line_number_count);
 					}
 				}
 				{
@@ -541,7 +540,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 						std::pair<error_page_map_p::iterator, bool> dup_check;
 						dup_check = saved_error_page_map_0.insert(std::make_pair(*it, temp_string));
 						if (dup_check.second == false) {
-							return error_("conf_error_page : duplicate error page number", "syntax error", line_number_count);
+							return error__("conf_error_page : duplicate error page number", "syntax error", line_number_count);
 						}
 					}
 					temp_error_page_number.clear();
@@ -552,30 +551,30 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_error_page", "syntax error", line_number_count);
+			return error__("conf_error_page", "syntax error", line_number_count);
 		}
 
 		case conf_location_zero: {
 			if (location_count != 0) {
 				if (!(flag_location_part & Kflag_accepted_methods)) {
-					return error_("conf_location_zero", "accepted_methods not defined", line_number_count);
+					return error__("conf_location_zero", "accepted_methods not defined", line_number_count);
 				}
 				if (temp_uri_location_info.uri.at(0) == '.') { // cgi_case
 					if (flag_location_part & (Kflag_index | Kflag_autoindex | Kflag_redirect)) {
-						return error_("conf_location_zero", "index, autoindex, redirect can't be used in cgi location", line_number_count);
+						return error__("conf_location_zero", "index, autoindex, redirect can't be used in cgi location", line_number_count);
 					}
 					if (!(flag_location_part & Kflag_cgi_path_info)) {
-						return error_("conf_location_zero", "cgi_path_info not defined", line_number_count);
+						return error__("conf_location_zero", "cgi_path_info not defined", line_number_count);
 					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
-						return error_("conf_location_zero", "duplicate cgi location", line_number_count);
+						return error__("conf_location_zero", "duplicate cgi location", line_number_count);
 					}
 					if (temp_uri_location_info.module_state == Kmodule_none) {
 						temp_uri_location_info.module_state = Kmodule_cgi;
 					} else {
-						return error_("conf_location_zero", "module_state already defined", line_number_count);
+						return error__("conf_location_zero", "module_state already defined", line_number_count);
 					}
 				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
 					if (!(flag_location_part & Kflag_root)) {
@@ -586,18 +585,18 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 					}
 					if (temp_uri_location_info.accepted_methods_flag & (KPost | KPut) && !(flag_location_part & Kflag_saved_path)) {
-						return error_("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);
+						return error__("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);
 					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
-						return error_("conf_location_zero", "duplicate location", line_number_count);
+						return error__("conf_location_zero", "duplicate location", line_number_count);
 					}
 					if (temp_uri_location_info.module_state == Kmodule_none) {
 						temp_uri_location_info.module_state = Kmodule_serve;
 					}
 				} else {
-					return error_("conf_location_zero", "location uri syntax error", line_number_count);
+					return error__("conf_location_zero", "location uri syntax error", line_number_count);
 				}
 			}
 			temp_uri_location_info.clear_();
@@ -624,7 +623,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 					next_state = conf_start;
 					break;
 				}
-				return error_("conf_waiting_location_value", "syntax error", line_number_count);
+				return error__("conf_waiting_location_value", "syntax error", line_number_count);
 			}
 			if (size_count == 0 && *it == '}' && flag_location_part & Kflag_accepted_methods) {
 				prev_state = state;
@@ -632,7 +631,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state = conf_start;
 				break;
 			} else if (size_count == 0 && *it == '}' && flag_location_part == 0) {
-				return error_("conf_waiting_default_value", "empty location - syntax error", line_number_count);
+				return error__("conf_waiting_default_value", "empty location - syntax error", line_number_count);
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				prev_state = state;
@@ -641,98 +640,98 @@ spx_config_syntax_checker(std::string const&	   buf,
 				case 4: {
 					if (temp_string.compare("root") == KSame) {
 						if (flag_location_part & Kflag_root) {
-							return error_("conf_waiting_locaiton_value", "root is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "root is already set", line_number_count);
 						}
 						next_state = conf_root;
 						break;
 					}
-					return error_("conf_waiting_location_value", "4 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "4 - syntax error", line_number_count);
 				}
 				case 5: {
 					if (temp_string.compare("index") == KSame) {
 						if (flag_location_part & Kflag_index) {
-							return error_("conf_waiting_locaiton_value", "index is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "index is already set", line_number_count);
 						}
 						next_state = conf_index;
 						break;
 					}
-					return error_("conf_waiting_location_value", "5 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "5 - syntax error", line_number_count);
 				}
 				case 8: {
 					if (temp_string.compare("cgi_pass") == KSame) {
 						if (flag_location_part & Kflag_cgi_pass) {
-							return error_("conf_waiting_locaiton_value", "cgi_pass is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "cgi_pass is already set", line_number_count);
 						}
 						next_state = conf_cgi_pass;
 						break;
 					}
 					if (temp_string.compare("redirect") == KSame) {
 						if (flag_location_part & Kflag_redirect) {
-							return error_("conf_waiting_locaiton_value", "redirect is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "redirect is already set", line_number_count);
 						}
 						next_state = conf_redirect;
 						break;
 					}
 					if (temp_string.compare("location") == KSame) {
-						return error_("conf_waiting_default_value", "location depth is only 1 supported - syntax error", line_number_count);
+						return error__("conf_waiting_default_value", "location depth is only 1 supported - syntax error", line_number_count);
 					}
 				}
 				case 9: {
 					if (temp_string.compare("autoindex") == KSame) {
 						if (flag_location_part & Kflag_autoindex) {
-							return error_("conf_waiting_locaiton_value", "autoindex is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "autoindex is already set", line_number_count);
 						}
 						next_state = conf_autoindex;
 						break;
 					}
-					return error_("conf_waiting_location_value", "9 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "9 - syntax error", line_number_count);
 				}
 				case 10: {
 					if (temp_string.compare("saved_path") == KSame) {
 						if (flag_location_part & Kflag_saved_path) {
-							return error_("conf_waiting_locaiton_value", "saved_path is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "saved_path is already set", line_number_count);
 						}
 						next_state = conf_saved_path;
 						break;
 					}
-					return error_("conf_waiting_location_value", "10 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "10 - syntax error", line_number_count);
 				}
 				case 13: {
 					if (temp_string.compare("cgi_path_info") == KSame) {
 						if (flag_location_part & Kflag_cgi_path_info) {
-							return error_("conf_waiting_locaiton_value", "cgi_path_info is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "cgi_path_info is already set", line_number_count);
 						}
 						next_state = conf_cgi_path_info;
 						break;
 					}
 					if (temp_string.compare("max_body_size") == KSame) {
 						if (flag_location_part & Kflag_client_max_body_size) {
-							return error_("conf_waiting_location_value", "max_body_size is already set", line_number_count);
+							return error__("conf_waiting_location_value", "max_body_size is already set", line_number_count);
 						}
 						next_state = conf_client_max_body_size;
 						break;
 					}
-					return error_("conf_waiting_location_value", "13 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "13 - syntax error", line_number_count);
 				}
 				case 16: {
 					if (temp_string.compare("accepted_methods") == KSame) {
 						if (flag_location_part & Kflag_accepted_methods) {
-							return error_("conf_waiting_locaiton_value", "accepted_methods is already set", line_number_count);
+							return error__("conf_waiting_locaiton_value", "accepted_methods is already set", line_number_count);
 						}
 						next_state = conf_accepted_methods;
 						break;
 					}
-					return error_("conf_waiting_location_value", "16 - syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "16 - syntax error", line_number_count);
 				}
 				default: {
-					return error_("conf_waiting_location_value", "syntax error", line_number_count);
+					return error__("conf_waiting_location_value", "syntax error", line_number_count);
 				}
 				}
 				temp_string.clear();
 				size_count = 0;
 				break;
 			}
-			return error_("conf_waiting_location_value", "end-line syntax error", line_number_count);
+			return error__("conf_waiting_location_value", "end-line syntax error", line_number_count);
 		}
 
 		case conf_location_uri: {
@@ -743,15 +742,15 @@ spx_config_syntax_checker(std::string const&	   buf,
 					++cgi_dot_checker_;
 				++it;
 			} else {
-				return error_("conf_location_uri", "start char error", line_number_count);
+				return error__("conf_location_uri", "start char error", line_number_count);
 			}
 			while (syntax_(vchar_, static_cast<uint8_t>(*it)) && *it != '{') {
 				if (*it == '/') {
-					return error_("conf_location_uri", "only allowed one depth slash", line_number_count);
+					return error__("conf_location_uri", "only allowed one depth slash", line_number_count);
 				} else if (*it == '.') {
 					++cgi_dot_checker_;
 					if (cgi_dot_checker_ > 1) {
-						return error_("conf_location_uri", "only allowed one depth dot", line_number_count);
+						return error__("conf_location_uri", "only allowed one depth dot", line_number_count);
 					}
 				}
 				temp_string.push_back(*it);
@@ -765,7 +764,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_location_uri", "syntax error", line_number_count);
+			return error__("conf_location_uri", "syntax error", line_number_count);
 		}
 
 		case conf_location_CB_open: {
@@ -777,7 +776,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				++location_count;
 				break;
 			}
-			return error_("conf_location_CB_open", "syntax error", line_number_count);
+			return error__("conf_location_CB_open", "syntax error", line_number_count);
 		}
 
 		case conf_location_CB_close: {
@@ -788,7 +787,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state = conf_start;
 				break;
 			}
-			return error_("conf_location_CB_close", "syntax error", line_number_count);
+			return error__("conf_location_CB_close", "syntax error", line_number_count);
 		}
 
 		case conf_client_max_body_size: {
@@ -808,9 +807,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 						++it;
 					}
 					if (check_body_size > 2147483647) {
-						return error_("conf_client_max_body_size : 255M or 262131K limited", "syntax error", line_number_count);
+						return error__("conf_client_max_body_size : 255M or 262131K limited", "syntax error", line_number_count);
 					} else if (check_body_size <= 0) {
-						return error_("conf_client_max_body_size : 0 or - size not supported", "syntax error", line_number_count);
+						return error__("conf_client_max_body_size : 0 or - size not supported", "syntax error", line_number_count);
 					}
 					if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 						temp_uri_location_info.client_max_body_size = check_body_size;
@@ -822,11 +821,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 						size_count = 0;
 						break;
 					}
-					return error_("conf_client_max_body_size : undefined character used", "syntax error", line_number_count);
+					return error__("conf_client_max_body_size : undefined character used", "syntax error", line_number_count);
 				}
-				return error_("conf_client_max_body_size - minus size", "syntax error", line_number_count);
+				return error__("conf_client_max_body_size - minus size", "syntax error", line_number_count);
 			}
-			return error_("conf_client_max_body_size", "syntax error", line_number_count);
+			return error__("conf_client_max_body_size", "syntax error", line_number_count);
 		}
 
 		case conf_accepted_methods: {
@@ -841,14 +840,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 				case 3: {
 					if (temp_string.compare("GET") == KSame) {
 						if (temp_uri_location_info.accepted_methods_flag & KGet) {
-							return error_("conf_accepted_methods", "GET is already set", line_number_count);
+							return error__("conf_accepted_methods", "GET is already set", line_number_count);
 						}
 						temp_uri_location_info.accepted_methods_flag |= KGet;
 						break;
 					}
 					if (temp_string.compare("PUT") == KSame) {
 						if (temp_uri_location_info.accepted_methods_flag & KPut) {
-							return error_("conf_accepted_methods", "PUT is already set", line_number_count);
+							return error__("conf_accepted_methods", "PUT is already set", line_number_count);
 						}
 						temp_uri_location_info.accepted_methods_flag |= KPut;
 						break;
@@ -857,37 +856,37 @@ spx_config_syntax_checker(std::string const&	   buf,
 						temp_uri_location_info.accepted_methods_flag |= (KGet | KPut | KPost | KHead | KDelete);
 						break;
 					}
-					return error_("conf_accepted_methods", "syntax error", line_number_count);
+					return error__("conf_accepted_methods", "syntax error", line_number_count);
 				}
 				case 4: {
 					if (temp_string.compare("POST") == KSame) {
 						if (temp_uri_location_info.accepted_methods_flag & KPost) {
-							return error_("conf_accepted_methods", "POST is already set", line_number_count);
+							return error__("conf_accepted_methods", "POST is already set", line_number_count);
 						}
 						temp_uri_location_info.accepted_methods_flag |= KPost;
 						break;
 					}
 					if (temp_string.compare("HEAD") == KSame) {
 						if (temp_uri_location_info.accepted_methods_flag & KHead) {
-							return error_("conf_accepted_methods", "HEAD is already set", line_number_count);
+							return error__("conf_accepted_methods", "HEAD is already set", line_number_count);
 						}
 						temp_uri_location_info.accepted_methods_flag |= KHead;
 						break;
 					}
-					return error_("conf_accepted_methods", "syntax error", line_number_count);
+					return error__("conf_accepted_methods", "syntax error", line_number_count);
 				}
 				case 6: {
 					if (temp_string.compare("DELETE") == KSame) {
 						if (temp_uri_location_info.accepted_methods_flag & KDelete) {
-							return error_("conf_accepted_methods", "DELETE is already set", line_number_count);
+							return error__("conf_accepted_methods", "DELETE is already set", line_number_count);
 						}
 						temp_uri_location_info.accepted_methods_flag |= KDelete;
 						break;
 					}
-					return error_("conf_accepted_methods", "syntax error", line_number_count);
+					return error__("conf_accepted_methods", "syntax error", line_number_count);
 				}
 				default:
-					return error_("conf_accepted_methods", "syntax error", line_number_count);
+					return error__("conf_accepted_methods", "syntax error", line_number_count);
 				}
 				prev_state = state;
 				state	   = conf_start;
@@ -896,7 +895,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				size_count = 0;
 				break;
 			}
-			return error_("conf_accepted_methods", "syntax error", line_number_count);
+			return error__("conf_accepted_methods", "syntax error", line_number_count);
 		}
 
 		case conf_root: {
@@ -913,7 +912,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_root", "syntax error", line_number_count);
+			return error__("conf_root", "syntax error", line_number_count);
 		}
 
 		case conf_index: {
@@ -930,7 +929,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_index", "syntax error", line_number_count);
+			return error__("conf_index", "syntax error", line_number_count);
 		}
 
 		case conf_autoindex: {
@@ -941,7 +940,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_uri_location_info.autoindex_flag = Kautoindex_off;
 				it += 3;
 			} else {
-				return error_("conf_autoindex", "not on and off - syntax error", line_number_count);
+				return error__("conf_autoindex", "not on and off - syntax error", line_number_count);
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				prev_state = state;
@@ -950,7 +949,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				flag_location_part |= Kflag_autoindex;
 				break;
 			}
-			return error_("conf_autoindex", "syntax error", line_number_count);
+			return error__("conf_autoindex", "syntax error", line_number_count);
 		}
 
 		case conf_redirect: {
@@ -968,7 +967,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_redirect", "syntax error", line_number_count);
+			return error__("conf_redirect", "syntax error", line_number_count);
 		}
 
 		case conf_saved_path: {
@@ -985,7 +984,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_saved_path", "syntax error", line_number_count);
+			return error__("conf_saved_path", "syntax error", line_number_count);
 		}
 
 		case conf_cgi_pass: {
@@ -1002,7 +1001,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_cgi_pass", "syntax error", line_number_count);
+			return error__("conf_cgi_pass", "syntax error", line_number_count);
 		}
 
 		case conf_cgi_path_info: {
@@ -1019,7 +1018,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 				temp_string.clear();
 				break;
 			}
-			return error_("conf_cgi_path_info", "syntax error", line_number_count);
+			return error__("conf_cgi_path_info", "syntax error", line_number_count);
 		}
 
 		case conf_almost_done: {
@@ -1028,7 +1027,7 @@ spx_config_syntax_checker(std::string const&	   buf,
 		}
 
 		default: {
-			return error_("syntax error", "config file", line_number_count);
+			return error__("syntax error", "config file", line_number_count);
 		}
 		}
 	}

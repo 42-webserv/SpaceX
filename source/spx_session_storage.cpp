@@ -1,5 +1,4 @@
 #include "spx_session_storage.hpp"
-#include <cstdlib>
 
 // temp
 #include "spx_client_buffer.hpp"

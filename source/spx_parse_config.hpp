@@ -6,8 +6,6 @@
 #include "spx_core_util_box.hpp"
 
 #include "spx_port_info.hpp"
-#include <cctype>
-#include <cstring>
 
 status
 spx_config_syntax_checker(std::string const&	   buf,

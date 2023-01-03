@@ -1,6 +1,4 @@
 #include "spx_cgi_module.hpp"
-#include <cstring>
-#include <string>
 
 namespace {
 

@@ -3,8 +3,6 @@
 #include "spx_client_buffer.hpp"
 #include "spx_kqueue_module.hpp"
 
-// #include <cstdio>
-
 namespace {
 
 #ifdef LEAK

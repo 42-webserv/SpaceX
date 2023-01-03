@@ -2,13 +2,11 @@
 #ifndef __SPX__SYNTAX_CHECKER__HPP__
 #define __SPX__SYNTAX_CHECKER__HPP__
 
-#include "spx_client_buffer.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include <cstddef>
 
-class ClientBuffer;
-typedef ClientBuffer client_buf_t;
+#include "spx_client_buffer.hpp"
+typedef class ClientBuffer client_buf_t;
 
 status
 spx_http_syntax_start_line(std::string const& line,

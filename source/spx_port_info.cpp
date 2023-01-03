@@ -1,8 +1,4 @@
 #include "spx_port_info.hpp"
-#include "spx_core_type.hpp"
-#include "spx_core_util_box.hpp"
-
-#include <cstddef>
 
 #include <dirent.h>
 

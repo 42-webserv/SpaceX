@@ -1,5 +1,4 @@
 #include "spx_core_util_box.hpp"
-#include <sstream>
 
 namespace {
 
@@ -77,7 +76,7 @@ namespace {
 	} error_page_e;
 
 	inline std::string
-	error_page_str_(error_page_e s) {
+	error_page_str__(error_page_e s) {
 		switch (s) {
 #define XX(num, name, string) \
 	case ERROR_PAGE_##name:   \
@@ -95,9 +94,9 @@ std::string const
 generator_error_page_(uint32_t const& error_code) {
 	std::string error_page;
 	error_page += "<html>" CRLF "<head><title>";
-	error_page += error_page_str_(static_cast<error_page_e>(error_code));
+	error_page += error_page_str__(static_cast<error_page_e>(error_code));
 	error_page += "</title></head>" CRLF "<body>" CRLF "<center><h1>";
-	error_page += error_page_str_(static_cast<error_page_e>(error_code));
+	error_page += error_page_str__(static_cast<error_page_e>(error_code));
 	error_page += "</h1><p>SpaceX Default error page.</p></center>" CRLF "</body>" CRLF "</html>";
 	return error_page;
 }

@@ -2,10 +2,10 @@
 #ifndef __SPX__CORE_TYPE_HPP__
 #define __SPX__CORE_TYPE_HPP__
 
-#include <cstdint>
-
 #include <iostream>
 #include <sstream>
+
+#include <cstdint>
 #include <string>
 
 #include <map>
