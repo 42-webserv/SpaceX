@@ -4,6 +4,8 @@
 
 NAME		= spacex
 
+
+
 # VPATH		:=	$(shell ls -R)
 # CONFIG_DEBUG, CONFIG_STATE_DEBUG, SOCKET_DEBUG, LEAK, LOG_MODE
 # DEBUG_FLAG	+= SYNTAX_DEBUG
@@ -46,7 +48,7 @@ CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-CXXFLAGS	+=	$(LOG)
+# CXXFLAGS	+=	$(LOG)
 
 RM			=	rm -f
 
@@ -56,7 +58,7 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
-CXXFLAGS	+=	$(DEBUG) #$(SNTZ)
+# CXXFLAGS	+=	$(DEBUG) $(SNTZ)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
@@ -64,6 +66,7 @@ CXXFLAGS	+=	$(DEBUG) #$(SNTZ)
 #	Make Part
 #==============================================================================
 .PHONY		:	all clean fclean re
+
 all			:	$(NAME)
 clean		:	; $(RM) -r $(OBJ_DIR)
 fclean		:	clean ; $(RM) $(NAME)
@@ -81,3 +84,7 @@ $(OBJ)		:	| $(OBJ_DIR)
 
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
 		$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(SNTZ)"
+
+log			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG)"
