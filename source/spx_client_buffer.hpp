@@ -147,22 +147,22 @@ public:
 	int								   transfer_encoding_;
 
 	/* RESPONSE*/
-	std::vector<header> headers_;
-	int					version_minor_;
-	int					version_major_;
-	unsigned int		status_code_;
-	std::string			status_;
+	std::vector<header> _headers;
+	int					_version_minor;
+	int					_version_major;
+	unsigned int		_status_code;
+	std::string			_status;
 
-	int			file_open(const char* dir) const;
-	off_t		setContentLength(int fd);
-	void		setContentType(std::string uri);
-	void		setDate();
-	std::string handle_static_error_page();
-	std::string make_to_string() const;
-	void		write_to_response_buffer(const std::string& content);
+	int			file_open_(const char* dir) const;
+	off_t		set_content_length_(int fd);
+	void		set_content_type_(std::string uri);
+	void		set_date_();
+	std::string handle_static_error_page_();
+	std::string make_to_string_() const;
+	void		write_to_response_buffer_(const std::string& content);
 
 	/* session & SESSION */
-	void setSessionHeader(std::string session_id);
+	void set_session_header_(std::string session_id);
 	/* RESPONSE END*/
 
 	ResField()
@@ -183,11 +183,11 @@ public:
 		, cgi_write_fd_(0)
 		, header_ready_(0)
 		, transfer_encoding_(0)
-		, headers_()
-		, version_minor_(1)
-		, version_major_(1)
-		, status_code_(200)
-		, status_("OK") {
+		, _headers()
+		, _version_minor(1)
+		, _version_major(1)
+		, _status_code(200)
+		, _status("OK") {
 	}
 
 	~ResField() {
