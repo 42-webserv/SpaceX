@@ -3,6 +3,11 @@
 #define __SPX__CORE_TYPE_HPP__
 
 #include <cstdint>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #ifndef _LIBCPP_CSTDINT
 typedef signed char		   int8_t;

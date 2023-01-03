@@ -1,5 +1,4 @@
 #include "spx_cgi_module.hpp"
-#include "spx_core_type.hpp"
 #include <cstring>
 #include <string>
 
@@ -23,6 +22,19 @@ namespace {
 		default:
 			return "<unknown>";
 		}
+	}
+
+	std::string
+	dashline_to_underline__(std::string const& str) {
+		std::string ret;
+		for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+			if (*it == '-') {
+				ret += '_';
+			} else {
+				ret += *it;
+			}
+		}
+		return ret;
 	}
 
 } // namespace
@@ -53,7 +65,7 @@ CgiModule::made_env_for_cgi_(int status) {
 		vec_env_.push_back("REQUEST_URI=" + cgi_resolved_.resolved_request_uri_);
 		vec_env_.push_back("SCRIPT_NAME=" + cgi_resolved_.script_name_);
 
-#ifdef STD_RFC // NOTE : in Formal CGI, PATH_INFO is after SCRIPT_NAME's path
+#ifdef STD_CGI_RFC // NOTE : in Formal CGI, PATH_INFO is after SCRIPT_NAME's path
 		if (!cgi_resolved_.path_info_.empty()) {
 			vec_env_.push_back("PATH_INFO=" + cgi_resolved_.path_info_);
 		}
@@ -87,14 +99,14 @@ CgiModule::made_env_for_cgi_(int status) {
 				} else if (it->first == "accept-language") {
 					vec_env_.push_back("HTTP_ACCEPT_LANGUAGE=" + it->second);
 				} else {
-					vec_env_.push_back("X_" + it->first + "=" + it->second);
+					vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 				}
 			} else if (it->first == "authorization") {
 				vec_env_.push_back("HTTP_AUTHORIZATION=" + it->second);
 				// } else if (it->first == "auth-scheme") {
 				// 	vec_env_.push_back("AUTH_TYPE=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -116,7 +128,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "cookie") {
 				vec_env_.push_back("HTTP_COOKIE=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -124,7 +136,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "date") {
 				vec_env_.push_back("HTTP_DATE=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -132,7 +144,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "expect") {
 				vec_env_.push_back("HTTP_EXPECT=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -142,7 +154,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "forwarded") {
 				vec_env_.push_back("HTTP_FORWARDED=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -152,7 +164,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "host2-settings") {
 				vec_env_.push_back("HTTP_HOST2_SETTINGS=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -169,10 +181,10 @@ CgiModule::made_env_for_cgi_(int status) {
 				} else if (it->first == "if-unmodified-since") {
 					vec_env_.push_back("HTTP_IF_UNMODIFIED_SINCE=" + it->second);
 				} else {
-					vec_env_.push_back("X_" + it->first + "=" + it->second);
+					vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 				}
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -180,7 +192,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "max-forwards") {
 				vec_env_.push_back("HTTP_MAX_FORWARDS=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -188,7 +200,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "origin") {
 				vec_env_.push_back("HTTP_ORIGIN=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -200,7 +212,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "proxy-authorization") {
 				vec_env_.push_back("HTTP_PROXY_AUTHORIZATION=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -210,7 +222,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "referer") {
 				vec_env_.push_back("HTTP_REFERER=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -222,7 +234,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "transfer-encoding") {
 				vec_env_.push_back("HTTP_TRANSFER_ENCODING=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -232,7 +244,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			} else if (it->first == "user-agent") {
 				vec_env_.push_back("HTTP_USER_AGENT=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -240,7 +252,7 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "via") {
 				vec_env_.push_back("HTTP_VIA=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
@@ -248,20 +260,16 @@ CgiModule::made_env_for_cgi_(int status) {
 			if (it->first == "warning") {
 				vec_env_.push_back("HTTP_WARNING=" + it->second);
 			} else {
-				vec_env_.push_back("X_" + it->first + "=" + it->second);
+				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
 			break;
 		}
 		default: {
-			std::string tmp;
-			for (std::string::const_iterator ite = it->first.begin(); ite < it->first.end(); ++ite) {
-				if (*ite == '-') {
-					tmp += '_';
-				} else {
-					tmp += toupper(*ite);
-				}
+			if (it->first[0] == 'X') {
+				vec_env_.push_back(dashline_to_underline__(it->first) + "=" + it->second);
+			} else {
+				vec_env_.push_back("HTTP_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
-			vec_env_.push_back("HTTP_" + tmp + "=" + it->second);
 		}
 		}
 	}
