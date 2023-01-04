@@ -314,10 +314,13 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 					std::string hash_value = storage.make_hash(client_fd_);
 					storage.add_new_session(hash_value);
 					req->session_id = SESSIONID + hash_value;
+					req->session_id += "; Max-Age=10"; // 10 sec
 				} else {
 					session_t& session = storage.find_value_by_key((*find_cookie).second);
 					session.count_++;
 					req->session_id = SESSIONID + (*find_cookie).second;
+					req->session_id += "; Max-Age=10";
+
 					spx_log_("SESSIONCOUNT", session.count_);
 				}
 			}
@@ -327,6 +330,7 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			std::string hash_value = storage.make_hash(client_fd_);
 			storage.add_new_session(hash_value);
 			req->session_id = SESSIONID + hash_value;
+			req->session_id += "; Max-Age=10";
 		}
 
 		// COOKIE & SESSION END
