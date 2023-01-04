@@ -11,6 +11,8 @@
 #include <time.h>
 
 #define SESSIONID "sessionID="
+#define MAX_AGE "Max-Age="
+#define AGE_TIME "10"
 
 typedef struct Cookie {
 	typedef std::map<std::string, std::string> key_val_t;
