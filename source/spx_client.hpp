@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __SPX__CLIENT_BUFFER__HPP
-#define __SPX__CLIENT_BUFFER__HPP
+#ifndef __SPX__CLIENT__HPP
+#define __SPX__CLIENT__HPP
 
 #include <algorithm>
 #include <arpa/inet.h>
@@ -12,7 +12,6 @@
 #include <string>
 #include <sys/event.h>
 #include <sys/socket.h>
-#include <sys/uio.h>
 #include <unistd.h>
 
 #include <map>
@@ -20,17 +19,21 @@
 #include <vector>
 
 #include "spacex.hpp"
+#include "spx_buffer.hpp"
 #include "spx_response_generator.hpp"
 #include "spx_session_storage.hpp"
 #include "spx_syntax_checker.hpp"
 
 #define BUFFER_SIZE 8 * 1024
-#define IOVEC_LEN 8
+#define IOVEC_LEN 4
 #define WRITE_BUFFER_MAX 32 * 1024
 
 #define MAX_EVENT_LIST 200
 
 class SessionStorage;
+
+typedef SpxReadBuffer rdbuf_t;
+typedef SpxBuffer	  buf_t;
 
 enum e_request_method {
 	REQ_GET		  = 1 << 1,
@@ -80,7 +83,6 @@ enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
 
 typedef std::vector<char>					buffer_t;
 typedef std::vector<struct kevent>			event_list_t;
-typedef std::vector<struct iovec>			iov_t;
 typedef std::map<std::string, std::string>	cgi_header_t;
 typedef std::map<std::string, std::string>	req_header_t;
 typedef std::pair<std::string, std::string> header;
@@ -88,10 +90,8 @@ typedef std::pair<std::string, std::string> header;
 class CgiField {
 public:
 	cgi_header_t _cgi_header;
-	iov_t		 _from_cgi;
-	iov_t		 _to_cgi;
-	off_t		 _from_cgi_ofs;
-	off_t		 _to_cgi_ofs;
+	rdbuf_t		 _from_cgi;
+	buf_t		 _to_cgi;
 	size_t		 _cgi_size;
 	size_t		 _cgi_read;
 	int			 _is_chnkd;
@@ -99,10 +99,8 @@ public:
 
 	CgiField()
 		: _cgi_header()
-		, _from_cgi()
+		, _from_cgi(IOVEC_LEN, BUFFER_SIZE)
 		, _to_cgi()
-		, _from_cgi_ofs(0)
-		, _to_cgi_ofs(0)
 		, _cgi_size(0)
 		, _cgi_read(0)
 		, _is_chnkd(0)
@@ -112,10 +110,8 @@ public:
 	void
 	clear_() {
 		_cgi_header.clear();
-		_from_cgi.clear();
-		_to_cgi.clear();
-		_from_cgi_ofs = 0;
-		_to_cgi_ofs	  = 0;
+		_from_cgi.clear_();
+		_to_cgi.clear_();
 		_cgi_size	  = 0;
 		_cgi_read	  = 0;
 		_is_chnkd	  = 0;
@@ -125,7 +121,7 @@ public:
 
 class ChunkedField {
 public:
-	iov_t _chnk_body;
+	buf_t _chnk_body;
 	off_t _chnk_ofs;
 
 	void
@@ -177,7 +173,7 @@ class ResField {
 public:
 	std::string	   _res_header;
 	std::string	   _dwnl_fn;
-	iov_t		   _res_buf;
+	buf_t		   _res_buf;
 	uri_resolved_t _uri_resolv;
 	size_t		   _body_read;
 	size_t		   _body_size;
@@ -238,7 +234,7 @@ public:
 		version_major_ = 1;
 		status_code_   = 200;
 		status_		   = "OK";
-		_res_buf.clear();
+		_res_buf.clear_();
 	};
 };
 
@@ -260,7 +256,7 @@ public:
 	CgiField			   _cgi;
 	ChunkedField		   _chnkd;
 	uintptr_t			   _client_fd;
-	iov_t				   _rdbuf;
+	rdbuf_t				   _rdbuf;
 	int					   _rd_ofs; // read point of _rdbuf.front()
 	int					   _rdbuf_end; // _rdbuf empty pos. like vector end iterator.
 	int					   _state;
@@ -271,10 +267,7 @@ public:
 	Client(event_list_t* chnage_list);
 	~Client();
 
-	void iov_clear_(iov_t& buf);
-
 	void reset_();
-	void read_buf_set(iov_t& rdbuf);
 
 	bool request_line_check(std::string& req_line);
 	bool request_line_parser();
