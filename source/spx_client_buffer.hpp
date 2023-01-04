@@ -83,7 +83,7 @@ enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
 
 typedef std::vector<char>					buffer_t;
 typedef std::vector<struct kevent>			event_list_t;
-typedef std::pair<std::string, std::string> header;
+typedef std::pair<std::string, std::string> header_t;
 
 class ReqField {
 public:
@@ -146,7 +146,7 @@ public:
 	int								   transfer_encoding_;
 
 	/* RESPONSE*/
-	std::vector<header> _headers;
+	std::vector<header_t> _headers;
 	int					_version_minor;
 	int					_version_major;
 	unsigned int		_status_code;

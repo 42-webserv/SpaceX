@@ -95,10 +95,3 @@ void
 SessionStorage::addCount() {
 	++count;
 }
-
-// this code will moved to client_buf file
-
-void
-ResField::setSessionHeader(std::string session_id) {
-	headers_.push_back(header("Set-Cookie", "sessionID=" + session_id));
-}
