@@ -147,10 +147,10 @@ public:
 
 	/* RESPONSE*/
 	std::vector<header_t> _headers;
-	int					_version_minor;
-	int					_version_major;
-	unsigned int		_status_code;
-	std::string			_status;
+	int					  _version_minor;
+	int					  _version_major;
+	unsigned int		  _status_code;
+	std::string			  _status;
 
 	int			file_open_(const char* dir) const;
 	off_t		set_content_length_(int fd);
@@ -204,7 +204,7 @@ private:
 	ClientBuffer& operator=(const ClientBuffer& buf);
 
 public:
-	SessionStorage									 storage; // add by space
+	session_storage_t								 _storage;
 	std::queue<std::pair<req_field_t, res_field_t> > req_res_queue_;
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
