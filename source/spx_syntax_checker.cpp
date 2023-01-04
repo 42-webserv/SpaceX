@@ -349,19 +349,17 @@ spx_chunked_syntax_start_line(client_buf_t&						  buf,
 			switch (*it) {
 			case ';':
 				next_state = chunked_semicolon;
-				state	   = chunked_size_input;
 				break;
 			case ' ':
 				next_state = chunked_BWS_before_ext;
-				state	   = chunked_size_input;
 				break;
 			case '\r':
 				next_state = chunked_almost_done;
-				state	   = chunked_size_input;
 				break;
 			default:
 				return error__("invalid chunked start line number : chunked_start");
 			}
+			state = chunked_size_input;
 			break;
 		}
 

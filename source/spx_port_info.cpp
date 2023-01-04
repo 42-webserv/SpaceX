@@ -1,4 +1,5 @@
 #include "spx_port_info.hpp"
+#include "spx_core_type.hpp"
 
 #include <dirent.h>
 
@@ -152,7 +153,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				break;
 			}
 			case '/': {
-				while (*it == '/') {
+				while (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
 					++it;
 				}
 				temp += "/";
@@ -280,12 +281,12 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 
 	std::string::const_iterator it = unvalid_path.begin();
 	while (it != unvalid_path.end()) {
-		if (*it == '/') {
-			while (*it == '/' && it != unvalid_path.end()) {
+		if (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
+			while (syntax_(only_slash_, static_cast<uint8_t>(*it)) && it != unvalid_path.end()) {
 				++it;
 			}
 			resolved_path += '/';
-		} else if (*it == '%'
+		} else if (syntax_(only_percent_, static_cast<uint8_t>(*it))
 				   && syntax_(hexdigit_, static_cast<uint8_t>(*(it + 1)))
 				   && syntax_(hexdigit_, static_cast<uint8_t>(*(it + 2)))) {
 			std::string		  temp_hex;
