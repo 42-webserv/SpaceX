@@ -10,7 +10,7 @@ typedef SpxReadBuffer rdbuf_t;
 int
 main() {
 	{
-		for (int i = 3; i < 10; i++) {
+		for (int i = 3; i < 15; i++) {
 			rdbuf_t rdbuf(i, 4);
 			buf_t	buf;
 
@@ -29,8 +29,9 @@ main() {
 				rdbuf.move_(buf, 2);
 			}
 
-			buf.write_(STDOUT_FILENO);
-			rdbuf.write_(STDOUT_FILENO);
+			std::string str;
+
+			std::cout << buf.get_crlf_line_(str) << ", " << str << std::endl;
 		}
 	}
 	{
@@ -47,24 +48,35 @@ main() {
 		while (rdbuf.read_(fd2)) {
 			;
 		}
+		for (int i = 0; i < rdbuf.buf_size_(); i++) {
+			std::cout << rdbuf.pos_val_(i);
+		}
 		std::string str;
-
 		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+		str.clear();
+		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+		str.clear();
+		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+		str.clear();
+		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+		str.clear();
+		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+		// std::cout << std::endl;
 	}
-	{
-		rdbuf_t rdbuf(10, 10);
-		buf_t	buf;
+	// {
+	// 	rdbuf_t rdbuf(10, 10);
+	// 	buf_t	buf;
 
-		int fd1 = open("bbb", O_RDONLY | O_NONBLOCK);
-		// printf("fd1: %d\n", fd1);
-		// printf("fd2: %d\n", fd2);
+	// 	int fd1 = open("bbb", O_RDONLY | O_NONBLOCK);
+	// 	// printf("fd1: %d\n", fd1);
+	// 	// printf("fd2: %d\n", fd2);
 
-		rdbuf.read_(fd1);
+	// 	rdbuf.read_(fd1);
 
-		rdbuf.move_(buf, 10);
-		buf.write_(STDOUT_FILENO);
-		rdbuf.write_(STDOUT_FILENO);
-	}
+	// 	rdbuf.move_(buf, 10);
+	// 	buf.write_(STDOUT_FILENO);
+	// 	rdbuf.write_(STDOUT_FILENO);
+	// }
 
 	return 0;
 }

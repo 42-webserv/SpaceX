@@ -5,11 +5,11 @@ SpxBuffer::SpxBuffer()
 	: _buf()
 	, _buf_size(0)
 	, _partial_point(0) {
-	std::cout << "constructor buf size " << _buf.size() << std::endl;
+	// std::cout << "constructor buf size " << _buf.size() << std::endl;
 }
 
 SpxBuffer::~SpxBuffer() {
-	std::cout << "destructor buf size " << _buf.size() << std::endl;
+	// std::cout << "destructor buf size " << _buf.size() << std::endl;
 	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
 		delete[] static_cast<char*>(it->iov_base);
 	}
@@ -65,11 +65,9 @@ SpxBuffer::delete_size_(size_t size) {
 
 size_t
 SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
-	size_t		 del_size;
-	struct iovec new_iov;
-
 	// std::cout << "partial" << std::endl;
-
+	size_t			del_size;
+	struct iovec	new_iov;
 	iov_t::iterator it = _buf.begin();
 
 	if (size < it->iov_len) {
@@ -97,11 +95,9 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 
 size_t
 SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
-	size_t		 tmp_size = size;
-	struct iovec new_iov;
-
 	// std::cout << "nonpartial" << std::endl;
-
+	size_t			tmp_size = size;
+	struct iovec	new_iov;
 	iov_t::iterator it = _buf.begin();
 
 	while (it != _buf.end() && tmp_size > it->iov_len) {
@@ -210,23 +206,25 @@ SpxBuffer::get_str_(std::string& str, size_t size) {
 
 	if (_buf.front().iov_len >= size) {
 		str.insert(str.end(), push_front_addr_(), push_front_addr_() + size);
-		delete_size_(size);
+		// delete_size_(size);
 		return;
 	}
 
 	str.insert(str.end(), push_front_addr_(), front_end_());
-	size -= _buf.front().iov_len;
+	size_t tmp_size = size;
+	tmp_size -= _buf.front().iov_len;
 
 	iov_t::iterator it = _buf.begin() + 1;
 
-	while (size > it->iov_len) {
+	while (tmp_size > it->iov_len) {
 		str.insert(str.end(), iov_base_(*it), iov_end_addr_(*it));
-		size -= it->iov_len;
+		tmp_size -= it->iov_len;
 		++it;
 	}
 	if (it != _buf.end()) {
-		str.insert(str.end(), iov_base_(*it), iov_base_(*it) + size);
+		str.insert(str.end(), iov_base_(*it), iov_base_(*it) + tmp_size);
 	}
+	// delete_size_(size);
 }
 
 int
@@ -238,7 +236,6 @@ SpxBuffer::get_crlf_line_(std::string& line) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, 8 * 1024);
-	std::cout << lf_pos << std::endl;
 	if (lf_pos == -1) {
 		return false;
 	} else if (lf_pos == 0) {
@@ -246,6 +243,7 @@ SpxBuffer::get_crlf_line_(std::string& line) {
 	}
 	if (pos_val_(lf_pos - 1) == CR) {
 		get_str_(line, lf_pos - 1);
+		delete_size_(lf_pos + 1);
 		return true;
 	} else {
 		return -1;
