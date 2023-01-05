@@ -49,9 +49,10 @@ SpxBuffer::delete_size_(size_t size) {
 
 size_t
 SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
-	size_t		 iov_size = 0;
 	size_t		 del_size;
 	struct iovec new_iov;
+
+	// std::cout << "partial" << std::endl;
 
 	iov_t::iterator it = _buf.begin();
 
@@ -59,8 +60,9 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 		new_iov.iov_base = new char[size];
 		new_iov.iov_len	 = size;
 		memcpy(new_iov.iov_base, push_front_addr_(), size);
-		_partial_point += size;
+		delete_size_(size);
 		to_buf._buf.push_back(new_iov);
+		to_buf._buf_size += size;
 		return size;
 	}
 
@@ -69,6 +71,7 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 	memcpy(new_iov.iov_base, push_front_addr_(), it->iov_len);
 	del_size = it->iov_len;
 	to_buf._buf.push_back(new_iov);
+	to_buf._buf_size += del_size;
 	delete_size_(del_size);
 	if (size - del_size) {
 		move_nonpartial_case_(to_buf, size - del_size);
@@ -80,6 +83,8 @@ size_t
 SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 	size_t		 tmp_size = size;
 	struct iovec new_iov;
+
+	// std::cout << "nonpartial" << std::endl;
 
 	iov_t::iterator it = _buf.begin();
 
@@ -100,8 +105,7 @@ SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 	if (tmp_size) {
 		to_buf._buf.push_back(new_iov);
 	}
-	// std::cout << "nonpartial to_buf " << to_buf._buf.size() << std::endl;
-	// std::cout << "nonpartial to_buf " << static_cast<char*>(to_buf._buf.front().iov_base) << std::endl;
+	to_buf._buf_size += size;
 	delete_size_(size);
 	return size;
 }
@@ -158,6 +162,10 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t str_max_size) {
 		str_max_size = _buf_size;
 	}
 	lf_pos = std::find(push_front_addr_(), push_front_addr_() + _buf.front().iov_len, LF);
+	if (lf_pos == push_front_addr_()) {
+		// start with \n. error case.
+		return -1;
+	}
 	lf_pos = lf_pos + 1;
 	size   = static_cast<char*>(lf_pos) - static_cast<char*>(push_front_addr_());
 	if (lf_pos > push_front_addr_() + _buf.front().iov_len) {
@@ -174,7 +182,10 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t str_max_size) {
 		// search from the second buffer
 		iov_t::iterator it = _buf.begin() + 1;
 		while (it != _buf.end() && size < str_max_size) {
-			lf_pos	 = std::find(static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len, LF);
+			lf_pos = std::find(static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len, LF);
+			if (lf_pos == it->iov_base) {
+				//
+			}
 			lf_pos	 = lf_pos + 1;
 			tmp_size = static_cast<char*>(lf_pos) - static_cast<char*>(it->iov_base);
 			size += tmp_size;
@@ -186,7 +197,6 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t str_max_size) {
 						line.insert(line.end(), static_cast<char*>(tmp->iov_base), static_cast<char*>(tmp->iov_base) + tmp->iov_len);
 					}
 					line.insert(line.end(), static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len);
-					_partial_point = tmp_size;
 					delete_size_(size);
 					return true;
 				} else {
