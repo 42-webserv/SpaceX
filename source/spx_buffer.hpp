@@ -19,8 +19,12 @@ protected:
 	SpxBuffer(const SpxBuffer& spxbuf);
 	SpxBuffer& operator=(const SpxBuffer& spxbuf);
 
-	char*  push_front_addr_();
-	char*  pull_front_addr_();
+	char* front_end_();
+	char* push_front_addr_();
+	char* pull_front_addr_();
+	char* iov_base_(struct iovec& iov);
+	char* iov_end_addr_(struct iovec& iov);
+
 	void   delete_size_(size_t size);
 	size_t move_partial_case_(SpxBuffer& to_buf, size_t size);
 	size_t move_nonpartial_case_(SpxBuffer& to_buf, size_t size);
@@ -32,15 +36,18 @@ public:
 	void	clear_();
 	size_t	move_(SpxBuffer& to_buf, size_t size);
 	ssize_t write_(int fd);
-	int		get_crlf_line_(std::string& line, size_t str_max_size);
+	int		get_crlf_line_(std::string& line);
 	size_t	buf_size_();
+	size_t	find_pos_(char c, size_t max = -1);
+	char	pos_val_(size_t pos);
+	void	get_str_(std::string& str, size_t size);
 };
 
 class SpxReadBuffer : public SpxBuffer {
 private:
 	iov_t		 _rdbuf;
 	const size_t _rdbuf_buf_size;
-	const int	 _rdbuf_iov_size;
+	const int	 _rdbuf_iov_vec_size;
 
 	SpxReadBuffer();
 	SpxReadBuffer(const SpxReadBuffer& buf);
@@ -49,7 +56,7 @@ private:
 	void set_empty_buf_();
 
 public:
-	SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_size);
+	SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size);
 	~SpxReadBuffer();
 
 	ssize_t read_(int fd);

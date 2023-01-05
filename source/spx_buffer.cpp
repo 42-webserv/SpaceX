@@ -5,14 +5,29 @@ SpxBuffer::SpxBuffer()
 	: _buf()
 	, _buf_size(0)
 	, _partial_point(0) {
-	// std::cout << "constructor buf size " << _buf.size() << std::endl;
+	std::cout << "constructor buf size " << _buf.size() << std::endl;
 }
 
 SpxBuffer::~SpxBuffer() {
-	// std::cout << "destructor buf size " << _buf.size() << std::endl;
+	std::cout << "destructor buf size " << _buf.size() << std::endl;
 	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
 		delete[] static_cast<char*>(it->iov_base);
 	}
+}
+
+char*
+SpxBuffer::front_end_() {
+	return static_cast<char*>(push_front_addr_()) + _buf.front().iov_len;
+}
+
+char*
+SpxBuffer::iov_base_(struct iovec& iov) {
+	return static_cast<char*>(iov.iov_base);
+}
+
+char*
+SpxBuffer::iov_end_addr_(struct iovec& iov) {
+	return static_cast<char*>(iov.iov_base) + iov.iov_len;
 }
 
 char*
@@ -39,9 +54,10 @@ SpxBuffer::delete_size_(size_t size) {
 		if (it == _buf.begin()) {
 			_partial_point += size;
 			return;
+		} else {
+			_partial_point = size;
+			_buf.erase(_buf.begin(), it);
 		}
-		_partial_point = size;
-		_buf.erase(_buf.begin(), it);
 	} else {
 		clear_();
 	}
@@ -88,21 +104,15 @@ SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 
 	iov_t::iterator it = _buf.begin();
 
-	while (tmp_size) {
-		if (tmp_size >= it->iov_len) {
-			tmp_size -= it->iov_len;
-			++it;
-		} else {
-			new_iov.iov_base = new char[tmp_size];
-			new_iov.iov_len	 = tmp_size;
-			memcpy(new_iov.iov_base, it->iov_base, tmp_size);
-			break;
-		}
+	while (it != _buf.end() && tmp_size > it->iov_len) {
+		tmp_size -= it->iov_len;
+		++it;
 	}
-	if (it != _buf.begin()) {
-		to_buf._buf.insert(to_buf._buf.end(), _buf.begin(), it);
-	}
+	to_buf._buf.insert(to_buf._buf.end(), _buf.begin(), it);
 	if (tmp_size) {
+		new_iov.iov_base = new char[tmp_size];
+		new_iov.iov_len	 = tmp_size;
+		memcpy(new_iov.iov_base, it->iov_base, tmp_size);
 		to_buf._buf.push_back(new_iov);
 	}
 	to_buf._buf_size += size;
@@ -149,66 +159,138 @@ SpxBuffer::write_(int fd) {
 	return n_write;
 }
 
+size_t
+SpxBuffer::find_pos_(char c, size_t max) {
+	size_t pos;
+	size_t tmp;
+
+	pos = std::find(push_front_addr_(), front_end_(), c) - push_front_addr_();
+	if (pos != _buf.front().iov_len) {
+		return pos;
+	}
+	iov_t::iterator it = _buf.begin() + 1;
+	while (it != _buf.end()) {
+		tmp = std::find(iov_base_(*it), iov_end_addr_(*it), c) - iov_base_(*it);
+		pos += tmp;
+		if (tmp != it->iov_len) {
+			return pos;
+		}
+		if (pos > max) {
+			return -1;
+		}
+		++it;
+	}
+	return -1;
+}
+
+char
+SpxBuffer::pos_val_(size_t pos) {
+	if (pos >= _buf_size) {
+		return 0;
+	}
+
+	if (_buf.front().iov_len > pos) {
+		return *(push_front_addr_() + pos);
+	}
+	pos -= _buf.front().iov_len;
+
+	iov_t::iterator it = _buf.begin() + 1;
+	while (it->iov_len <= pos) {
+		pos -= it->iov_len;
+		++it;
+	}
+	return *(static_cast<char*>(it->iov_base) + pos);
+}
+
+void
+SpxBuffer::get_str_(std::string& str, size_t size) {
+	if (size >= _buf_size) {
+		size = _buf_size;
+	}
+
+	if (_buf.front().iov_len >= size) {
+		str.insert(str.end(), push_front_addr_(), push_front_addr_() + size);
+		delete_size_(size);
+		return;
+	}
+
+	str.insert(str.end(), push_front_addr_(), front_end_());
+	size -= _buf.front().iov_len;
+
+	iov_t::iterator it = _buf.begin() + 1;
+
+	while (size > it->iov_len) {
+		str.insert(str.end(), iov_base_(*it), iov_end_addr_(*it));
+		size -= it->iov_len;
+		++it;
+	}
+	if (it != _buf.end()) {
+		str.insert(str.end(), iov_base_(*it), iov_base_(*it) + size);
+	}
+}
+
 int
-SpxBuffer::get_crlf_line_(std::string& line, size_t str_max_size) {
-	size_t size		= 0;
-	size_t tmp_size = 0;
-	char*  lf_pos;
+SpxBuffer::get_crlf_line_(std::string& line) {
+	size_t lf_pos;
+	size_t tmp_size;
 
 	if (_buf.empty()) {
 		return false;
 	}
-	if (str_max_size > _buf_size) {
-		str_max_size = _buf_size;
-	}
-	lf_pos = std::find(push_front_addr_(), push_front_addr_() + _buf.front().iov_len, LF);
-	if (lf_pos == push_front_addr_()) {
-		// start with \n. error case.
+	lf_pos = find_pos_(LF, 8 * 1024);
+	std::cout << lf_pos << std::endl;
+	if (lf_pos == -1) {
+		return false;
+	} else if (lf_pos == 0) {
 		return -1;
 	}
-	lf_pos = lf_pos + 1;
-	size   = static_cast<char*>(lf_pos) - static_cast<char*>(push_front_addr_());
-	if (lf_pos > push_front_addr_() + _buf.front().iov_len) {
-		// LF found in the first buffer.
-		if (*(static_cast<char*>(lf_pos) - 2) == CR) {
-			line.assign(push_front_addr_(), (lf_pos - 2));
-			_partial_point += size;
-			return true;
-		} else {
-			// error case.
-			return -1;
-		}
+	if (pos_val_(lf_pos - 1) == CR) {
+		get_str_(line, lf_pos - 1);
+		return true;
 	} else {
-		// search from the second buffer
-		iov_t::iterator it = _buf.begin() + 1;
-		while (it != _buf.end() && size < str_max_size) {
-			lf_pos = std::find(static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len, LF);
-			if (lf_pos == it->iov_base) {
-				//
-			}
-			lf_pos	 = lf_pos + 1;
-			tmp_size = static_cast<char*>(lf_pos) - static_cast<char*>(it->iov_base);
-			size += tmp_size;
-			if (lf_pos > static_cast<char*>(it->iov_base) + it->iov_len) {
-				// LF found.
-				if (*(static_cast<char*>(lf_pos) - 2) == CR) {
-					line.assign(push_front_addr_(), push_front_addr_() + _buf.front().iov_len);
-					for (iov_t::iterator tmp = _buf.begin() + 1; tmp != it; ++tmp) {
-						line.insert(line.end(), static_cast<char*>(tmp->iov_base), static_cast<char*>(tmp->iov_base) + tmp->iov_len);
-					}
-					line.insert(line.end(), static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len);
-					delete_size_(size);
-					return true;
-				} else {
-					// error case.
-					return -1;
-				}
-			}
-			++it;
-		}
-		// not found
-		return false;
+		return -1;
 	}
+	// if (lf_pos > push_front_addr_() + _buf.front().iov_len) {
+	// 	// LF found in the first buffer.
+	// 	if (*(static_cast<char*>(lf_pos) - 2) == CR) {
+	// 		line.assign(push_front_addr_(), (lf_pos - 2));
+	// 		_partial_point += size;
+	// 		return true;
+	// 	} else {
+	// 		// error case.
+	// 		return -1;
+	// 	}
+	// } else {
+	// 	// search from the second buffer
+	// 	iov_t::iterator it = _buf.begin() + 1;
+	// 	while (it != _buf.end() && size < str_max_size) {
+	// 		lf_pos = std::find(static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len, LF);
+	// 		if (lf_pos == it->iov_base) {
+	// 			//
+	// 		}
+	// 		lf_pos	 = lf_pos + 1;
+	// 		tmp_size = static_cast<char*>(lf_pos) - static_cast<char*>(it->iov_base);
+	// 		size += tmp_size;
+	// 		if (lf_pos > static_cast<char*>(it->iov_base) + it->iov_len) {
+	// 			// LF found.
+	// 			if (*(static_cast<char*>(lf_pos) - 2) == CR) {
+	// 				line.assign(push_front_addr_(), push_front_addr_() + _buf.front().iov_len);
+	// 				for (iov_t::iterator tmp = _buf.begin() + 1; tmp != it; ++tmp) {
+	// 					line.insert(line.end(), static_cast<char*>(tmp->iov_base), static_cast<char*>(tmp->iov_base) + tmp->iov_len);
+	// 				}
+	// 				line.insert(line.end(), static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len);
+	// 				delete_size_(size);
+	// 				return true;
+	// 			} else {
+	// 				// error case.
+	// 				return -1;
+	// 			}
+	// 		}
+	// 		++it;
+	// 	}
+	// 	// not found
+	// 	return false;
+	// }
 }
 
 size_t
@@ -220,11 +302,11 @@ SpxBuffer::buf_size_() {
 SPX READ BUFFER
 */
 
-SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_size)
+SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size)
 	: SpxBuffer()
 	, _rdbuf()
 	, _rdbuf_buf_size(_rdbuf_buf_size)
-	, _rdbuf_iov_size(_rdbuf_iov_size) {
+	, _rdbuf_iov_vec_size(_rdbuf_iov_vec_size) {
 	// set_empty_buf_();
 }
 
@@ -241,7 +323,7 @@ SpxReadBuffer::set_empty_buf_() {
 	struct iovec tmp;
 
 	tmp.iov_len = _rdbuf_buf_size;
-	while (_rdbuf.size() < _rdbuf_iov_size) {
+	while (_rdbuf.size() < _rdbuf_iov_vec_size) {
 		tmp.iov_base = new char[_rdbuf_buf_size];
 		_rdbuf.push_back(tmp);
 	}
@@ -251,7 +333,7 @@ ssize_t
 SpxReadBuffer::read_(int fd) {
 	set_empty_buf_();
 	// std::cout << "empty_buf size " << _rdbuf.size() << std::endl;
-	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_size);
+	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_vec_size);
 
 	if (n_read <= 0) {
 		return n_read;

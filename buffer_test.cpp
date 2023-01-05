@@ -49,7 +49,21 @@ main() {
 		}
 		std::string str;
 
-		std::cout << rdbuf.get_crlf_line_(str, -1) << ", " << str << std::endl;
+		std::cout << rdbuf.get_crlf_line_(str) << ", " << str << std::endl;
+	}
+	{
+		rdbuf_t rdbuf(10, 10);
+		buf_t	buf;
+
+		int fd1 = open("bbb", O_RDONLY | O_NONBLOCK);
+		// printf("fd1: %d\n", fd1);
+		// printf("fd2: %d\n", fd2);
+
+		rdbuf.read_(fd1);
+
+		rdbuf.move_(buf, 10);
+		buf.write_(STDOUT_FILENO);
+		rdbuf.write_(STDOUT_FILENO);
 	}
 
 	return 0;
