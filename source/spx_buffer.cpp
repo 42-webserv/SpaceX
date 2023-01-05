@@ -206,7 +206,7 @@ SpxBuffer::get_str_(std::string& str, size_t size) {
 
 	if (_buf.front().iov_len >= size) {
 		str.insert(str.end(), push_front_addr_(), push_front_addr_() + size);
-		// delete_size_(size);
+		delete_size_(size);
 		return;
 	}
 
@@ -224,7 +224,7 @@ SpxBuffer::get_str_(std::string& str, size_t size) {
 	if (it != _buf.end()) {
 		str.insert(str.end(), iov_base_(*it), iov_base_(*it) + tmp_size);
 	}
-	// delete_size_(size);
+	delete_size_(size);
 }
 
 int
@@ -243,52 +243,11 @@ SpxBuffer::get_crlf_line_(std::string& line) {
 	}
 	if (pos_val_(lf_pos - 1) == CR) {
 		get_str_(line, lf_pos - 1);
-		delete_size_(lf_pos + 1);
+		delete_size_(2);
 		return true;
 	} else {
 		return -1;
 	}
-	// if (lf_pos > push_front_addr_() + _buf.front().iov_len) {
-	// 	// LF found in the first buffer.
-	// 	if (*(static_cast<char*>(lf_pos) - 2) == CR) {
-	// 		line.assign(push_front_addr_(), (lf_pos - 2));
-	// 		_partial_point += size;
-	// 		return true;
-	// 	} else {
-	// 		// error case.
-	// 		return -1;
-	// 	}
-	// } else {
-	// 	// search from the second buffer
-	// 	iov_t::iterator it = _buf.begin() + 1;
-	// 	while (it != _buf.end() && size < str_max_size) {
-	// 		lf_pos = std::find(static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len, LF);
-	// 		if (lf_pos == it->iov_base) {
-	// 			//
-	// 		}
-	// 		lf_pos	 = lf_pos + 1;
-	// 		tmp_size = static_cast<char*>(lf_pos) - static_cast<char*>(it->iov_base);
-	// 		size += tmp_size;
-	// 		if (lf_pos > static_cast<char*>(it->iov_base) + it->iov_len) {
-	// 			// LF found.
-	// 			if (*(static_cast<char*>(lf_pos) - 2) == CR) {
-	// 				line.assign(push_front_addr_(), push_front_addr_() + _buf.front().iov_len);
-	// 				for (iov_t::iterator tmp = _buf.begin() + 1; tmp != it; ++tmp) {
-	// 					line.insert(line.end(), static_cast<char*>(tmp->iov_base), static_cast<char*>(tmp->iov_base) + tmp->iov_len);
-	// 				}
-	// 				line.insert(line.end(), static_cast<char*>(it->iov_base), static_cast<char*>(it->iov_base) + it->iov_len);
-	// 				delete_size_(size);
-	// 				return true;
-	// 			} else {
-	// 				// error case.
-	// 				return -1;
-	// 			}
-	// 		}
-	// 		++it;
-	// 	}
-	// 	// not found
-	// 	return false;
-	// }
 }
 
 size_t

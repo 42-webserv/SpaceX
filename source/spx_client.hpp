@@ -25,8 +25,7 @@
 #include "spx_syntax_checker.hpp"
 
 #define BUFFER_SIZE 8 * 1024
-#define IOVEC_LEN 4
-#define WRITE_BUFFER_MAX 32 * 1024
+#define IOV_VEC_SIZE 6
 
 #define MAX_EVENT_LIST 200
 
@@ -99,7 +98,7 @@ public:
 
 	CgiField()
 		: _cgi_header()
-		, _from_cgi(IOVEC_LEN, BUFFER_SIZE)
+		, _from_cgi(BUFFER_SIZE, IOV_VEC_SIZE)
 		, _to_cgi()
 		, _cgi_size(0)
 		, _cgi_read(0)
@@ -117,6 +116,10 @@ public:
 		_is_chnkd	  = 0;
 		_cgi_write_fd = 0;
 	}
+
+	bool cgi_handler_(req_field_t& req, event_list_t& change_list, struct kevent* cur_event);
+	// 	bool cgi_header_parser();
+	// 	bool cgi_controller();
 };
 
 class ChunkedField {
@@ -269,8 +272,11 @@ public:
 
 	void reset_();
 
-	bool request_line_check(std::string& req_line);
-	bool request_line_parser();
+	bool req_res_controller_(struct kevent* cur_event);
+	bool request_line_parser_();
+	bool request_line_check_(std::string& req_line);
+	bool header_field_parser_();
+	bool host_check_(std::string& host);
 };
 
 typedef Client client_t;
@@ -301,24 +307,16 @@ typedef Client client_t;
 // 	bool request_line_check(std::string& req_line);
 // 	bool request_line_parser();
 
-// 	bool header_field_parser();
-
 // 	void disconnect_client(event_list_t& change_list);
 
 // 	bool write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>& change_list);
 // 	bool write_response(event_list_t& change_list);
 // 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
 
-// 	bool cgi_header_parser();
-// 	bool cgi_controller();
 // 	// bool cgi_controller(int state, event_list_t& change_list);
-
-// 	bool cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 
 // 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
 // 	// bool skip_body(ssize_t cont_len);
-
-// 	bool host_check(std::string& host);
 
 // 	void read_to_client_buffer(event_list_t& change_list, struct kevent* cur_event);
 // 	void read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event);
