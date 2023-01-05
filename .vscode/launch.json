@@ -10,7 +10,7 @@
 			"request": "launch",
 			//"targetArchitecture": "x86_64",
 			// "program": "프로그램 이름 입력(예: ${workspaceFolder}/a.out)",
-			"program": "${workspaceFolder}/spacex",
+			"program": "${workspaceFolder}/a.out",
 			//"args": ["./rt_file/multi_42.rt", "--save"],
 			"args": [
 				"./config/for_intra_test.conf"
