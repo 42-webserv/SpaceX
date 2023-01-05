@@ -31,11 +31,23 @@ main(void) {
 
 	std::string hash_str;
 
-	for (int i = 0; i < 4; ++i) {
-		hash_str += static_cast<char>('!' + (time_char.to_ulong() & 0x3f));
-		hash_str += static_cast<char>('!' + (rand_char.to_ulong() & 0x3f));
-		time_char >>= 6;
-		rand_char >>= 6;
+	for (int i = 0; i < 6; ++i) {
+		if (seed_in & 1) {
+			hash_str += "abcdefghijklmnopqrstuvwxyz"[(time_char.to_ulong() & 0xf)];
+			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[(rand_char.to_ulong() & 0xf)];
+		} else {
+			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[(time_char.to_ulong() & 0xf)];
+			hash_str += "abcdefghijhlmnopqrstuvwxyz"[(rand_char.to_ulong() & 0xf)];
+		}
+		if (seed_in & 8) {
+			hash_str += "0123456789!#$%+-"[(time_char.to_ulong() & 0xf)];
+			hash_str += "&'*.^_`|~0123456"[(rand_char.to_ulong() & 0xf)];
+		} else {
+			hash_str += "&'*.^_`|~0123456"[(time_char.to_ulong() & 0xf)];
+			hash_str += "0123456789!#$%+-"[(rand_char.to_ulong() & 0xf)];
+		}
+		time_char >>= 4;
+		rand_char >>= 4;
 	}
 	std::cout << hash_str << std::endl;
 }
