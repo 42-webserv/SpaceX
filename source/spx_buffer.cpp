@@ -70,8 +70,8 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 	to_buf._buf.push_back(new_iov);
 	delete[] static_cast<char*>(it->iov_base);
 	_buf.erase(_buf.begin());
-
-	return del_size + move_(to_buf, size - del_size);
+	move_nonpartial_case_(to_buf, size - del_size);
+	return size;
 }
 
 size_t
@@ -97,13 +97,9 @@ SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 		}
 	}
 	to_buf._buf.insert(to_buf._buf.end(), _buf.begin(), it);
+	to_buf._buf.push_back(new_iov);
 	delete_size_(size);
 	return size;
-}
-
-void
-SpxBuffer::clear_() {
-	delete_size_(-1);
 }
 
 size_t
@@ -119,19 +115,61 @@ SpxBuffer::move_(SpxBuffer& to_buf, size_t size) {
 	return move_nonpartial_case_(to_buf, size);
 }
 
-size_t
+void
+SpxBuffer::clear_() {
+	delete_size_(-1);
+}
+
+ssize_t
 SpxBuffer::write_(int fd) {
 	if (_buf_size == 0) {
 		return 0;
 	}
 	_buf.front().iov_base = push_front_addr_();
-	size_t n_write		  = writev(fd, &_buf.front(), _buf.size());
-	if (n_write == 0) {
-		return 0;
+	ssize_t n_write		  = writev(fd, &_buf.front(), _buf.size());
+	if (n_write <= 0) {
+		return n_write;
 	}
 	_buf.front().iov_base = pull_front_addr_();
 	delete_size_(n_write);
 	return n_write;
+}
+
+int
+SpxBuffer::get_crlf_line_(std::string& line) {
+	size_t size = 0;
+	void*  lf_pos;
+
+	lf_pos = std::find(push_front_addr_(), push_front_addr_() + _buf.front().iov_len, LF);
+	size   = static_cast<char*>(lf_pos) - static_cast<char*>(push_front_addr_()) + 1;
+	if (lf_pos != push_front_addr_() + _buf.front().iov_len) {
+		// LF found in first buffer.
+		if (*(static_cast<char*>(lf_pos) - 1) == CR) {
+			line.assign(push_front_addr_(), (lf_pos - 1));
+			_partial_point += size;
+			return true;
+		} else {
+			// error case.
+			return -1;
+		}
+	} else {
+		// search next buffer
+		iov_t::iterator it = _buf.begin() + 1;
+		while (it != _buf.end()) {
+			lf_pos = std::find(it->iov_base, it->iov_base + it->iov_len, LF);
+			if (lf_pos != it->iov_base + it->iov_len) {
+				// LF found.
+				if (*(static_cast<char*>(lf_pos) - 1) == CR) {
+					line.assign(push_front_addr_(), (lf_pos - 1));
+					_partial_point += size;
+					return true;
+				} else {
+					// error case.
+					return -1;
+				}
+			}
+		}
+	}
 }
 
 /*
@@ -164,15 +202,13 @@ SpxReadBuffer::set_empty_buf_() {
 	}
 }
 
-#include <iostream>
-
-size_t
+ssize_t
 SpxReadBuffer::read_(int fd) {
 	set_empty_buf_();
-	size_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_size);
+	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_size);
 
-	if (n_read == 0) {
-		return 0;
+	if (n_read <= 0) {
+		return n_read;
 	}
 	_buf_size += n_read;
 	size_t div = n_read / _rdbuf_buf_size;

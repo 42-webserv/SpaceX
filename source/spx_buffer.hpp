@@ -2,8 +2,11 @@
 #ifndef __SPX__BUFFER__HPP
 #define __SPX__BUFFER__HPP
 
+#include <string>
 #include <sys/uio.h>
 #include <vector>
+
+#include "spx_core_type.hpp"
 
 class SpxBuffer {
 protected:
@@ -26,9 +29,10 @@ public:
 	SpxBuffer();
 	~SpxBuffer();
 
-	void   clear_();
-	size_t move_(SpxBuffer& to_buf, size_t size);
-	size_t write_(int fd);
+	void	clear_();
+	size_t	move_(SpxBuffer& to_buf, size_t size);
+	ssize_t write_(int fd);
+	int		get_crlf_line_(std::string& line);
 };
 
 class SpxReadBuffer : public SpxBuffer {
@@ -47,7 +51,7 @@ public:
 	SpxReadBuffer(size_t _rdbuf_iov_size, size_t _rdbuf_buf_size);
 	~SpxReadBuffer();
 
-	size_t read_(int fd);
+	ssize_t read_(int fd);
 };
 
 #endif
