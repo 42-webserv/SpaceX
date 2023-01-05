@@ -50,18 +50,18 @@ SessionStorage::make_hash(uintptr_t& seed_in) {
 
 	for (int i = 0; i < 6; ++i) {
 		if (seed_in & 1) {
-			hash_str += "abcdefghijklmnopqrstuvwxyz"[(time_char.to_ulong() & 0xf)];
-			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[(rand_char.to_ulong() & 0xf)];
+			hash_str += "abcdefghijklmnop"[(time_char.to_ulong() & 0xf)];
+			hash_str += "ABCDEFGHIJKLMNOP"[(rand_char.to_ulong() & 0xf)];
 		} else {
-			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[(time_char.to_ulong() & 0xf)];
-			hash_str += "abcdefghijhlmnopqrstuvwxyz"[(rand_char.to_ulong() & 0xf)];
+			hash_str += "ABCDEFGHIJKLMNOP"[(time_char.to_ulong() & 0xf)];
+			hash_str += "abcdefghijhlmnop"[(rand_char.to_ulong() & 0xf)];
 		}
 		if (seed_in & 8) {
-			hash_str += "0123456789!#$%+-"[(time_char.to_ulong() & 0xf)];
-			hash_str += "&'*.^_`|~0123456"[(rand_char.to_ulong() & 0xf)];
+			hash_str += "qrstuvwxyz12345+"[(time_char.to_ulong() & 0xf)];
+			hash_str += "QRSTUVWXYZ67890-"[(rand_char.to_ulong() & 0xf)];
 		} else {
-			hash_str += "&'*.^_`|~0123456"[(time_char.to_ulong() & 0xf)];
-			hash_str += "0123456789!#$%+-"[(rand_char.to_ulong() & 0xf)];
+			hash_str += "QRSTUVWXYZ67890-"[(time_char.to_ulong() & 0xf)];
+			hash_str += "qrstuvwxyz12345+"[(rand_char.to_ulong() & 0xf)];
 		}
 		time_char >>= 4;
 		rand_char >>= 4;
