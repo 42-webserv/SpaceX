@@ -62,7 +62,10 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	std::string		  full_path;
 
 	char* base_name = basename((char*)path.c_str());
-	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << path_info.script_name_ << HTML_BEFORE_LIST;
+	result << HTML_HEAD_TITLE << base_name << "</title>";
+	result << "<meta charset= utf-8>"
+		   << "</ head>\r\n<body>\r\n<h1> Index of "
+		   << path_info.script_name_ << HTML_BEFORE_LIST;
 	result << "<table>";
 	if ((dir = opendir(path.c_str())) != NULL) {
 		entry = readdir(dir);
@@ -75,13 +78,13 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				if (filename.compare("..") == 0) {
 					generate_root_path(full_path, path_info);
 					result << A_TAG_START << full_path << A_TAG_END;
-					result << filename << CLOSE_A_TAG << CRLF;
+					result << "📁 " << filename << CLOSE_A_TAG << CRLF;
 					continue;
 				} else {
 					generate_file_path(full_path, filename, path_info);
 					result << A_TAG_START << full_path << A_TAG_END;
 				}
-				result << filename << "/" << CLOSE_A_TAG << "</td>"
+				result << "📁 " << filename << "/" << CLOSE_A_TAG << "</td>"
 					   << "<td " << TD_STYLE << ">";
 				generate_file_status(result, filename, path_info);
 				result << "</td>"
