@@ -12,7 +12,9 @@
 #include "spx_response_generator.hpp"
 
 #define HTML_HEAD_TITLE "<html>\r\n<head><title>Index of "
-#define HTML_HEAD_TO_BODY "</title></head>\r\n<body>\r\n<h1>Index of "
+#define HTML_HEAD_TO_BODY "</title>\
+<meta charset=\"utf-8\"><style>a{text-decoration: none;}</style>\
+</head>\r\n<body>\r\n<h1>Index of "
 #define HTML_BEFORE_LIST "</h1><hr>\r\n<pre>\r\n"
 #define HTML_AFTER_LIST "</pre>\r\n<hr>\r\n</body>\r\n</html>"
 #define TD_STYLE "style=\"padding-left: 500px;padding-right: 100px;\""

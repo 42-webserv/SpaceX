@@ -62,10 +62,7 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 	std::string		  full_path;
 
 	char* base_name = basename((char*)path.c_str());
-	result << HTML_HEAD_TITLE << base_name << "</title>";
-	result << "<meta charset= utf-8>"
-		   << "</ head>\r\n<body>\r\n<h1> Index of "
-		   << path_info.script_name_ << HTML_BEFORE_LIST;
+	result << HTML_HEAD_TITLE << base_name << HTML_HEAD_TO_BODY << path_info.script_name_ << HTML_BEFORE_LIST;
 	result << "<table>";
 	if ((dir = opendir(path.c_str())) != NULL) {
 		entry = readdir(dir);
