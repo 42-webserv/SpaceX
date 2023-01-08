@@ -290,10 +290,10 @@ spx_http_syntax_header_line(std::string const& line) {
 }
 
 status
-spx_chunked_syntax_start_line(client_buf_t&						  buf,
+spx_chunked_syntax_start_line(std::string&						  line,
 							  uint32_t&							  chunk_size,
 							  std::map<std::string, std::string>& chunk_ext) {
-	std::string::const_iterator it = buf.rdsaved_.begin() + buf.rdchecked_;
+	std::string::const_iterator it = line.begin();
 	std::string					temp_str_key;
 	std::string					empty_str;
 	std::string					temp_str_value;

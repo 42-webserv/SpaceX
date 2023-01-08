@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 // temp
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 
 bool
 SessionStorage::is_key_exsits(const std::string& c_key) const {
@@ -101,5 +101,5 @@ SessionStorage::addCount() {
 
 void
 ResField::setSessionHeader(std::string session_id) {
-	headers_.push_back(header("Set-Cookie", "sessionID=" + session_id));
+	_headers.push_back(header("Set-Cookie", "sessionID=" + session_id));
 }

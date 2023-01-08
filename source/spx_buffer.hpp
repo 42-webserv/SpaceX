@@ -25,7 +25,6 @@ protected:
 	char* iov_base_(struct iovec& iov);
 	char* iov_end_addr_(struct iovec& iov);
 
-	void   delete_size_(size_t size);
 	void   delete_size_for_move_(size_t size);
 	size_t move_partial_case_(SpxBuffer& to_buf, size_t size);
 	size_t move_nonpartial_case_(SpxBuffer& to_buf, size_t size);
@@ -36,12 +35,15 @@ public:
 
 	void	clear_();
 	size_t	move_(SpxBuffer& to_buf, size_t size);
+	void	delete_size_(size_t size);
 	ssize_t write_(int fd);
-	int		get_crlf_line_(std::string& line);
+	int		get_crlf_line_(std::string& line, size_t size = 8 * 1024);
+	int		get_lf_line_(std::string& line, size_t size = 8 * 1024);
 	size_t	buf_size_();
 	size_t	find_pos_(char c, size_t max = -1);
 	char	pos_val_(size_t pos);
 	void	get_str_(std::string& str, size_t size);
+	ssize_t write_debug_(int fd = 1);
 };
 
 class SpxReadBuffer : public SpxBuffer {

@@ -71,9 +71,7 @@ enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
 				  READ_BODY_END = 1 << 1
 };
 
-enum e_res_flag { RES_FILE_OPEN = 1,
-				  WRITE_READY	= 2,
-				  RES_CGI		= 4 };
+enum e_res_flag { WRITE_READY = 1 };
 
 // gzip & deflate are not implemented.
 enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
@@ -86,6 +84,12 @@ typedef std::map<std::string, std::string>	cgi_header_t;
 typedef std::map<std::string, std::string>	req_header_t;
 typedef std::pair<std::string, std::string> header;
 
+class ReqField;
+class ResField;
+class CgiField;
+class ChunkedField;
+class Client;
+
 class CgiField {
 public:
 	cgi_header_t _cgi_header;
@@ -93,8 +97,9 @@ public:
 	buf_t		 _to_cgi;
 	size_t		 _cgi_size;
 	size_t		 _cgi_read;
+	int			 _write_to_cgi_fd;
+	int			 _cgi_state;
 	int			 _is_chnkd;
-	int			 _cgi_write_fd;
 
 	CgiField()
 		: _cgi_header()
@@ -102,8 +107,9 @@ public:
 		, _to_cgi()
 		, _cgi_size(0)
 		, _cgi_read(0)
-		, _is_chnkd(0)
-		, _cgi_write_fd(0) {};
+		, _write_to_cgi_fd(0)
+		, _cgi_state(CGI_HEADER)
+		, _is_chnkd(false) {};
 	~CgiField() {};
 
 	void
@@ -111,30 +117,35 @@ public:
 		_cgi_header.clear();
 		_from_cgi.clear_();
 		_to_cgi.clear_();
-		_cgi_size	  = 0;
-		_cgi_read	  = 0;
-		_is_chnkd	  = 0;
-		_cgi_write_fd = 0;
+		_cgi_size		 = 0;
+		_cgi_read		 = 0;
+		_write_to_cgi_fd = 0;
+		_cgi_state		 = CGI_HEADER;
+		_is_chnkd		 = false;
 	}
 
-	bool cgi_handler_(req_field_t& req, event_list_t& change_list, struct kevent* cur_event);
-	// 	bool cgi_header_parser();
-	// 	bool cgi_controller();
+	bool cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* cur_event);
+	bool cgi_header_parser_();
+	bool cgi_controller_(Client& cl);
 };
 
 class ChunkedField {
 public:
-	buf_t _chnk_body;
-	off_t _chnk_ofs;
+	buf_t _chnkd_body;
+	bool  _first_chnkd;
 
 	void
 	clear_() {
-		_chnk_ofs = 0;
+		_first_chnkd = 1;
 	}
+
+	bool chunked_body_(Client& cl);
+	bool skip_chunked_body_(Client& cl);
 };
 
 class ReqField {
 public:
+	buf_t				  _body_buf;
 	size_t				  _body_size;
 	size_t				  _body_read;
 	size_t				  _body_limit;
@@ -146,13 +157,15 @@ public:
 	std::string			  _upld_fn;
 	const server_info_t*  _serv_info;
 	const uri_location_t* _uri_loc;
+	uri_resolved_t		  _uri_resolv;
 	int					  _req_mthd;
 	int					  _is_chnkd;
-	int					  flag_;
+	int					  _flag;
 	std::string			  session_id; // session
 
 	ReqField()
-		: _body_size(0)
+		: _body_buf()
+		, _body_size(0)
 		, _body_read(0)
 		, _body_limit(-1)
 		, _cnt_len(0)
@@ -162,7 +175,8 @@ public:
 		, _http_ver()
 		, _upld_fn()
 		, _uri_loc()
-		, flag_(0)
+		, _uri_resolv()
+		, _flag(0)
 		, _req_mthd(0)
 		, _is_chnkd(0) { }
 	~ReqField() { }
@@ -174,50 +188,38 @@ public:
 
 class ResField {
 public:
-	std::string	   _res_header;
-	std::string	   _dwnl_fn;
-	buf_t		   _res_buf;
-	uri_resolved_t _uri_resolv;
-	size_t		   _body_read;
-	size_t		   _body_size;
-	int			   _body_fd;
-	int			   _is_chnkd;
-	int			   _header_sent;
+	std::string _res_header;
+	std::string _dwnl_fn;
+	rdbuf_t		_res_buf;
+	size_t		_body_read;
+	size_t		_body_size;
+	int			_body_fd;
+	int			_is_chnkd;
+	int			_header_sent;
+	bool		_write_ready;
 
 	/* RESPONSE*/
-	std::vector<header> headers_;
-	int					version_minor_;
-	int					version_major_;
-	unsigned int		status_code_;
-	std::string			status_;
-
-	int			file_open(const char* dir) const;
-	off_t		setContentLength(int fd);
-	void		setContentType(std::string uri);
-	void		setDate();
-	std::string handle_static_error_page();
-	std::string make_to_string() const;
-	void		write_to_response_buffer(const std::string& content);
-
-	/* session & SESSION */
-	void setSessionHeader(std::string session_id);
-	/* RESPONSE END*/
+	std::vector<header> _headers;
+	int					_version_minor;
+	int					_version_major;
+	unsigned int		_status_code;
+	std::string			_status;
 
 	ResField()
 		: _res_header()
 		, _dwnl_fn()
-		, _res_buf()
-		, _uri_resolv()
+		, _res_buf(BUFFER_SIZE, IOV_VEC_SIZE)
 		, _body_fd(-1)
 		, _body_read(0)
 		, _body_size(0)
 		, _is_chnkd(0)
 		, _header_sent(0)
-		, headers_()
-		, version_minor_(1)
-		, version_major_(1)
-		, status_code_(200)
-		, status_("OK") {
+		, _write_ready(0)
+		, _headers()
+		, _version_minor(1)
+		, _version_major(1)
+		, _status_code(200)
+		, _status("OK") {
 	}
 
 	~ResField() {
@@ -227,18 +229,38 @@ public:
 	clear_() {
 		_res_header.clear();
 		_dwnl_fn.clear();
-		_body_fd	 = -1;
-		_body_read	 = 0;
-		_body_size	 = 0;
-		_is_chnkd	 = 0;
-		_header_sent = 0;
-		headers_.clear();
-		version_minor_ = 1;
-		version_major_ = 1;
-		status_code_   = 200;
-		status_		   = "OK";
+		_headers.clear();
 		_res_buf.clear_();
+		_body_fd	   = -1;
+		_body_read	   = 0;
+		_body_size	   = 0;
+		_is_chnkd	   = 0;
+		_header_sent   = 0;
+		_write_ready   = 0;
+		_version_minor = 1;
+		_version_major = 1;
+		_status_code   = 200;
+		_status		   = "OK";
 	};
+
+	int			file_open_(const char* dir) const;
+	off_t		setContentLength_(int fd);
+	void		setContentType_(std::string uri);
+	void		setDate_();
+	std::string handle_static_error_page_();
+	std::string make_to_string_() const;
+	void		write_to_response_buffer_(const std::string& content);
+
+	/* session & SESSION */
+	void setSessionHeader(std::string session_id);
+	/* RESPONSE END*/
+
+	// 	/* RESPONSE */
+	void make_error_response_(Client& cl, http_status error_code);
+	void make_response_header_(Client& cl);
+	void make_redirect_response_(Client& cl);
+	void make_cgi_response_header_(Client& cl);
+	// 	/* RESPONSE END*/
 };
 
 typedef ResField	 res_field_t;
@@ -260,9 +282,8 @@ public:
 	ChunkedField		   _chnkd;
 	uintptr_t			   _client_fd;
 	rdbuf_t				   _rdbuf;
-	int					   _rd_ofs; // read point of _rdbuf.front()
-	int					   _rdbuf_end; // _rdbuf empty pos. like vector end iterator.
 	int					   _state;
+	int					   _skip_size;
 	port_info_t*		   _port_info;
 	const struct sockaddr* _sockaddr;
 	SessionStorage		   storage; // add by space
@@ -277,59 +298,22 @@ public:
 	bool request_line_check_(std::string& req_line);
 	bool header_field_parser_();
 	bool host_check_(std::string& host);
+	void set_cookie_();
+	void error_response_keep_alive_(http_status error_code);
+	void do_cgi_(struct kevent* cur_event);
+	bool res_for_get_head_req_();
+	bool res_for_post_put_req_();
+
+	void disconnect_client_();
+	bool write_to_cgi_(struct kevent* cur_event);
+	bool write_response_();
+	bool write_for_upload_(struct kevent* cur_event);
+
+	void read_to_client_buffer_(struct kevent* cur_event);
+	void read_to_cgi_buffer_(struct kevent* cur_event);
+	void read_to_res_buffer_(struct kevent* cur_event);
 };
 
 typedef Client client_t;
-
-// class ClientBuffer {
-// private:
-// 	ClientBuffer(const ClientBuffer& buf);
-// 	ClientBuffer& operator=(const ClientBuffer& buf);
-
-// public:
-// 	SessionStorage storage; // add by space
-// 	buffer_t	   rdsaved_;
-// 	timespec	   timeout_;
-// 	uintptr_t	   client_fd_;
-// 	port_info_t*   port_info_;
-// 	size_t		   skip_size_;
-// 	size_t		   rdchecked_;
-// 	int			   flag_;
-// 	int			   state_;
-// 	char		   rdbuf_[BUFFER_SIZE];
-
-// 	// TEMP Implement
-// 	ClientBuffer();
-// 	~ClientBuffer();
-
-// 	void write_filter_enable(event_list_t& change_list, struct kevent* cur_event);
-
-// 	bool request_line_check(std::string& req_line);
-// 	bool request_line_parser();
-
-// 	void disconnect_client(event_list_t& change_list);
-
-// 	bool write_to_cgi(struct kevent* cur_event, std::vector<struct kevent>& change_list);
-// 	bool write_response(event_list_t& change_list);
-// 	bool write_for_upload(event_list_t& change_list, struct kevent* cur_event);
-
-// 	// bool cgi_controller(int state, event_list_t& change_list);
-
-// 	bool req_res_controller(event_list_t& change_list, struct kevent* cur_event);
-// 	// bool skip_body(ssize_t cont_len);
-
-// 	void read_to_client_buffer(event_list_t& change_list, struct kevent* cur_event);
-// 	void read_to_cgi_buffer(event_list_t& change_list, struct kevent* cur_event);
-// 	void read_to_res_buffer(event_list_t& change_list, struct kevent* cur_event);
-
-// 	/* RESPONSE */
-// 	void make_error_response(http_status error_code);
-// 	void make_response_header();
-// 	void make_redirect_response();
-// 	void make_cgi_response_header();
-// 	/* RESPONSE END*/
-// };
-
-// typedef ClientBuffer client_buf_t;
 
 #endif

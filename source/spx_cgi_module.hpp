@@ -2,7 +2,7 @@
 #ifndef __SPX__CGI__MODULE__HPP
 #define __SPX__CGI__MODULE__HPP
 
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 #include "spx_port_info.hpp"

@@ -9,7 +9,7 @@ SpxBuffer::SpxBuffer()
 }
 
 SpxBuffer::~SpxBuffer() {
-	std::cout << "destructor buf size " << _buf.size() << std::endl;
+	// std::cout << "destructor buf size " << _buf.size() << std::endl;
 	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
 		delete[] static_cast<char*>(it->iov_base);
 	}
@@ -179,6 +179,21 @@ SpxBuffer::write_(int fd) {
 	return n_write;
 }
 
+ssize_t
+SpxBuffer::write_debug_(int fd) {
+	if (_buf_size == 0) {
+		return 0;
+	}
+	_buf.front().iov_base = push_front_addr_();
+	ssize_t n_write		  = writev(fd, &_buf.front(), _buf.size());
+	_buf.front().iov_base = pull_front_addr_();
+	if (n_write <= 0) {
+		return n_write;
+	}
+	// delete_size_(n_write);
+	return n_write;
+}
+
 size_t
 SpxBuffer::find_pos_(char c, size_t max) {
 	size_t pos;
@@ -192,11 +207,10 @@ SpxBuffer::find_pos_(char c, size_t max) {
 	while (it != _buf.end()) {
 		tmp = std::find(iov_base_(*it), iov_end_addr_(*it), c) - iov_base_(*it);
 		pos += tmp;
-		if (tmp != it->iov_len) {
-			return pos;
-		}
 		if (pos > max) {
 			return -1;
+		} else if (tmp != it->iov_len) {
+			return pos;
 		}
 		++it;
 	}
@@ -252,14 +266,14 @@ SpxBuffer::get_str_(std::string& str, size_t size) {
 }
 
 int
-SpxBuffer::get_crlf_line_(std::string& line) {
+SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 	size_t lf_pos;
 	size_t tmp_size;
 
 	if (_buf.empty()) {
 		return false;
 	}
-	lf_pos = find_pos_(LF, 8 * 1024);
+	lf_pos = find_pos_(LF, size);
 	if (lf_pos == -1) {
 		return false;
 	} else if (lf_pos == 0) {
@@ -272,6 +286,30 @@ SpxBuffer::get_crlf_line_(std::string& line) {
 	} else {
 		return -1;
 	}
+}
+
+int
+SpxBuffer::get_lf_line_(std::string& line, size_t size) {
+	size_t lf_pos;
+	size_t tmp_size;
+
+	if (_buf.empty()) {
+		return false;
+	}
+	lf_pos = find_pos_(LF, size);
+	if (lf_pos == -1) {
+		return false;
+	} else if (lf_pos == 0) {
+		return -1;
+	}
+	if (pos_val_(lf_pos - 1) == CR) {
+		get_str_(line, lf_pos - 1);
+		delete_size_(2);
+	} else {
+		get_str_(line, lf_pos);
+		delete_size_(1);
+	}
+	return true;
 }
 
 size_t

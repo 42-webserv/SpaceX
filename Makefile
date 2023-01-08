@@ -13,7 +13,7 @@ NAME		= spacex
 # DEBUG_FLAG	+=	LEAK
 # DEBUG_FLAG	+= LOG_FILE_MODE
 # DEBUG_FLAG	+= LOG_MODE
-# DEBUG_FLAG	+=	DEBUG
+DEBUG_FLAG	+=	DEBUG
 
 ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
@@ -21,8 +21,9 @@ endif
 
 SRC			=	spacex.cpp \
 				spx_autoindex_generator.cpp \
+				spx_buffer.cpp \
 				spx_cgi_module.cpp \
-				spx_client_buffer.cpp \
+				spx_client.cpp \
 				spx_core_util_box.cpp \
 				spx_kqueue_module.cpp \
 				spx_parse_config.cpp \

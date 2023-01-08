@@ -3,7 +3,7 @@
 #include "spx_core_util_box.hpp"
 #include <vector>
 
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 #include "spx_kqueue_module.hpp"
 #include "spx_port_info.hpp"
 
