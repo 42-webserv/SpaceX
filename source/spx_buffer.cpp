@@ -9,7 +9,7 @@ SpxBuffer::SpxBuffer()
 }
 
 SpxBuffer::~SpxBuffer() {
-	// std::cout << "destructor buf size " << _buf.size() << std::endl;
+	std::cout << "destructor buf size " << _buf.size() << std::endl;
 	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
 		delete[] static_cast<char*>(it->iov_base);
 	}
@@ -63,6 +63,30 @@ SpxBuffer::delete_size_(size_t size) {
 	}
 }
 
+void
+SpxBuffer::delete_size_for_move_(size_t size) {
+	iov_t::iterator it = _buf.begin();
+	if (size < _buf_size) {
+		_buf_size -= size;
+		while (size >= it->iov_len) {
+			size -= it->iov_len;
+			++it;
+		}
+		it->iov_len -= size;
+		if (it == _buf.begin()) {
+			_partial_point += size;
+			return;
+		} else {
+			_partial_point = size;
+			_buf.erase(_buf.begin(), it);
+		}
+	} else {
+		_buf.clear();
+		_buf_size	   = 0;
+		_partial_point = 0;
+	}
+}
+
 size_t
 SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 	// std::cout << "partial" << std::endl;
@@ -74,7 +98,7 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 		new_iov.iov_base = new char[size];
 		new_iov.iov_len	 = size;
 		memcpy(new_iov.iov_base, push_front_addr_(), size);
-		delete_size_(size);
+		delete_size_for_move_(size);
 		to_buf._buf.push_back(new_iov);
 		to_buf._buf_size += size;
 		return size;
@@ -100,7 +124,7 @@ SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 	struct iovec	new_iov;
 	iov_t::iterator it = _buf.begin();
 
-	while (it != _buf.end() && tmp_size > it->iov_len) {
+	while (it != _buf.end() && tmp_size >= it->iov_len) {
 		tmp_size -= it->iov_len;
 		++it;
 	}
@@ -112,7 +136,7 @@ SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
 		to_buf._buf.push_back(new_iov);
 	}
 	to_buf._buf_size += size;
-	delete_size_(size);
+	delete_size_for_move_(size);
 	return size;
 }
 

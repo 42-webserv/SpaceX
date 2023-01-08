@@ -26,6 +26,7 @@ protected:
 	char* iov_end_addr_(struct iovec& iov);
 
 	void   delete_size_(size_t size);
+	void   delete_size_for_move_(size_t size);
 	size_t move_partial_case_(SpxBuffer& to_buf, size_t size);
 	size_t move_nonpartial_case_(SpxBuffer& to_buf, size_t size);
 

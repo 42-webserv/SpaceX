@@ -13,6 +13,7 @@ add_change_list(event_list_t& change_list,
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 					event_list_t& change_list, port_info_t& port_info) {
+
 	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
 
 	if (client_fd == -1) {
