@@ -216,9 +216,12 @@ kqueue_module(port_list_t& port_info) {
 									delete cl;
 									return;
 								}
+								if (cl->_cgi._cgi_state == CGI_HEADER) {
+									cl->_cgi.cgi_controller_(*cl);
+								}
 								spx_log_("cgi read close");
-								cl->_cgi.cgi_controller_(*cl);
-								// add_change_list(change_list, cl->_client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, cl);
+								close(cur_event->ident);
+								add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DISABLE | EV_DELETE, 0, 0, cl);
 								break;
 							} else {
 								spx_log_("cgi write close");

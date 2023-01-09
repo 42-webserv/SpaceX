@@ -79,10 +79,20 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	uint16_t					root_uri_flag  = 0;
 	std::string::const_iterator it			   = uri.begin();
 
+	//  initialize
 	uri_resolved_sets.is_cgi_			= false;
 	uri_resolved_sets.is_same_location_ = false;
 	uri_resolved_sets.cgi_loc_			= NULL;
-	uri_resolved_sets.request_uri_		= uri;
+	uri_resolved_sets.request_uri_.clear();
+	uri_resolved_sets.resolved_request_uri_.clear();
+	uri_resolved_sets.script_name_.clear();
+	uri_resolved_sets.script_filename_.clear();
+	uri_resolved_sets.path_info_.clear();
+	uri_resolved_sets.path_translated_.clear();
+	uri_resolved_sets.query_string_.clear();
+	uri_resolved_sets.fragment_.clear();
+
+	uri_resolved_sets.request_uri_ = uri;
 
 	enum {
 		uri_main, // 0
