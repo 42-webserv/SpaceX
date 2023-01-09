@@ -1,7 +1,6 @@
 #include "spx_client.hpp"
 #include "spx_cgi_module.hpp"
 #include "spx_kqueue_module.hpp"
-
 #include "spx_session_storage.hpp"
 
 Client::Client(event_list_t* change_list)

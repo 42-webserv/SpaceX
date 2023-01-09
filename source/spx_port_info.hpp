@@ -4,15 +4,12 @@
 
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include "spx_port_info.hpp"
+
 #include <arpa/inet.h>
-#include <fcntl.h>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
 #include <sys/event.h>
 #include <sys/socket.h>
+
+#include <fcntl.h>
 #include <unistd.h>
 
 typedef enum {
@@ -89,10 +86,7 @@ typedef struct uri_location_for_copy_stage {
 	std::string			cgi_pass;
 	std::string			cgi_path_info;
 	uint64_t			client_max_body_size;
-	// std::string			main_root;
-	// std::string			default_error_page;
-	// error_page_map_p	error_page_case;
-	void clear_();
+	void				clear_();
 } uri_location_for_copy_stage_t;
 
 typedef struct server_info_for_copy_stage {
@@ -125,10 +119,7 @@ typedef struct uri_location {
 	const std::string		  cgi_pass;
 	const std::string		  cgi_path_info;
 	const uint64_t			  client_max_body_size;
-	// const std::string		  main_root;
-	// const std::string		  default_error_page;
-	// mutable error_page_map_p  error_page_case;
-	//
+
 	uri_location(const uri_location_for_copy_stage_t from);
 	~uri_location();
 	void print_(void) const;
@@ -152,12 +143,12 @@ typedef struct uri_resolved {
 	bool			is_cgi_;
 	bool			is_same_location_;
 	uri_location_t* cgi_loc_;
-	std::string		request_uri_; // full request_uri
-	std::string		resolved_request_uri_; // resolved_uri
+	std::string		request_uri_;
+	std::string		resolved_request_uri_;
 	std::string		script_name_;
-	std::string		script_filename_; // full path + script_name
-	std::string		path_info_; // script name after, before ? or #
-	std::string		path_translated_; // if path_info is not empty, full path + path_info
+	std::string		script_filename_;
+	std::string		path_info_;
+	std::string		path_translated_;
 	std::string		query_string_;
 	std::string		fragment_;
 	void			print_(void) const;
@@ -176,10 +167,9 @@ typedef struct server_info {
 	//
 	server_info(server_info_for_copy_stage_t const& from);
 	server_info(server_info_t const& from);
-	// server_info& operator=(server_info_t const& from);
 	~server_info();
-	std::string const get_error_page_path_(uint32_t const& error_code) const;
-	// uri_location_t const*	 get_uri_location_t_(std::string const& uri, std::string& output_resolved_uri) const;
+
+	std::string const		 get_error_page_path_(uint32_t const& error_code) const;
 	uri_location_t const*	 get_uri_location_t_(std::string const& uri, uri_resolved_t& uri_resolved_sets) const;
 	static std::string const path_resolve_(std::string const& unvalid_path);
 	void					 print_(void) const;
@@ -204,7 +194,7 @@ typedef struct port_info {
 	port_info(server_info_t const& from);
 	server_info_t const& search_server_config_(std::string const& host_name);
 
-} port_info_t; // NOTE : specific socket's whole info
+} port_info_t;
 
 typedef std::vector<port_info_t> port_info_vec;
 
@@ -216,9 +206,9 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 int
 socket_init(total_port_server_map_p const& config_info);
 
-// typedef std::map<const std::string, const uri_location_t> uri_location_map_p;
-// typedef std::map<const std::string, server_info_t>  server_map_p;
-// typedef std::map<const std::uint32_t, server_map_p> total_port_server_map_p;
+// e.g. std::map<const std::string, const uri_location_t> uri_location_map_p;
+// e.g. std::map<const std::string, server_info_t>  server_map_p;
+// e.g. std::map<const std::uint32_t, server_map_p> total_port_server_map_p;
 
 // < port_number , < server_name, serve_map_p> > my_config_map;
 // < port_number , < server_name, < uri_location, uri_location_t> > > my_config_map;

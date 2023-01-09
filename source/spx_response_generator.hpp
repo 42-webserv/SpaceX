@@ -2,18 +2,15 @@
 #ifndef __SPX_RESPONSE_GENERATOR_HPP__
 #define __SPX_RESPONSE_GENERATOR_HPP__
 
+#include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
+
 #include <ctime>
 #include <fcntl.h>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <unistd.h>
-#include <vector>
 
 #include "spacex.hpp"
 #include "spx_autoindex_generator.hpp"
-#include "spx_core_type.hpp"
 
 /* Status Codes */
 
@@ -98,11 +95,21 @@ enum http_status {
 #define XX(num, name, string) HTTP_STATUS_##name = num,
 	HTTP_STATUS_MAP(XX)
 #undef XX
-	HTTP_STATUS_LAST
+		HTTP_STATUS_LAST
 };
 
-std::string
-http_status_str(http_status s);
+inline std::string
+http_status_str(http_status s) {
+	switch (s) {
+#define XX(num, name, string) \
+	case HTTP_STATUS_##name:  \
+		return #string;
+		HTTP_STATUS_MAP(XX)
+#undef XX
+	default:
+		return "<unknown>";
+	}
+}
 
 /*
 struct Response {

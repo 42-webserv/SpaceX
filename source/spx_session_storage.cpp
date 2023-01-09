@@ -1,8 +1,9 @@
 #include "spx_session_storage.hpp"
-#include <cstdlib>
-
-// temp
 #include "spx_client.hpp"
+#include <sys/time.h>
+
+SessionStorage::SessionStorage() { }
+SessionStorage::~SessionStorage() { }
 
 bool
 SessionStorage::is_key_exsits(const std::string& c_key) const {
@@ -18,15 +19,6 @@ SessionStorage::find_value_by_key(std::string& c_key) {
 	storage_t::iterator it = storage_.find(c_key);
 	return it->second;
 }
-/*
-std::string
-SessionStorage::find_session_to_string(const std::string& c_key) {
-	storage_t::iterator it = storage_.find(c_key);
-	if (it == storage_.end())
-		return "";
-	return it->second.to_string();
-}
-*/
 
 void
 SessionStorage::add_new_session(SessionID id) {
@@ -35,59 +27,36 @@ SessionStorage::add_new_session(SessionID id) {
 
 std::string
 SessionStorage::make_hash(uintptr_t& seed_in) {
+	struct timeval time;
+	gettimeofday(&time, NULL);
 
-	std::time_t		t = std::time(0);
-	std::bitset<16> left(t);
-	std::bitset<8>	right(seed_in);
+	uint32_t t = time.tv_usec;
+	std::srand(t);
 
-	if (left[0]) {
-		if (left[4]) {
-			std::bitset<16> tmp;
-			int				i = 15;
-			while (i >= 0) {
-				tmp[i] = left[15 - i];
-				--i;
-			}
-			left = tmp;
-		}
-		left.flip();
-	}
-	if (right[0]) {
-		if (right[4]) {
-			std::bitset<8> tmp;
-			int			   i = 7;
-			while (i >= 0) {
-				tmp[i] = right[7 - i];
-				--i;
-			}
-			right = tmp;
-		}
-		right.flip();
-	}
-
-	uint32_t rand_seed;
-	rand_seed |= left.to_ulong();
-	rand_seed <<= 8;
-	rand_seed |= right.to_ulong();
-
-	std::srand(rand_seed);
 	uint32_t r = std::rand();
 
-	std::bitset<24> total(rand_seed);
-	std::string		hash_str;
-	int				i = 24;
-	while (i >= 0) {
-		if (total[i]) {
-			hash_str += "abcdefghijklmnopqrstuvwxyz"[i];
+	std::bitset<24> rand_char(r);
+	std::bitset<24> time_char(t);
+
+	std::string hash_str;
+
+	for (int i = 0; i < 6; ++i) {
+		if (seed_in & 1) {
+			hash_str += "abcdefghijklmnop"[(time_char.to_ulong() & 0xf)];
+			hash_str += "ABCDEFGHIJKLMNOP"[(rand_char.to_ulong() & 0xf)];
 		} else {
-			hash_str += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i];
+			hash_str += "ABCDEFGHIJKLMNOP"[(time_char.to_ulong() & 0xf)];
+			hash_str += "abcdefghijhlmnop"[(rand_char.to_ulong() & 0xf)];
 		}
-		if ((1 << i) & r) {
-			hash_str += "1^2&3*4(5)"[i % 10];
+		if (seed_in & 8) {
+			hash_str += "qrstuvwxyz12345+"[(time_char.to_ulong() & 0xf)];
+			hash_str += "QRSTUVWXYZ67890-"[(rand_char.to_ulong() & 0xf)];
 		} else {
-			hash_str += "0!8@6#7$9%"[i % 10];
+			hash_str += "QRSTUVWXYZ67890-"[(time_char.to_ulong() & 0xf)];
+			hash_str += "qrstuvwxyz12345+"[(rand_char.to_ulong() & 0xf)];
 		}
-		--i;
+		time_char >>= 4;
+		rand_char >>= 4;
 	}
 	return hash_str;
 }
@@ -95,11 +64,4 @@ SessionStorage::make_hash(uintptr_t& seed_in) {
 void
 SessionStorage::addCount() {
 	++count;
-}
-
-// this code will moved to client_buf file
-
-void
-ResField::setSessionHeader(std::string session_id) {
-	_headers.push_back(header("Set-Cookie", "sessionID=" + session_id));
 }

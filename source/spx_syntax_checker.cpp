@@ -1,17 +1,11 @@
 #include "spx_syntax_checker.hpp"
-#include "spx_core_type.hpp"
-#include "spx_core_util_box.hpp"
 
 namespace {
 
 	inline status
-	error_(const char* msg) {
+	error__(const char* msg) {
 #ifdef SYNTAX_DEBUG
-		std::cout << "\033[1;31m" << msg << "\033[0m"
-				  << " : "
-				  << "\033[1;33m"
-				  << ""
-				  << "\033[0m" << std::endl;
+		std::cout << COLOR_RED << msg << COLOR_RESET << std::endl;
 #else
 		(void)msg;
 #endif
@@ -19,13 +13,9 @@ namespace {
 	}
 
 	inline status
-	error_flag_(const char* msg, int& flag) {
+	error_flag__(const char* msg, int& flag) {
 #ifdef SYNTAX_DEBUG
-		std::cout << "\033[1;31m" << msg << "\033[0m"
-				  << " : "
-				  << "\033[1;33m"
-				  << ""
-				  << "\033[0m" << std::endl;
+		std::cout << COLOR_RED << msg << COLOR_RESET << std::endl;
 #else
 		(void)msg;
 #endif
@@ -40,7 +30,7 @@ spx_http_syntax_start_line(std::string const& line,
 						   int&				  req_type) {
 
 	if (line.length() > 8192) {
-		return error_flag_("invalid line start : too long", req_type);
+		return error_flag__("invalid line start : too long", req_type);
 	}
 
 	std::string::const_iterator it		   = line.begin();
@@ -71,7 +61,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__method;
 				break;
 			}
-			return error_flag_("invalid line start : request line", req_type);
+			return error_flag__("invalid line start : request line", req_type);
 		}
 
 		case start_line__method: {
@@ -89,7 +79,7 @@ spx_http_syntax_start_line(std::string const& line,
 					req_type = REQ_PUT;
 					break;
 				}
-				return error_flag_("invalid line start : METHOD - 3", req_type);
+				return error_flag__("invalid line start : METHOD - 3", req_type);
 			}
 			case 4: {
 				if (temp_str == "POST") {
@@ -99,17 +89,17 @@ spx_http_syntax_start_line(std::string const& line,
 					req_type = REQ_HEAD;
 					break;
 				}
-				return error_flag_("invalid line start : METHOD - 4", req_type);
+				return error_flag__("invalid line start : METHOD - 4", req_type);
 			}
 			case 6: {
 				if (temp_str == "DELETE") {
 					req_type = REQ_DELETE;
 					break;
 				}
-				return error_flag_("invalid line start : METHOD - 6", req_type);
+				return error_flag__("invalid line start : METHOD - 6", req_type);
 			}
 			default: {
-				return error_flag_("invalid line start : METHOD", req_type);
+				return error_flag__("invalid line start : METHOD", req_type);
 			}
 			}
 			state = start_line__sp_before_uri;
@@ -122,7 +112,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__uri_start;
 				break;
 			}
-			return error_flag_("invalid uri or method : request line", req_type);
+			return error_flag__("invalid uri or method : request line", req_type);
 		}
 
 		case start_line__uri_start: {
@@ -131,7 +121,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__uri;
 				break;
 			}
-			return error_flag_("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
+			return error_flag__("invalid uri start : request line, we only supported origin from :1*( \"/\"segment )", req_type);
 		}
 
 		case start_line__uri: {
@@ -144,7 +134,7 @@ spx_http_syntax_start_line(std::string const& line,
 					it += 3;
 					break;
 				}
-				return error_flag_("invalid uri : request line : unmatched percent encoding", req_type);
+				return error_flag__("invalid uri : request line : unmatched percent encoding", req_type);
 			}
 			case ' ': {
 				++it;
@@ -160,7 +150,7 @@ spx_http_syntax_start_line(std::string const& line,
 				break;
 			}
 			default: {
-				return error_flag_("invalid uri : request line", req_type);
+				return error_flag__("invalid uri : request line", req_type);
 			}
 			}
 			break;
@@ -172,7 +162,7 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__almost_done;
 				break;
 			}
-			return error_flag_("invalid http version or end line : request line", req_type);
+			return error_flag__("invalid http version or end line : request line", req_type);
 		}
 
 		case start_line__almost_done: {
@@ -180,11 +170,11 @@ spx_http_syntax_start_line(std::string const& line,
 				state = start_line__done;
 				break;
 			}
-			return error_flag_("invalid request end line : request line", req_type);
+			return error_flag__("invalid request end line : request line", req_type);
 		}
 
 		default: {
-			return error_flag_("invalid request : request line", req_type);
+			return error_flag__("invalid request : request line", req_type);
 		}
 		}
 	}
@@ -195,7 +185,7 @@ status
 spx_http_syntax_header_line(std::string const& line) {
 
 	if (line.length() > 8192) {
-		return error_("invalid header field : too long");
+		return error__("invalid header field : too long");
 	}
 
 	std::string::const_iterator it = line.begin();
@@ -236,7 +226,7 @@ spx_http_syntax_header_line(std::string const& line) {
 				++it;
 				break;
 			}
-			return error_("invalid key : header");
+			return error__("invalid key : header");
 		}
 
 		case spx_OWS_before_value: {
@@ -247,7 +237,7 @@ spx_http_syntax_header_line(std::string const& line) {
 				state = spx_value;
 				break;
 			}
-			return error_("invalid value : header");
+			return error__("invalid value : header");
 		}
 
 		case spx_value: {
@@ -263,7 +253,7 @@ spx_http_syntax_header_line(std::string const& line) {
 				++it;
 				break;
 			}
-			return error_("invalid value : header");
+			return error__("invalid value : header");
 		}
 
 		case spx_OWS_after_value: {
@@ -279,11 +269,11 @@ spx_http_syntax_header_line(std::string const& line) {
 				state = spx_done;
 				break;
 			}
-			return error_("invalid header end line : header");
+			return error__("invalid header end line : header");
 		}
 
 		default:
-			return error_("invalid key or value : header");
+			return error__("invalid key or value : header");
 		}
 	}
 	return spx_ok;
@@ -331,7 +321,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_size;
 				break;
 			}
-			return error_("invalid chunked start line : chunked_start");
+			return error__("invalid chunked start line : chunked_start");
 		}
 
 		case chunked_last_chunk: {
@@ -346,7 +336,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_semicolon;
 				break;
 			default:
-				return error_("invalid chunked start line last chunk : chunked_start");
+				return error__("invalid chunked start line last chunk : chunked_start");
 			}
 			break;
 		}
@@ -359,19 +349,17 @@ spx_chunked_syntax_start_line(std::string&						  line,
 			switch (*it) {
 			case ';':
 				next_state = chunked_semicolon;
-				state	   = chunked_size_input;
 				break;
 			case ' ':
 				next_state = chunked_BWS_before_ext;
-				state	   = chunked_size_input;
 				break;
 			case '\r':
 				next_state = chunked_almost_done;
-				state	   = chunked_size_input;
 				break;
 			default:
-				return error_("invalid chunked start line number : chunked_start");
+				return error__("invalid chunked start line number : chunked_start");
 			}
+			state = chunked_size_input;
 			break;
 		}
 
@@ -398,7 +386,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_almost_done;
 				break;
 			default:
-				return error_("invalid chunked start line : BWS_before_ext : chunked_start");
+				return error__("invalid chunked start line : BWS_before_ext : chunked_start");
 			}
 			break;
 		}
@@ -416,7 +404,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				++it;
 			}
 			if (*it == '\r' || *it == '=' || *it == ';') {
-				return error_("invalid chunked start line : BWS_before_ext_name : chunked_start");
+				return error__("invalid chunked start line : BWS_before_ext_name : chunked_start");
 			}
 			state = chunked_ext_name;
 			break;
@@ -443,7 +431,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_semicolon;
 				break;
 			default:
-				return error_("invalid chunked start line : ext_name : chunked_start");
+				return error__("invalid chunked start line : ext_name : chunked_start");
 			}
 			break;
 		}
@@ -465,7 +453,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_almost_done;
 				break;
 			default:
-				return error_("invalid chunked start line : BWS_after_ext_name : chunked_start");
+				return error__("invalid chunked start line : BWS_after_ext_name : chunked_start");
 			}
 			break;
 		}
@@ -482,7 +470,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 			}
 			switch (*it) {
 			case '\r':
-				return error_("invalid chunked start line : BWS_before_ext_value : chunked_start");
+				return error__("invalid chunked start line : BWS_before_ext_value : chunked_start");
 			case '"':
 				state = chunked_ext_quoted_open;
 				break;
@@ -553,7 +541,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				break;
 			}
 			default:
-				return error_("invalid chunked ext : ext_value : chunked_start");
+				return error__("invalid chunked ext : ext_value : chunked_start");
 			}
 			break;
 		}
@@ -564,7 +552,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 			} else if (*it == '\'' && f_quoted_open & 1) {
 				f_quoted_open &= ~1;
 			} else {
-				return error_("invalid chunked ext : ext_quoted_close : chunked_start");
+				return error__("invalid chunked ext : ext_quoted_close : chunked_start");
 			}
 			++it;
 			if (syntax_(name_token_, static_cast<uint8_t>(*it))) {
@@ -591,7 +579,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			default:
-				return error_("invalid chunked ext : ext_quoted_close : chunked_start");
+				return error__("invalid chunked ext : ext_quoted_close : chunked_start");
 			}
 			break;
 		}
@@ -602,11 +590,11 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				state = chunked_done;
 				break;
 			}
-			return error_("invalid chunked end line : chunked_start");
+			return error__("invalid chunked end line : chunked_start");
 		}
 
 		default:
-			return error_("invalid chunked_start : chunked_start");
+			return error__("invalid chunked_start : chunked_start");
 		}
 	}
 	return spx_ok;
@@ -661,7 +649,7 @@ spx_chunked_syntax_data_line(std::string const&					 line,
 					++it;
 					break;
 				}
-				return error_("invalid last chunked key : trailer");
+				return error__("invalid last chunked key : trailer");
 			}
 
 			case last_OWS_before_value: {
@@ -669,7 +657,7 @@ spx_chunked_syntax_data_line(std::string const&					 line,
 					++it;
 				}
 				if (*it == '\r') {
-					return error_("invalid last chunked value : \\r : trailer");
+					return error__("invalid last chunked value : \\r : trailer");
 				}
 				state_last_chunk = last_trailer_value;
 				break;
@@ -686,7 +674,7 @@ spx_chunked_syntax_data_line(std::string const&					 line,
 					break;
 				}
 				spx_log_(*it);
-				return error_("invalid last chunked value : unsupported char : trailer");
+				return error__("invalid last chunked value : unsupported char : trailer");
 			}
 
 			case last_almost_done: {
@@ -701,11 +689,11 @@ spx_chunked_syntax_data_line(std::string const&					 line,
 					state_last_chunk = last_start;
 					break;
 				}
-				return error_("invalid header end line : header");
+				return error__("invalid header end line : header");
 			}
 
 			default:
-				return error_("invalid chunked : chunked_data");
+				return error__("invalid chunked : chunked_data");
 			}
 		}
 		return spx_ok;
@@ -749,14 +737,14 @@ spx_chunked_syntax_data_line(std::string const&					 line,
 						state_data = data_done;
 						break;
 					}
-					return error_("invalid chunked end line : chunked_data");
+					return error__("invalid chunked end line : chunked_data");
 				}
 				if (chunk_size != 0)
 					return spx_need_more;
 			}
 
 			default:
-				return error_("invalid chunked_data : chunked_data");
+				return error__("invalid chunked_data : chunked_data");
 			}
 		}
 	}
