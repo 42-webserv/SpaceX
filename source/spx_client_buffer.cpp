@@ -308,25 +308,34 @@ ClientBuffer::req_res_controller(std::vector<struct kevent>& change_list,
 			if (!req_cookie_value.empty()) {
 				cookie.parse_cookie_header(req_cookie_value);
 				cookie_t::key_val_t::iterator find_cookie = cookie.content.find("sessionID");
-				if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty() || !storage.is_key_exsits((*find_cookie).second)) {
+				if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty() || !_storage.is_key_exsits((*find_cookie).second)) {
 					spx_log_("COOKIE ERROR ", "Invalid_COOKIE");
 					spx_log_("MAKING NEW SESSION");
-					std::string hash_value = storage.make_hash(client_fd_);
-					storage.add_new_session(hash_value);
+					std::string hash_value = _storage.make_hash(client_fd_);
+					_storage.add_new_session(hash_value);
 					req->session_id = SESSIONID + hash_value;
+					req->session_id += "; ";
+					req->session_id += MAX_AGE;
+					req->session_id += AGE_TIME;
 				} else {
-					session_t& session = storage.find_value_by_key((*find_cookie).second);
+					session_t& session = _storage.find_value_by_key((*find_cookie).second);
 					session.count_++;
 					req->session_id = SESSIONID + (*find_cookie).second;
+					req->session_id += "; ";
+					req->session_id += MAX_AGE;
+					req->session_id += AGE_TIME;
 					spx_log_("SESSIONCOUNT", session.count_);
 				}
 			}
 		} else // if first connection or (no session id on cookie)
 		{
 			spx_log_("MAKING NEW SESSION");
-			std::string hash_value = storage.make_hash(client_fd_);
-			storage.add_new_session(hash_value);
+			std::string hash_value = _storage.make_hash(client_fd_);
+			_storage.add_new_session(hash_value);
 			req->session_id = SESSIONID + hash_value;
+			req->session_id += "; ";
+			req->session_id += MAX_AGE;
+			req->session_id += AGE_TIME;
 		}
 
 		// COOKIE & SESSION END
@@ -927,7 +936,7 @@ ClientBuffer::make_error_response(http_status error_code) {
 	// if (error_code == HTTP__statusBAD_REQUEST)
 	// 	res._headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
 	// else
-	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
+	res._headers.push_back(header_t(CONNECTION, KEEP_ALIVE));
 
 	// page_path null case added..
 	std::string page_path;
@@ -946,8 +955,8 @@ ClientBuffer::make_error_response(http_status error_code) {
 		const std::string error_page = generator_error_page_(error_code);
 
 		ss << error_page.length();
-		res._headers.push_back(header(CONTENT_LENGTH, ss.str()));
-		res._headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+		res._headers.push_back(header_t(CONTENT_LENGTH, ss.str()));
+		res._headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_HTML));
 		std::string tmp = res.make_to_string_();
 		res.write_to_response_buffer_(tmp);
 		if (req.req_type_ != REQ_HEAD)
@@ -981,7 +990,7 @@ ClientBuffer::make_response_header() {
 	// Set Date Header
 	res.set_date_();
 	if (!req.session_id.empty())
-		res._headers.push_back(header("Set-Cookie", req.session_id));
+		res._headers.push_back(header_t("Set-Cookie", req.session_id));
 
 	// Redirect
 	if (req.uri_loc_ != NULL && !(req.uri_loc_->redirect.empty())) {
@@ -1015,7 +1024,7 @@ ClientBuffer::make_response_header() {
 			content = generate_autoindex_page(req_fd, res.uri_resolv_);
 			std::stringstream ss;
 			ss << content.size();
-			res._headers.push_back(header(CONTENT_LENGTH, ss.str()));
+			res._headers.push_back(header_t(CONTENT_LENGTH, ss.str()));
 			// ???? autoindex fail case?
 			if (content.empty()) {
 				make_error_response(HTTP_STATUS_FORBIDDEN);
@@ -1036,18 +1045,18 @@ ClientBuffer::make_response_header() {
 			// res._headers.push_back(header("Accept-Ranges", "bytes"));
 		} else {
 			// autoindex case?
-			res._headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+			res._headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_HTML));
 		}
 		break;
 	case REQ_POST:
 	case REQ_PUT:
-		res._headers.push_back(header(CONTENT_LENGTH, "0"));
+		res._headers.push_back(header_t(CONTENT_LENGTH, "0"));
 		break;
 	}
 	// res._headers.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 
 	// settting response_header size  + content-length size to res_field
-	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
+	res._headers.push_back(header_t(CONNECTION, KEEP_ALIVE));
 	res.write_to_response_buffer_(res.make_to_string_());
 	if (!content.empty()) {
 		res.write_to_response_buffer_(content);
@@ -1074,15 +1083,15 @@ ClientBuffer::make_cgi_response_header() {
 	}
 	// res._headers.push_back(header("Set-Cookie", "SESSIONID=123456;"));
 	// settting response_header size  + content-length size to res_field
-	res._headers.push_back(header(CONNECTION, KEEP_ALIVE));
+	res._headers.push_back(header_t(CONNECTION, KEEP_ALIVE));
 
 	it = res.cgi_field_.find("content-length");
 	if (it != res.cgi_field_.end()) {
-		res._headers.push_back(header(CONTENT_LENGTH, it->second));
+		res._headers.push_back(header_t(CONTENT_LENGTH, it->second));
 	} else {
 		std::stringstream ss;
 		ss << (res.cgi_buffer_.size() - res.cgi_checked_);
-		res._headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
+		res._headers.push_back(header_t(CONTENT_LENGTH, ss.str().c_str()));
 		// res._headers.push_back(header(CONTENT_LENGTH, "0"));
 	}
 	res.write_to_response_buffer_(res.make_to_string_());
@@ -1098,7 +1107,7 @@ ClientBuffer::make_redirect_response() {
 	spx_log_("uri_loc->redirect", req.uri_loc_->redirect);
 	res._status_code = HTTP_STATUS_MOVED_PERMANENTLY;
 	res._status		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
-	res._headers.push_back(header("Location", req.uri_loc_->redirect));
+	res._headers.push_back(header_t("Location", req.uri_loc_->redirect));
 	res.write_to_response_buffer_(res.make_to_string_());
 }
 
@@ -1332,7 +1341,7 @@ ResField::make_to_string_() const {
 	std::stringstream stream;
 	stream << "HTTP/" << _version_major << "." << _version_major << " " << _status_code << " " << _status
 		   << CRLF;
-	for (std::vector<header>::const_iterator it = _headers.begin();
+	for (std::vector<header_t>::const_iterator it = _headers.begin();
 		 it != _headers.end(); ++it)
 		stream << it->first << ": " << it->second << CRLF;
 	stream << CRLF;
@@ -1363,7 +1372,7 @@ ResField::set_content_length_(int fd) {
 	ss << length;
 	body_size_ += length;
 
-	_headers.push_back(header(CONTENT_LENGTH, ss.str()));
+	_headers.push_back(header_t(CONTENT_LENGTH, ss.str()));
 	return length;
 }
 
@@ -1377,17 +1386,17 @@ ResField::set_content_type_(std::string uri) {
 		ext = uri.substr(uri_ext_size + 1);
 	}
 	if (ext == "html" || ext == "htm")
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_HTML));
 	else if (ext == "png")
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_PNG));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_PNG));
 	else if (ext == "jpg")
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_JPG));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_JPG));
 	else if (ext == "jpeg")
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_JPEG));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_JPEG));
 	else if (ext == "txt")
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_TEXT));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_TEXT));
 	else
-		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_DEFUALT));
+		_headers.push_back(header_t(CONTENT_TYPE, MIME_TYPE_DEFUALT));
 }
 
 void
@@ -1397,5 +1406,5 @@ ResField::set_date_(void) {
 
 	char date_buf[32];
 	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
-	_headers.push_back(header("Date", date_buf));
+	_headers.push_back(header_t("Date", date_buf));
 }

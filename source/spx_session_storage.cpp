@@ -4,6 +4,9 @@
 #include "spx_client_buffer.hpp"
 #include <sys/time.h>
 
+SessionStorage::SessionStorage() { }
+SessionStorage::~SessionStorage() { }
+
 bool
 SessionStorage::is_key_exsits(const std::string& c_key) const {
 	storage_t::const_iterator it = storage_.find(c_key);
@@ -18,15 +21,6 @@ SessionStorage::find_value_by_key(std::string& c_key) {
 	storage_t::iterator it = storage_.find(c_key);
 	return it->second;
 }
-/*
-std::string
-SessionStorage::find_session_to_string(const std::string& c_key) {
-	storage_t::iterator it = storage_.find(c_key);
-	if (it == storage_.end())
-		return "";
-	return it->second.to_string();
-}
-*/
 
 void
 SessionStorage::add_new_session(SessionID id) {
@@ -73,10 +67,3 @@ void
 SessionStorage::addCount() {
 	++count;
 }
-
-// this code will moved to client_buf file
-
-// void
-// ResField::setSessionHeader(std::string session_id) {
-// 	headers_.push_back(header("Set-Cookie", "sessionID=" + session_id));
-// }

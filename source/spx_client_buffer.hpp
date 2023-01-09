@@ -83,7 +83,7 @@ enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
 
 typedef std::vector<char>					buffer_t;
 typedef std::vector<struct kevent>			event_list_t;
-typedef std::pair<std::string, std::string> header;
+typedef std::pair<std::string, std::string> header_t;
 
 class ReqField {
 public:
@@ -146,11 +146,11 @@ public:
 	int								   transfer_encoding_;
 
 	/* RESPONSE*/
-	std::vector<header> _headers;
-	int					_version_minor;
-	int					_version_major;
-	unsigned int		_status_code;
-	std::string			_status;
+	std::vector<header_t> _headers;
+	int					  _version_minor;
+	int					  _version_major;
+	unsigned int		  _status_code;
+	std::string			  _status;
 
 	int			file_open_(const char* dir) const;
 	off_t		set_content_length_(int fd);
@@ -204,7 +204,7 @@ private:
 	ClientBuffer& operator=(const ClientBuffer& buf);
 
 public:
-	SessionStorage									 storage; // add by space
+	session_storage_t								 _storage;
 	std::queue<std::pair<req_field_t, res_field_t> > req_res_queue_;
 	buffer_t										 rdsaved_;
 	timespec										 timeout_;
