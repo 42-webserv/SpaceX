@@ -75,7 +75,7 @@ error_fn(std::string err, int (*func)(int), int fd) {
 
 inline void
 error_exit_msg(std::string err) {
-	std::cerr << "\033[1;31m[ " << err << " ]\033[0m" << std::endl;
+	std::cerr << COLOR_RED << err << COLOR_RESET << std::endl;
 	exit(spx_error);
 }
 
