@@ -282,6 +282,33 @@ SpxBuffer::get_str_(std::string& str, size_t size) {
 	delete_size_(size);
 }
 
+void
+SpxBuffer::get_str_cpy_(std::string& str, size_t size) {
+	if (size >= _buf_size) {
+		size = _buf_size;
+	}
+
+	if (_buf.front().iov_len >= size) {
+		str.insert(str.end(), push_front_addr_(), push_front_addr_() + size);
+		return;
+	}
+
+	str.insert(str.end(), push_front_addr_(), front_end_());
+	size_t tmp_size = size;
+	tmp_size -= _buf.front().iov_len;
+
+	iov_t::iterator it = _buf.begin() + 1;
+
+	while (tmp_size > it->iov_len) {
+		str.insert(str.end(), iov_base_(*it), iov_end_addr_(*it));
+		tmp_size -= it->iov_len;
+		++it;
+	}
+	if (it != _buf.end()) {
+		str.insert(str.end(), iov_base_(*it), iov_base_(*it) + tmp_size);
+	}
+}
+
 int
 SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 	size_t lf_pos;
@@ -299,6 +326,28 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 	if (pos_val_(lf_pos - 1) == CR) {
 		get_str_(line, lf_pos - 1);
 		delete_size_(2);
+		return true;
+	} else {
+		return -1;
+	}
+}
+
+int
+SpxBuffer::get_crlf_cpy_line_(std::string& line, size_t size) {
+	size_t lf_pos;
+	size_t tmp_size;
+
+	if (_buf.empty()) {
+		return false;
+	}
+	lf_pos = find_pos_(LF, size);
+	if (lf_pos == -1) {
+		return false;
+	} else if (lf_pos == 0) {
+		return -1;
+	}
+	if (pos_val_(lf_pos - 1) == CR) {
+		get_str_cpy_(line, lf_pos - 1);
 		return true;
 	} else {
 		return -1;
@@ -329,9 +378,14 @@ SpxBuffer::get_lf_line_(std::string& line, size_t size) {
 	return true;
 }
 
-size_t
+size_t&
 SpxBuffer::buf_size_() {
 	return _buf_size;
+}
+
+SpxBuffer::iov_t&
+SpxBuffer::get_buf_() {
+	return _buf;
 }
 
 /*
@@ -339,8 +393,7 @@ SPX READ BUFFER
 */
 
 SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size)
-	: SpxBuffer()
-	, _rdbuf()
+	: _rdbuf()
 	, _rdbuf_buf_size(_rdbuf_buf_size)
 	, _rdbuf_iov_vec_size(_rdbuf_iov_vec_size) {
 	// set_empty_buf_();
@@ -366,7 +419,7 @@ SpxReadBuffer::set_empty_buf_() {
 }
 
 ssize_t
-SpxReadBuffer::read_(int fd) {
+SpxReadBuffer::read_(int fd, SpxBuffer& buf) {
 	set_empty_buf_();
 	// std::cout << "empty_buf size " << _rdbuf.size() << std::endl;
 	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_vec_size);
@@ -374,7 +427,7 @@ SpxReadBuffer::read_(int fd) {
 	if (n_read <= 0) {
 		return n_read;
 	}
-	_buf_size += n_read;
+	buf.buf_size_() += n_read;
 	size_t			div = n_read / _rdbuf_buf_size;
 	size_t			mod = n_read % _rdbuf_buf_size;
 	iov_t::iterator it	= _rdbuf.begin() + div;
@@ -382,7 +435,7 @@ SpxReadBuffer::read_(int fd) {
 		it->iov_len = mod;
 		++it;
 	}
-	_buf.insert(_buf.end(), _rdbuf.begin(), it);
+	buf.get_buf_().insert(buf.get_buf_().end(), _rdbuf.begin(), it);
 	// std::cout << "buf size " << _buf.size() << std::endl;
 	_rdbuf.erase(_rdbuf.begin(), it);
 

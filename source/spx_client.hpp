@@ -52,7 +52,8 @@ enum e_client_buffer_flag {
 };
 
 enum e_read_status {
-	REQ_LINE_PARSING = 0,
+	REQ_CLEAR = 0,
+	REQ_LINE_PARSING,
 	REQ_HEADER_PARSING,
 	REQ_BODY,
 	REQ_BODY_CHUNKED,
@@ -68,19 +69,20 @@ enum e_cgi_state {
 	CGI_HOLD
 };
 
-enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
-				  READ_BODY_END = 1 << 1
-};
+// enum e_req_flag { REQ_FILE_OPEN = 1 << 0,
+// 				  READ_BODY_END = 1 << 1
+// };
 
-enum e_res_flag { WRITE_READY = 1 };
+// enum e_res_flag { WRITE_READY = 1 };
 
-// gzip & deflate are not implemented.
+// gzip & deflate are not implemented. for extension.
 enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
 						   TE_GZIP	  = 1 << 1,
 						   TE_DEFLATE = 1 << 2 };
 
 typedef std::vector<char>					buffer_t;
 typedef std::vector<struct kevent>			event_list_t;
+typedef std::vector<port_info_t>			port_list_t;
 typedef std::map<std::string, std::string>	cgi_header_t;
 typedef std::map<std::string, std::string>	req_header_t;
 typedef std::pair<std::string, std::string> header;
@@ -94,7 +96,7 @@ class Client;
 class CgiField {
 public:
 	cgi_header_t _cgi_header;
-	rdbuf_t		 _from_cgi;
+	buf_t		 _from_cgi;
 	buf_t		 _to_cgi;
 	size_t		 _cgi_size;
 	size_t		 _cgi_read;
@@ -104,7 +106,7 @@ public:
 
 	CgiField()
 		: _cgi_header()
-		, _from_cgi(BUFFER_SIZE, IOV_VEC_SIZE)
+		, _from_cgi()
 		, _to_cgi()
 		, _cgi_size(0)
 		, _cgi_read(0)
@@ -142,6 +144,7 @@ public:
 
 	bool chunked_body_(Client& cl);
 	bool chunked_body_can_parse_chnkd_(Client& cl, size_t size);
+	bool chunked_body_can_parse_chnkd_skip_(Client& cl, size_t size);
 	bool skip_chunked_body_(Client& cl);
 };
 
@@ -170,7 +173,7 @@ public:
 		, _body_size(0)
 		, _body_read(0)
 		, _body_limit(-1)
-		, _cnt_len(0)
+		, _cnt_len(-1)
 		, _body_fd(-1)
 		, _header()
 		, _uri()
@@ -185,6 +188,21 @@ public:
 
 	void
 	clear_() {
+		_body_buf.clear_();
+		_header.clear();
+		_uri.clear();
+		_http_ver.clear();
+		_upld_fn.clear();
+		// _uri_resolv.clear();
+		_body_size	= 0;
+		_body_read	= 0;
+		_body_limit = -1;
+		_cnt_len	= -1;
+		_body_fd	= -1;
+		_uri_loc	= NULL;
+		_flag		= 0;
+		_req_mthd	= 0;
+		_is_chnkd	= false;
 	}
 };
 
@@ -192,8 +210,9 @@ class ResField {
 public:
 	std::string _res_header;
 	std::string _dwnl_fn;
-	rdbuf_t		_res_buf;
+	buf_t		_res_buf;
 	size_t		_body_read;
+	size_t		_body_write;
 	size_t		_body_size;
 	int			_body_fd;
 	int			_is_chnkd;
@@ -210,9 +229,10 @@ public:
 	ResField()
 		: _res_header()
 		, _dwnl_fn()
-		, _res_buf(BUFFER_SIZE, IOV_VEC_SIZE)
+		, _res_buf()
 		, _body_fd(-1)
 		, _body_read(0)
+		, _body_write(0)
 		, _body_size(0)
 		, _is_chnkd(0)
 		, _header_sent(0)
@@ -235,6 +255,7 @@ public:
 		_res_buf.clear_();
 		_body_fd	   = -1;
 		_body_read	   = 0;
+		_body_write	   = 0;
 		_body_size	   = 0;
 		_is_chnkd	   = 0;
 		_header_sent   = 0;
@@ -283,7 +304,8 @@ public:
 	CgiField			   _cgi;
 	ChunkedField		   _chnkd;
 	uintptr_t			   _client_fd;
-	rdbuf_t				   _rdbuf;
+	rdbuf_t*			   _rdbuf;
+	buf_t				   _buf;
 	int					   _state;
 	int					   _skip_size;
 	port_info_t*		   _port_info;
