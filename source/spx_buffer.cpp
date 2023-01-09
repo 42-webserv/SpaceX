@@ -40,50 +40,56 @@ SpxBuffer::pull_front_addr_() {
 	return static_cast<char*>(_buf.front().iov_base) - _partial_point;
 }
 
-void
+size_t
 SpxBuffer::delete_size_(size_t size) {
-	iov_t::iterator it = _buf.begin();
-	if (size < _buf_size) {
-		_buf_size -= size;
-		while (size >= it->iov_len) {
+	iov_t::iterator it		 = _buf.begin();
+	size_t			tmp_size = size;
+	if (tmp_size < _buf_size) {
+		_buf_size -= tmp_size;
+		while (tmp_size >= it->iov_len) {
 			delete[] static_cast<char*>(it->iov_base);
-			size -= it->iov_len;
+			tmp_size -= it->iov_len;
 			++it;
 		}
-		it->iov_len -= size;
+		it->iov_len -= tmp_size;
 		if (it == _buf.begin()) {
-			_partial_point += size;
-			return;
+			_partial_point += tmp_size;
 		} else {
-			_partial_point = size;
+			_partial_point = tmp_size;
 			_buf.erase(_buf.begin(), it);
 		}
+		return size;
 	} else {
+		size = _buf_size;
 		clear_();
+		return size;
 	}
 }
 
-void
+size_t
 SpxBuffer::delete_size_for_move_(size_t size) {
-	iov_t::iterator it = _buf.begin();
-	if (size < _buf_size) {
-		_buf_size -= size;
-		while (size >= it->iov_len) {
-			size -= it->iov_len;
+	iov_t::iterator it		 = _buf.begin();
+	size_t			tmp_size = size;
+	if (tmp_size < _buf_size) {
+		_buf_size -= tmp_size;
+		while (tmp_size >= it->iov_len) {
+			tmp_size -= it->iov_len;
 			++it;
 		}
-		it->iov_len -= size;
+		it->iov_len -= tmp_size;
 		if (it == _buf.begin()) {
-			_partial_point += size;
-			return;
+			_partial_point += tmp_size;
 		} else {
 			_partial_point = size;
 			_buf.erase(_buf.begin(), it);
 		}
+		return size;
 	} else {
+		size = _buf_size;
 		_buf.clear();
 		_buf_size	   = 0;
 		_partial_point = 0;
+		return size;
 	}
 }
 
@@ -192,6 +198,17 @@ SpxBuffer::write_debug_(int fd) {
 	}
 	// delete_size_(n_write);
 	return n_write;
+}
+
+void
+SpxBuffer::add_str(const std::string& str) {
+	struct iovec tmp;
+
+	tmp.iov_base = new char[str.size()];
+	memcpy(tmp.iov_base, str.c_str(), str.size());
+	tmp.iov_len = str.size();
+	_buf_size += str.size();
+	_buf.push_back(tmp);
 }
 
 size_t

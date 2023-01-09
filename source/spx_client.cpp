@@ -311,9 +311,46 @@ Client::res_for_post_put_req_() {
 		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, this);
 	} else {
 		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
-		_state = REQ_HOLD;
+		_state = REQ_BODY;
 	}
 	return false;
+}
+
+bool
+ChunkedField::chunked_body_can_parse_chnkd_(Client& cl, size_t size) {
+	if (cl._rdbuf.buf_size_() >= size) {
+		cl._rdbuf.move_(_chnkd_body, size);
+		cl._req._body_size += size;
+		if (cl._req._body_size > cl._req._body_limit) {
+			throw(std::exception());
+		}
+		if (size != 0) {
+			if (cl._rdbuf.find_pos_(CR) != 0 || cl._rdbuf.find_pos_(LF) != 1) {
+				// chunked error
+				throw(std::exception());
+			}
+			cl._rdbuf.delete_size_(2);
+			return true;
+		} else {
+			// chunked last
+			spx_log_("chunked last piece");
+			if (cl._rdbuf.find_pos_(CR) == 0) {
+				spx_log_("chunked last no extension");
+				// no extention
+				cl._req._cnt_len = cl._req._body_size;
+				cl._state		 = REQ_HOLD;
+				return true;
+			} else {
+				spx_log_("chunked extension");
+				throw(std::exception());
+				// yoma's code..? end check..??
+			}
+		}
+	} else {
+		// try next.
+		spx_log_("chunked try next");
+		return false;
+	}
 }
 
 bool
@@ -327,84 +364,49 @@ ChunkedField::chunked_body_(Client& cl) {
 	if (_first_chnkd) {
 		_first_chnkd = false;
 		if (cl._req._uri_resolv.is_cgi_) {
-			add_change_list(*cl.change_list, cl._cgi._write_to_cgi_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+			add_change_list(*cl.change_list, cl._cgi._write_to_cgi_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		} else {
-			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		}
 	}
 	// spx_log_("controller - req body chunked. body limit", req.body_limit_);
-	while (true) {
-		if (cl._rdbuf.get_crlf_line_(len) == true) {
-			if (spx_chunked_syntax_start_line(len, size, cl._req._header) != -1) {
-				if (cl._rdbuf.buf_size_() >= size) {
-					cl._rdbuf.move_(_chnkd_body, size);
-					cl._req._body_size += size;
-					if (cl._req._body_size > cl._req._body_limit) {
-						cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
-						cl._state = REQ_SKIP_BODY_CHUNKED;
+	try {
+		while (true) {
+			if (cl._rdbuf.get_crlf_line_(len) == true) {
+				if (spx_chunked_syntax_start_line(len, size, cl._req._header) == spx_ok) {
+					if (chunked_body_can_parse_chnkd_(cl, size) == false) {
+						return false;
+					} else if (cl._state == REQ_HOLD) {
+						// parsed
 						return false;
 					}
-					if (size != 0) {
-						// can parse chunked size.
-						// chunked valid check
-						if (cl._rdbuf.find_pos_(CR) != 0 || cl._rdbuf.find_pos_(LF) != 1) {
-							// chunked error
-							cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
-							if (cl._req._body_fd != -1) {
-								add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-							}
-							cl._state = E_BAD_REQ;
-							return false;
-						}
-						cl._rdbuf.delete_size_(2);
-					} else {
-						// chunked last
-						spx_log_("chunked last piece");
-						if (cl._rdbuf.find_pos_(CR) == 0) {
-							spx_log_("chunked last no extension");
-							// no extention
-							cl._req._cnt_len = cl._req._body_size;
-							// _state		= REQ_LINE_PARSING;
-							if (cl._req._cnt_len > cl._req._body_limit) {
-								break;
-							}
-							return false;
-						} else {
-							spx_log_("chunked extension");
-							// yoma's code..? end check..??
-							return false;
-						}
-					}
 				} else {
-					// try next.
-					spx_log_("chunked try next");
-					// rdsaved_.erase(rdsaved_.begin(), rdsaved_.begin() + rdchecked_);
-					// rdchecked_ = 0;
-					return false;
+					// chunked error
+					spx_log_("chunked error");
+					throw(std::exception());
 				}
 			} else {
-				// chunked error
-				spx_log_("chunked error");
-				cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
-				if (cl._req._body_fd != -1) {
-					add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-				}
-				cl._state = E_BAD_REQ;
+				// chunked start line not exist.
 				return false;
 			}
-		} else {
-			// chunked start line not exist.
-			return false;
 		}
+	} catch (...) {
+		if (cl._req._body_read > cl._req._body_limit) {
+			// send over limit.
+			close(cl._req._body_fd);
+			remove(cl._req._upld_fn.c_str());
+			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+			cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
+			cl._state = REQ_SKIP_BODY_CHUNKED;
+		} else {
+			cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
+			if (cl._req._body_fd != -1) {
+				add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
+			}
+			cl._state = E_BAD_REQ;
+		}
+		return false;
 	}
-	// if (req.body_size_ > req.body_limit_) {
-	// send over limit.
-	close(cl._req._body_fd);
-	remove(cl._req._upld_fn.c_str());
-	add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-	cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
-	cl._state = REQ_SKIP_BODY_CHUNKED;
-	return false;
 }
 
 bool
@@ -419,7 +421,7 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 		if (cl._rdbuf.get_crlf_line_(len) == true) {
 			if (spx_chunked_syntax_start_line(len, size, cl._req._header) != -1) {
 				if (cl._rdbuf.buf_size_() >= size) {
-					cl._rdbuf.move_(_chnkd_body, size);
+					size = cl._rdbuf.delete_size_(size);
 					cl._req._body_size += size;
 					if (cl._req._body_size > cl._req._body_limit) {
 						cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
@@ -433,7 +435,7 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 							// chunked error
 							cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
 							if (cl._req._body_fd != -1) {
-								add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+								add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
 							}
 							cl._state = E_BAD_REQ;
 							return false;
@@ -470,7 +472,7 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 				spx_log_("chunked error");
 				cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
 				if (cl._req._body_fd != -1) {
-					add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+					add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
 				}
 				cl._state = E_BAD_REQ;
 				return false;
@@ -558,6 +560,15 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			}
 			//  HEADER?
 			break;
+		}
+		break;
+	}
+	case REQ_BODY: {
+		int n_move = _rdbuf.move_(_req._body_buf, _req._body_size - _req._body_read);
+
+		_req._body_read += n_move;
+		if (_req._body_read == _req._body_size) {
+			_state = REQ_HOLD;
 		}
 		break;
 	}
@@ -766,8 +777,10 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		std::string tmp = make_to_string_();
 		write_to_response_buffer_(tmp);
-		if ((cl._req._req_mthd & REQ_HEAD) == false)
-			write_to_response_buffer_(error_page);
+		if ((cl._req._req_mthd & REQ_HEAD) == false) {
+			// write_to_response_buffer_(error_page);
+			cl._res._res_buf.add_str(error_page);
+		}
 		// add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		return;
 	}
@@ -827,6 +840,7 @@ ResField::make_response_header_(Client& cl) {
 			// if (res.uri_resolv_.is_same_location_) {
 			spx_log_("uri=======", cl._req._uri_resolv.script_filename_);
 			content = generate_autoindex_page(req_fd, cl._req._uri_resolv);
+			cl._rdbuf.add_str(content);
 			std::stringstream ss;
 			ss << content.size();
 			_headers.push_back(header(CONTENT_LENGTH, ss.str()));

@@ -54,6 +54,7 @@ enum e_client_buffer_flag {
 enum e_read_status {
 	REQ_LINE_PARSING = 0,
 	REQ_HEADER_PARSING,
+	REQ_BODY,
 	REQ_BODY_CHUNKED,
 	REQ_SKIP_BODY,
 	REQ_SKIP_BODY_CHUNKED,
@@ -140,6 +141,7 @@ public:
 	}
 
 	bool chunked_body_(Client& cl);
+	bool chunked_body_can_parse_chnkd_(Client& cl, size_t size);
 	bool skip_chunked_body_(Client& cl);
 };
 

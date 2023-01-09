@@ -259,11 +259,11 @@ kqueue_module(std::vector<port_info_t>& port_info) {
 				spx_log_("event_write");
 				write_event_handler(port_info, cur_event, change_list);
 				break;
-			case EVFILT_PROC:
-				// cgi end
-				spx_log_("event_cgi");
-				proc_event_handler(cur_event, change_list);
-				break;
+			// case EVFILT_PROC:
+			// 	// cgi end
+			// 	spx_log_("event_cgi");
+			// 	proc_event_handler(cur_event, change_list);
+			// 	break;
 			case EVFILT_TIMER:
 				spx_log_("event_timer");
 				timer_event_handler(cur_event, change_list);
