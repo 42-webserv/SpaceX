@@ -290,12 +290,12 @@ Client::res_for_get_head_req_() {
 	// _res._write_ready = true;
 	if (_req._is_chnkd) {
 		_state = REQ_SKIP_BODY_CHUNKED;
-	} else if (_req._body_size > 0) {
-		_skip_size = _req._body_size;
-		_state	   = REQ_SKIP_BODY;
-	} else {
-		// _state = REQ_SKIP_BODY_CHUNKED;
+	} else if (_req._cnt_len == 0 || _req._cnt_len == -1) {
 		_state = REQ_HOLD;
+	} else {
+		_skip_size = _req._cnt_len;
+		_state	   = REQ_SKIP_BODY;
+		// _state = REQ_SKIP_BODY_CHUNKED;
 	}
 	return false;
 }
@@ -319,7 +319,8 @@ Client::res_for_post_put_req_() {
 	// spx_log_("control - REQ_POST fd: ", _req._body_fd);
 	// _req.flag_ |= REQ_FILE_OPEN;
 	if (_req._is_chnkd || _req._cnt_len == -1) {
-		_req._body_size = -1;
+		_req._body_size = 0;
+		_req._cnt_len	= -1;
 		_state			= REQ_BODY_CHUNKED;
 		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, this);
 	} else {
