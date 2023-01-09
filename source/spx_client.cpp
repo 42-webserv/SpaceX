@@ -1,6 +1,7 @@
 #include "spx_client.hpp"
 #include "spx_cgi_module.hpp"
 #include "spx_kqueue_module.hpp"
+
 #include "spx_session_storage.hpp"
 
 Client::Client(event_list_t* change_list)
@@ -839,7 +840,6 @@ ResField::make_response_header_(Client& cl) {
 			// if (res.uri_resolv_.is_same_location_) {
 			spx_log_("uri=======", cl._req._uri_resolv.script_filename_);
 			content = generate_autoindex_page(req_fd, cl._req._uri_resolv);
-			cl._rdbuf.add_str(content);
 			std::stringstream ss;
 			ss << content.size();
 			_headers.push_back(header(CONTENT_LENGTH, ss.str()));
