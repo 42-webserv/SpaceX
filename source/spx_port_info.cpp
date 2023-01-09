@@ -208,7 +208,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
 				cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
 				if (it_ != cgi_case.end()) {
-					uri_resolved_sets.is_cgi_  = true;
+					if (temp_extension.find_last_of(".") != 0) {
+						uri_resolved_sets.is_cgi_ = true;
+					}
 					uri_resolved_sets.cgi_loc_ = &it_->second;
 					flag_check_dup |= Kuri_cgi;
 				}
