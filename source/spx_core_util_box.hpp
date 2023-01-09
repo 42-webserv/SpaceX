@@ -3,10 +3,12 @@
 #define __SPACEX__CORE_UTIL_BOX_HPP__
 
 #include "spx_core_type.hpp"
-#include <cerrno>
+
 #include <fstream>
-#include <iostream>
-#include <string>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 
 #define COLOR_RED "\033[1;31m"
 #define COLOR_GREEN "\033[1;32m"
@@ -73,7 +75,7 @@ error_fn(std::string err, int (*func)(int), int fd) {
 
 inline void
 error_exit_msg(std::string err) {
-	std::cerr << "\033[1;31m[ " << err << " ]\033[0m" << std::endl;
+	std::cerr << COLOR_RED << err << COLOR_RESET << std::endl;
 	exit(spx_error);
 }
 

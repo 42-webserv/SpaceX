@@ -1,21 +1,13 @@
 #include "spx_port_info.hpp"
 #include "spx_core_type.hpp"
-#include "spx_core_util_box.hpp"
-#include "spx_parse_config.hpp"
-#include <cstddef>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
 
 #include <dirent.h>
 
 namespace {
 
 	inline void
-	close_socket_and_exit_(uint32_t const prev_socket_size, port_info_vec& port_info) {
-		for (uint32_t i = 0; i <= prev_socket_size; ++i) {
+	close_socket_and_exit__(int const prev_socket_size, port_info_vec& port_info) {
+		for (int i = 0; i <= prev_socket_size; ++i) {
 			if (i == port_info[i].listen_sd) {
 				close(port_info[i].listen_sd);
 			}
@@ -32,10 +24,6 @@ server_info_t::server_info(server_info_for_copy_stage_t const& from)
 	, server_name(from.server_name)
 	, root(from.root)
 	, default_error_page(from.default_error_page) {
-#ifdef CONFIG_DEBUG
-
-	std::cout << "server_info copy construct" << std::endl;
-#endif
 	if (from.error_page_case.size() != 0) {
 		error_page_case.insert(from.error_page_case.begin(), from.error_page_case.end());
 	}
@@ -54,10 +42,6 @@ server_info_t::server_info(server_info_t const& from)
 	, server_name(from.server_name)
 	, root(from.root)
 	, default_error_page(from.default_error_page) {
-#ifdef CONFIG_DEBUG
-
-	std::cout << "server_info copy construct" << std::endl;
-#endif
 	if (from.error_page_case.size() != 0) {
 		error_page_case.insert(from.error_page_case.begin(), from.error_page_case.end());
 	}
@@ -169,7 +153,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				break;
 			}
 			case '/': {
-				while (*it == '/') {
+				while (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
 					++it;
 				}
 				temp += "/";
@@ -268,7 +252,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 
 			DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
-			if ((uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) && !temp_index.empty()) {
+			if ((uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) && !temp_index.empty()) { // TODO: only get case add index, when put or post case add saved_path
 				uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
 			}
@@ -297,12 +281,12 @@ server_info_t::path_resolve_(std::string const& unvalid_path) {
 
 	std::string::const_iterator it = unvalid_path.begin();
 	while (it != unvalid_path.end()) {
-		if (*it == '/') {
-			while (*it == '/' && it != unvalid_path.end()) {
+		if (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
+			while (syntax_(only_slash_, static_cast<uint8_t>(*it)) && it != unvalid_path.end()) {
 				++it;
 			}
 			resolved_path += '/';
-		} else if (*it == '%'
+		} else if (syntax_(only_percent_, static_cast<uint8_t>(*it))
 				   && syntax_(hexdigit_, static_cast<uint8_t>(*(it + 1)))
 				   && syntax_(hexdigit_, static_cast<uint8_t>(*(it + 2)))) {
 			std::string		  temp_hex;
@@ -357,7 +341,6 @@ server_info_for_copy_stage_t::clear_(void) {
 
 void
 server_info_for_copy_stage_t::print_() const {
-#ifdef CONFIG_DEBUG
 	std::cout << "\n[ server_name ] " << server_name << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
@@ -371,17 +354,16 @@ server_info_for_copy_stage_t::print_() const {
 	else
 		std::cout << "default_error_page: none" << std::endl;
 	std::cout << std::endl;
-#endif
 }
 
 void
 server_info_t::print_(void) const {
-	std::cout << "\033[1;32m [ server_name ] " << server_name << "\033[0m" << std::endl;
+	std::cout << COLOR_GREEN << " [ server_name ] " << server_name << COLOR_RESET;
+	if (default_server_flag == Kdefault_server)
+		std::cout << COLOR_RED << " <---- default_server" << COLOR_RESET << std::endl;
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
 	std::cout << "root: " << root << std::endl;
-	if (default_server_flag == Kdefault_server)
-		std::cout << "\033[1;31m default_server \033[0m" << std::endl;
 
 	if (default_error_page != "")
 		std::cout << "\ndefault_error_page: " << default_error_page << std::endl;
@@ -395,7 +377,7 @@ server_info_t::print_(void) const {
 	}
 	std::cout << std::endl;
 
-	std::cout << COLOR_RED << "uri_case: " << uri_case.size() << COLOR_RESET << std::endl;
+	std::cout << COLOR_RED << "uri_case: " << uri_case.size() << "\t---------------" << COLOR_RESET << std::endl;
 	uri_location_map_p::iterator it = uri_case.begin();
 	while (it != uri_case.end()) {
 		std::cout << "\n[ uri ] " << it->first << std::endl;
@@ -404,7 +386,7 @@ server_info_t::print_(void) const {
 	}
 	std::cout << std::endl;
 
-	std::cout << COLOR_RED << "cgi_case: " << cgi_case.size() << COLOR_RESET << std::endl;
+	std::cout << COLOR_RED << "cgi_case: " << cgi_case.size() << "\t---------------" << COLOR_RESET << std::endl;
 	cgi_list_map_p::const_iterator it_cgi = cgi_case.begin();
 	while (it_cgi != cgi_case.end()) {
 		std::cout << "\n[ cgi ] " << it_cgi->first << std::endl;
@@ -445,9 +427,6 @@ uri_location_t::uri_location(const uri_location_for_copy_stage_t from)
 	, cgi_pass(from.cgi_pass)
 	, cgi_path_info(from.cgi_path_info)
 	, client_max_body_size(from.client_max_body_size) {
-#ifdef CONFIG_DEBUG
-	std::cout << "uri_location copy construct" << std::endl;
-#endif
 }
 
 uri_location_t::~uri_location() {
@@ -460,12 +439,12 @@ uri_location_t::print_(void) const {
 	std::cout << "accepted_methods_flag: ";
 	if (accepted_methods_flag & KGet)
 		std::cout << "GET ";
-	if (accepted_methods_flag & KPost)
-		std::cout << "POST ";
 	if (accepted_methods_flag & KHead)
 		std::cout << "HEAD ";
 	if (accepted_methods_flag & KPut)
 		std::cout << "PUT ";
+	if (accepted_methods_flag & KPost)
+		std::cout << "POST ";
 	if (accepted_methods_flag & KDelete)
 		std::cout << "DELETE ";
 	std::cout << std::endl;
@@ -528,16 +507,16 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
 				if (temp_port_info.listen_sd < 0) {
-					close_socket_and_exit_(prev_socket_size, port_info);
+					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				int opt(1);
 				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) { // NOTE:: SO_REUSEPORT
 					error_fn("setsockopt", close, temp_port_info.listen_sd);
-					close_socket_and_exit_(prev_socket_size, port_info);
+					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (fcntl(temp_port_info.listen_sd, F_SETFL, O_NONBLOCK) == -1) {
 					error_fn("fcntl", close, temp_port_info.listen_sd);
-					close_socket_and_exit_(prev_socket_size, port_info);
+					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				temp_port_info.addr_server.sin_family	   = AF_INET;
 				temp_port_info.addr_server.sin_port		   = htons(temp_port_info.my_port);
@@ -547,11 +526,11 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					ss << temp_port_info.my_port;
 					std::string err = "bind port " + ss.str() + " ";
 					error_fn(err, close, temp_port_info.listen_sd);
-					close_socket_and_exit_(prev_socket_size, port_info);
+					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
 					error_fn("listen", close, temp_port_info.listen_sd);
-					close_socket_and_exit_(prev_socket_size, port_info);
+					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (prev_socket_size == 0) {
 					uint32_t i = 0;
@@ -573,7 +552,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 		}
 		if (it2 == it->second.end()) {
 			std::cerr << "no default server in port " << it->first << std::endl;
-			close_socket_and_exit_(prev_socket_size, port_info);
+			close_socket_and_exit__(prev_socket_size, port_info);
 		}
 	}
 	if (socket_size == 0) {

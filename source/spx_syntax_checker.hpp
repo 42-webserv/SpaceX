@@ -5,15 +5,6 @@
 #include "spx_client.hpp"
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-#include <cstddef>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
-#include <vector>
-
-class ClientBuffer;
-typedef ClientBuffer client_buf_t;
 
 status
 spx_http_syntax_start_line(std::string const& line,
