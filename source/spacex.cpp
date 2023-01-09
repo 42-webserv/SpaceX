@@ -1,6 +1,6 @@
 #include "spacex.hpp"
 
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 #include "spx_kqueue_module.hpp"
 
 namespace {

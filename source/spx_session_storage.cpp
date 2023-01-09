@@ -1,7 +1,5 @@
 #include "spx_session_storage.hpp"
-
-// temp
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 #include <sys/time.h>
 
 SessionStorage::SessionStorage() { }

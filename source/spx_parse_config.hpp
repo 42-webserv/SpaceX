@@ -4,7 +4,6 @@
 
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
-
 #include "spx_port_info.hpp"
 
 status

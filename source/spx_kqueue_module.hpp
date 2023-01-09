@@ -2,7 +2,7 @@
 #ifndef __SPX__KQUEUE_MODULE__HPP
 #define __SPX__KQUEUE_MODULE__HPP
 
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 
 void add_change_list(std::vector<struct kevent>& change_list,
 					 uintptr_t ident, int64_t filter, uint16_t flags,
