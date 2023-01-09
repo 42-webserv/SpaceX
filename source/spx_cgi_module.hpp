@@ -5,7 +5,7 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 
-#include "spx_client_buffer.hpp"
+#include "spx_client.hpp"
 #include "spx_port_info.hpp"
 
 typedef std::map<std::string, std::string> header_field_map;

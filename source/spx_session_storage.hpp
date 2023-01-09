@@ -11,6 +11,8 @@
 #include <time.h>
 
 #define SESSIONID "sessionID="
+#define MAX_AGE "Max-Age="
+#define AGE_TIME "10"
 
 typedef struct Cookie {
 	typedef std::map<std::string, std::string> key_val_t;
@@ -51,57 +53,9 @@ typedef struct Cookie {
 } cookie_t;
 
 typedef struct Session {
+
 	typedef std::pair<std::string, std::string> session_content;
-	/*
-		key_val_t content;
 
-		// TODO : TicketTime - currentTime > limit => delete session
-		// time_t	  valid_time;
-		Session(std::string key, std::string value) {
-			content.insert(key, value);
-		};
-		~Session() {};
-
-		std::string
-		to_string() {
-			std::stringstream ss;
-			for (key_val_t::iterator it = content.begin(); it != content.end(); ++it) {
-				ss << it->first << "=" << it->second << "; ";
-			}
-			std::string result = ss.str();
-			size_t		pos	   = result.find_last_of(";");
-			return result.substr(0, pos);
-		}
-
-		void
-		parse_session_header(const std::string& session_header) {
-			size_t start = 0;
-			while (start < session_header.size()) {
-				size_t end = session_header.find(';', start);
-				if (end == std::string::npos)
-					end = session_header.size();
-				std::string session	  = session_header.substr(start, end - start);
-				size_t		equal_pos = session.find('=');
-				size_t		key_pos	  = 0;
-				if (equal_pos != std::string::npos) {
-					std::string key	  = session.substr(key_pos, equal_pos);
-					std::string value = session.substr(equal_pos + 1);
-					if (!key.empty()) // additional valid check for key needed
-						content[key] = value;
-				}
-				start = end + 1;
-				while (session_header[start] == ' ')
-					++start;
-			}
-		}
-		void
-		increase_session_value(const std::string& key) {
-			std::stringstream	ss;
-			key_val_t::iterator it = content.find(key);
-			if (it == content.end())
-				return;
-		}
-		*/
 	int count_;
 	Session(int i) {
 		count_ = i;
@@ -115,9 +69,6 @@ typedef struct Session {
 } session_t;
 
 class SessionStorage {
-	// typedef typename std::string					 SessionID;
-	// typedef typename std::string					 SessionValue;
-	// typedef typename std::pair<SessionID, session_t> session_key_val;
 	typedef std::string						SessionID;
 	typedef std::string						SessionValue;
 	typedef std::pair<SessionID, session_t> session_key_val;
@@ -127,8 +78,8 @@ class SessionStorage {
 	int		  count;
 
 public:
-	SessionStorage() { }
-	~SessionStorage() { }
+	SessionStorage();
+	~SessionStorage();
 
 	// void
 	//  parse_session_header(const std::string& session_header);
@@ -140,5 +91,6 @@ public:
 	std::string make_hash(uintptr_t& seed_in);
 	void		addCount();
 };
+typedef SessionStorage session_storage_t;
 
 #endif

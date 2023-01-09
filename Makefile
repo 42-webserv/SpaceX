@@ -23,8 +23,9 @@ endif
 
 SRC			=	spacex.cpp \
 				spx_autoindex_generator.cpp \
+				spx_buffer.cpp \
 				spx_cgi_module.cpp \
-				spx_client_buffer.cpp \
+				spx_client.cpp \
 				spx_core_util_box.cpp \
 				spx_kqueue_module.cpp \
 				spx_parse_config.cpp \

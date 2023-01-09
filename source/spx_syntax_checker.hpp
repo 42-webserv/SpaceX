@@ -5,8 +5,7 @@
 #include "spx_core_type.hpp"
 #include "spx_core_util_box.hpp"
 
-#include "spx_client_buffer.hpp"
-typedef class ClientBuffer client_buf_t;
+#include "spx_client.hpp"
 
 status
 spx_http_syntax_start_line(std::string const& line,
@@ -16,7 +15,7 @@ status
 spx_http_syntax_header_line(std::string const& line);
 
 status
-spx_chunked_syntax_start_line(client_buf_t&						  buf,
+spx_chunked_syntax_start_line(std::string&						  line,
 							  uint32_t&							  chunk_size,
 							  std::map<std::string, std::string>& chunk_ext);
 
