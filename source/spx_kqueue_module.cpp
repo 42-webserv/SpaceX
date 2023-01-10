@@ -12,7 +12,8 @@ add_change_list(event_list_t& change_list,
 
 bool
 create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
-					event_list_t& change_list, port_info_t& port_info, rdbuf_t* rdbuf) {
+					event_list_t& change_list, port_info_t& port_info,
+					rdbuf_t* rdbuf, session_storage_t* storage) {
 
 	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
 
@@ -26,6 +27,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		new_cl->_client_fd = client_fd;
 		new_cl->_rdbuf	   = rdbuf;
 		new_cl->_port_info = &port_info;
+		new_cl->_storage   = storage;
 		add_change_list(change_list, client_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, new_cl);
 		add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);
 		// add_change_list(change_list, client_fd, EVFILT_TIMER,
@@ -36,11 +38,11 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 
 void
 read_event_handler(port_list_t& port_info, struct kevent* cur_event,
-				   event_list_t& change_list, rdbuf_t* rdbuf) {
+				   event_list_t& change_list, rdbuf_t* rdbuf, session_storage_t* storage) {
 
 	if (cur_event->ident < port_info.size()) {
 		if (create_client_event(cur_event->ident, cur_event, change_list,
-								port_info[cur_event->ident], rdbuf)
+								port_info[cur_event->ident], rdbuf, storage)
 			== false) {
 			// TODO: error ???
 		}
@@ -142,10 +144,11 @@ timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 void
 kqueue_module(port_list_t& port_info) {
 
-	event_list_t  change_list;
-	struct kevent event_list[MAX_EVENT_LIST];
-	int			  kq;
-	rdbuf_t		  rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
+	event_list_t	  change_list;
+	struct kevent	  event_list[MAX_EVENT_LIST];
+	int				  kq;
+	rdbuf_t			  rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
+	session_storage_t storage;
 
 	kq = kqueue();
 	if (kq == -1) {
@@ -236,7 +239,7 @@ kqueue_module(port_list_t& port_info) {
 			switch (cur_event->filter) {
 			case EVFILT_READ:
 				spx_log_("event_read");
-				read_event_handler(port_info, cur_event, change_list, &rdbuf);
+				read_event_handler(port_info, cur_event, change_list, &rdbuf, &storage);
 				break;
 			case EVFILT_WRITE:
 				// if (cur_event->flags & EV_DISABLE) {
