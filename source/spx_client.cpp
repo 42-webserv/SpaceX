@@ -420,20 +420,23 @@ ChunkedField::chunked_body_(Client& cl) {
 			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		}
 	}
-	// spx_log_("controller - req body chunked. body limit", req.body_limit_);
+	spx_log_("controller - req body chunked.");
 	try {
 		while (true) {
+			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
-				if (spx_chunked_syntax_start_line(len, size, cl._req._header) == spx_ok) {
+				spx_log_("size str len", len);
+				if (spx_chunked_syntax_start_line(len, size, cl._req._header) != spx_error) {
 					if (chunked_body_can_parse_chnkd_(cl, size) == false) {
 						return false;
 					} else if (cl._state == REQ_HOLD) {
 						// parsed
+						spx_log_("parsed");
 						return false;
 					}
 				} else {
 					// chunked error
-					spx_log_("chunked error");
+					spx_log_("chunked error. len", len);
 					throw(std::exception());
 				}
 			} else {
@@ -472,6 +475,7 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 	// spx_log_("req skip body chunked. is chunked", cl._req._is_chnkd);
 	try {
 		while (true) {
+			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
 				if (spx_chunked_syntax_start_line(len, size, cl._req._header) == spx_ok) {
 					if (chunked_body_can_parse_chnkd_skip_(cl, size) == false) {

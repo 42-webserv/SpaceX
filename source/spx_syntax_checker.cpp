@@ -4,7 +4,7 @@ namespace {
 
 	inline status
 	error__(const char* msg) {
-#ifdef SYNTAX_DEBUG
+#ifdef DEBUG
 		std::cout << COLOR_RED << msg << COLOR_RESET << std::endl;
 #else
 		(void)msg;
@@ -14,7 +14,7 @@ namespace {
 
 	inline status
 	error_flag__(const char* msg, int& flag) {
-#ifdef SYNTAX_DEBUG
+#ifdef DEBUG
 		std::cout << COLOR_RED << msg << COLOR_RESET << std::endl;
 #else
 		(void)msg;
@@ -317,7 +317,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 	while (state != chunked_done) {
 		switch (state) {
 		case chunked_start: {
-			if (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
+			if (it != line.end() && syntax_(hexdigit_, static_cast<uint8_t>(*it))) {
 				state = chunked_size;
 				break;
 			}
@@ -342,9 +342,14 @@ spx_chunked_syntax_start_line(std::string&						  line,
 		}
 
 		case chunked_size: {
-			while (syntax_(digit_alpha_, static_cast<uint8_t>(*it))) {
+			while (it != line.end() && syntax_(hexdigit_, static_cast<uint8_t>(*it))) {
 				temp_str_key.push_back(*it);
 				++it;
+			}
+			if (it == line.end()) {
+				ss << std::hex << temp_str_key;
+				ss >> chunk_size;
+				return spx_ok;
 			}
 			switch (*it) {
 			case ';':
@@ -400,10 +405,10 @@ spx_chunked_syntax_start_line(std::string&						  line,
 		}
 
 		case chunked_BWS_before_ext_name: {
-			while (*it == ' ') {
+			while (it != line.end() && *it == ' ') {
 				++it;
 			}
-			if (*it == '\r' || *it == '=' || *it == ';') {
+			if (it != line.end() && (*it == '\r' || *it == '=' || *it == ';')) {
 				return error__("invalid chunked start line : BWS_before_ext_name : chunked_start");
 			}
 			state = chunked_ext_name;
@@ -411,7 +416,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 		}
 
 		case chunked_ext_name: {
-			while (syntax_(name_token_, static_cast<uint8_t>(*it))) {
+			while (it != line.end() && syntax_(name_token_, static_cast<uint8_t>(*it))) {
 				temp_str_key.push_back(*it);
 				++it;
 			}
