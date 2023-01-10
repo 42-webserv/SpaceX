@@ -201,11 +201,11 @@ Client::set_cookie_() {
 				spx_log_("MAKING NEW SESSION");
 				std::string hash_value = _storage->make_hash(_client_fd);
 				_storage->add_new_session(hash_value);
-				_req.session_id = SESSIONID + hash_value;
+				_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
 			} else {
 				session_t& session = _storage->find_value_by_key((*find_cookie).second);
 				session.count_++;
-				_req.session_id = SESSIONID + (*find_cookie).second;
+				_req.session_id = SESSIONID + (*find_cookie).second + "; " + MAX_AGE + AGE_TIME;
 				// spx_log_("SESSIONCOUNT", session.count_);
 			}
 		}
@@ -214,7 +214,7 @@ Client::set_cookie_() {
 		spx_log_("MAKING NEW SESSION NOT FOUND SESSION");
 		std::string hash_value = _storage->make_hash(_client_fd);
 		_storage->add_new_session(hash_value);
-		_req.session_id = SESSIONID + hash_value;
+		_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
 	}
 	// COOKIE & SESSION END
 }
