@@ -90,30 +90,33 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 void
 write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 					event_list_t& change_list) {
-	client_t& cl = *static_cast<client_t*>(cur_event->udata);
+	client_t* cl = static_cast<client_t*>(cur_event->udata);
 
-	if (cur_event->ident == cl._client_fd) {
-		spx_log_("write event handler - cl state", cl._state);
-		if (cl.write_response_() == false) {
+	if (cl == NULL) {
+		return;
+	}
+	if (cur_event->ident == cl->_client_fd) {
+		spx_log_("write event handler - cl state", cl->_state);
+		if (cl->write_response_() == false) {
 			return;
 		}
-		if (cl._state != REQ_HOLD) {
+		if (cl->_state != REQ_HOLD) {
 			spx_log_("write_event_handler - not REQ_HOLD");
-			spx_log_("write event handler - cl state", cl._state);
-			cl.req_res_controller_(cur_event);
+			spx_log_("write event handler - cl state", cl->_state);
+			cl->req_res_controller_(cur_event);
 		}
 	} else {
-		if (cur_event->ident == cl._req._body_fd) {
-			spx_log_("write_for_upload");
-			if (cl.write_for_upload_(cur_event) == false) {
+		if (cur_event->ident == cl->_req._body_fd) {
+			// spx_log_("write_for_upload");
+			if (cl->write_for_upload_(cur_event) == false) {
 				spx_log_("too large file to upload");
-				cl.error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
+				cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
 				return;
 			}
 		} else {
 			spx_log_("write_to_cgi");
 			// cgi logic
-			cl.write_to_cgi_(cur_event);
+			cl->write_to_cgi_(cur_event);
 		}
 	}
 }
@@ -224,12 +227,12 @@ kqueue_module(port_list_t& port_info) {
 								}
 								spx_log_("cgi read close");
 								close(cur_event->ident);
-								add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DISABLE | EV_DELETE, 0, 0, cl);
+								add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
 								break;
 							} else {
 								spx_log_("cgi write close");
 								close(cur_event->ident);
-								add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DISABLE | EV_DELETE, 0, 0, NULL);
+								add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DELETE, 0, 0, NULL);
 							}
 						}
 					}
@@ -239,21 +242,13 @@ kqueue_module(port_list_t& port_info) {
 			switch (cur_event->filter) {
 			case EVFILT_READ:
 				spx_log_("event_read");
+				// usleep(1000);
 				read_event_handler(port_info, cur_event, change_list, &rdbuf, &storage);
 				break;
 			case EVFILT_WRITE:
-				// if (cur_event->flags & EV_DISABLE) {
-				// 	spx_log_("event_write disabled!!");
-				// 	break;
-				// }
-				spx_log_("event_write");
+				// usleep(1000);
 				write_event_handler(port_info, cur_event, change_list);
 				break;
-			// case EVFILT_PROC:
-			// 	// cgi end
-			// 	spx_log_("event_cgi");
-			// 	proc_event_handler(cur_event, change_list);
-			// 	break;
 			case EVFILT_TIMER:
 				spx_log_("event_timer");
 				timer_event_handler(cur_event, change_list);

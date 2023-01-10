@@ -10,9 +10,7 @@ SpxBuffer::SpxBuffer()
 
 SpxBuffer::~SpxBuffer() {
 	// std::cout << "destructor buf size " << _buf.size() << std::endl;
-	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
-		delete[] static_cast<char*>(it->iov_base);
-	}
+	clear_();
 }
 
 char*
@@ -396,7 +394,9 @@ SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size)
 	: _rdbuf()
 	, _rdbuf_buf_size(_rdbuf_buf_size)
 	, _rdbuf_iov_vec_size(_rdbuf_iov_vec_size) {
-	// set_empty_buf_();
+	if (_rdbuf_buf_size == 0 || _rdbuf_iov_vec_size == 0) {
+		throw(std::exception());
+	}
 }
 
 SpxReadBuffer::~SpxReadBuffer() {
@@ -411,9 +411,9 @@ void
 SpxReadBuffer::set_empty_buf_() {
 	struct iovec tmp;
 
-	tmp.iov_len = _rdbuf_buf_size;
 	while (_rdbuf.size() < _rdbuf_iov_vec_size) {
 		tmp.iov_base = new char[_rdbuf_buf_size];
+		tmp.iov_len	 = _rdbuf_buf_size;
 		_rdbuf.push_back(tmp);
 	}
 }

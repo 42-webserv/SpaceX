@@ -25,7 +25,7 @@
 #include "spx_syntax_checker.hpp"
 
 #define BUFFER_SIZE 8 * 1024
-#define IOV_VEC_SIZE 8
+#define IOV_VEC_SIZE 6
 
 #define MAX_EVENT_LIST 200
 
@@ -118,8 +118,8 @@ public:
 	void
 	clear_() {
 		_cgi_header.clear();
-		_from_cgi.clear_();
-		_to_cgi.clear_();
+		// _from_cgi.clear_();
+		// _to_cgi.clear_();
 		_cgi_size		 = 0;
 		_cgi_read		 = 0;
 		_write_to_cgi_fd = 0;
@@ -149,7 +149,7 @@ public:
 
 	void
 	clear_() {
-		_chnkd_body.clear_();
+		// _chnkd_body.clear_();
 		_chnkd_size	 = 0;
 		_first_chnkd = true;
 		_last_chnkd	 = false;
@@ -192,16 +192,16 @@ public:
 		, _uri()
 		, _http_ver()
 		, _upld_fn()
-		, _uri_loc()
+		, _uri_loc(NULL)
 		, _uri_resolv()
 		, _flag(0)
-		, _req_mthd(0)
-		, _is_chnkd(0) { }
+		, _req_mthd(REQ_LINE_PARSING)
+		, _is_chnkd(false) { }
 	~ReqField() { }
 
 	void
 	clear_() {
-		_body_buf.clear_();
+		// _body_buf.clear_();
 		_header.clear();
 		_uri.clear();
 		_http_ver.clear();
@@ -214,7 +214,7 @@ public:
 		_body_fd	= -1;
 		_uri_loc	= NULL;
 		_flag		= 0;
-		_req_mthd	= 0;
+		_req_mthd	= REQ_LINE_PARSING;
 		_is_chnkd	= false;
 	}
 };
@@ -230,7 +230,7 @@ public:
 	int			_body_fd;
 	int			_is_chnkd;
 	int			_header_sent;
-	bool		_write_ready;
+	bool		_write_finished;
 
 	/* RESPONSE*/
 	std::vector<header> _headers;
@@ -247,9 +247,9 @@ public:
 		, _body_read(0)
 		, _body_write(0)
 		, _body_size(0)
-		, _is_chnkd(0)
+		, _is_chnkd(false)
 		, _header_sent(0)
-		, _write_ready(0)
+		, _write_finished(false)
 		, _headers()
 		, _version_minor(1)
 		, _version_major(1)
@@ -266,17 +266,17 @@ public:
 		_dwnl_fn.clear();
 		_headers.clear();
 		_res_buf.clear_();
-		_body_fd	   = -1;
-		_body_read	   = 0;
-		_body_write	   = 0;
-		_body_size	   = 0;
-		_is_chnkd	   = 0;
-		_header_sent   = 0;
-		_write_ready   = 0;
-		_version_minor = 1;
-		_version_major = 1;
-		_status_code   = 200;
-		_status		   = "OK";
+		_body_fd		= -1;
+		_body_read		= 0;
+		_body_write		= 0;
+		_body_size		= 0;
+		_is_chnkd		= 0;
+		_header_sent	= 0;
+		_write_finished = false;
+		_version_minor	= 1;
+		_version_major	= 1;
+		_status_code	= 200;
+		_status			= "OK";
 	};
 
 	int			file_open_(const char* dir) const;
