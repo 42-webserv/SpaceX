@@ -346,8 +346,11 @@ ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
 			return true;
 		}
 	}
+	spx_log_("chunked_body_can_parse_chnkd");
 	if (cl._buf.buf_size_() >= 2) {
-		if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
+		spx_log_("posval0", cl._buf.pos_val_(0));
+		spx_log_("posval1", cl._buf.pos_val_(1));
+		if (cl._buf.pos_val_(0) != CR || cl._buf.pos_val_(1) != LF) {
 			// chunked error
 			throw(std::exception());
 		}
@@ -649,7 +652,7 @@ Client::read_to_client_buffer_(struct kevent* cur_event) {
 	// #ifdef DEBUG
 	// 	write(STDOUT_FILENO, &rdbuf_, std::min(200, n_read));
 	// #endif
-	_buf.write_debug_();
+	// _buf.write_debug_();
 	spx_log_("\nread_to_client", n_read);
 	spx_log_("read_to_client state", _state);
 	if (_state != REQ_HOLD) {
@@ -744,7 +747,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 void
 Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
-	_res._res_buf.write_debug_();
+	// _res._res_buf.write_debug_();
 	if (n_read < 0) {
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
@@ -809,7 +812,11 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		return;
 	}
-	_body_fd = error_req_fd;
+	if ((cl._req._req_mthd & REQ_HEAD) == false) {
+		_body_fd = error_req_fd;
+	} else {
+		_body_fd = -1;
+	}
 
 	setContentType_(page_path);
 	setContentLength_(error_req_fd);
@@ -953,11 +960,15 @@ Client::write_for_upload_(struct kevent* cur_event) {
 	if (_req._is_chnkd) {
 		n_write = _chnkd._chnkd_body.write_(cur_event->ident);
 		_req._body_read += n_write;
+		spx_log_("uploading body size", _req._body_read);
 		if (_req._body_read == _req._cnt_len) {
 			// upload finished.
+			spx_log_("upload_finished");
 			close(cur_event->ident);
 			add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-			_state = REQ_LINE_PARSING;
+			_state = REQ_HOLD;
+			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+			_res.make_response_header_(*this);
 		}
 		return true;
 	} else {
@@ -976,7 +987,9 @@ Client::write_for_upload_(struct kevent* cur_event) {
 	if (_req._body_read == _req._cnt_len) {
 		close(cur_event->ident);
 		add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DISABLE | EV_DELETE, 0, 0, NULL);
-		_state = REQ_LINE_PARSING;
+		_state = REQ_HOLD;
+		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
+		_res.make_response_header_(*this);
 	}
 	return true;
 }
@@ -1005,7 +1018,7 @@ Client::write_response_() {
 	// no chunked case.
 	int n_write;
 	if (_res._header_sent == false) {
-		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
+		// n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
 			spx_log_("write error");
@@ -1019,7 +1032,7 @@ Client::write_response_() {
 			_res._res_header.clear();
 			_res._header_sent = true;
 			spx_log_("write response body size", _res._body_size);
-			if (_res._body_size == 0) {
+			if (_res._body_size == 0 || (_req._req_mthd & REQ_HEAD)) {
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DISABLE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;
@@ -1030,10 +1043,10 @@ Client::write_response_() {
 	} else {
 		// file write
 		if (_req._uri_resolv.is_cgi_) {
-			n_write = _cgi._from_cgi.write_debug_();
+			// n_write = _cgi._from_cgi.write_debug_();
 			n_write = _cgi._from_cgi.write_(_client_fd);
 		} else {
-			n_write = _res._res_buf.write_debug_();
+			// n_write = _res._res_buf.write_debug_();
 			n_write = _res._res_buf.write_(_client_fd);
 		}
 		if (n_write < 0) {
