@@ -134,17 +134,30 @@ public:
 
 class ChunkedField {
 public:
-	buf_t _chnkd_body;
-	bool  _first_chnkd;
+	buf_t	 _chnkd_body;
+	uint32_t _chnkd_size;
+	bool	 _first_chnkd;
+	bool	 _last_chnkd;
+
+	ChunkedField()
+		: _chnkd_body()
+		, _chnkd_size(0)
+		, _first_chnkd(true)
+		, _last_chnkd(false) {
+	}
+	~ChunkedField() { }
 
 	void
 	clear_() {
-		_first_chnkd = 1;
+		_chnkd_body.clear_();
+		_chnkd_size	 = 0;
+		_first_chnkd = true;
+		_last_chnkd	 = false;
 	}
 
 	bool chunked_body_(Client& cl);
-	bool chunked_body_can_parse_chnkd_(Client& cl, size_t size);
-	bool chunked_body_can_parse_chnkd_skip_(Client& cl, size_t size);
+	bool chunked_body_can_parse_chnkd_(Client& cl);
+	bool chunked_body_can_parse_chnkd_skip_(Client& cl);
 	bool skip_chunked_body_(Client& cl);
 };
 

@@ -331,85 +331,60 @@ Client::res_for_post_put_req_() {
 }
 
 bool
-ChunkedField::chunked_body_can_parse_chnkd_(Client& cl, size_t size) {
-	if (cl._buf.buf_size_() >= size) {
-		cl._buf.move_(_chnkd_body, size);
-		cl._req._body_size += size;
-		if (cl._req._body_size > cl._req._body_limit) {
+ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
+	if (_chnkd_size > 2) {
+		_chnkd_size -= cl._buf.move_(_chnkd_body, _chnkd_size - 2);
+		if (_chnkd_size != 2) {
+			return true;
+		}
+	}
+	if (cl._buf.buf_size_() >= 2) {
+		if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
+			// chunked error
 			throw(std::exception());
 		}
-		if (size != 0) {
-			if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
-				// chunked error
-				throw(std::exception());
-			}
-			cl._buf.delete_size_(2);
-			return true;
-		} else {
+		_chnkd_size -= cl._buf.delete_size_(2);
+		if (_last_chnkd) {
 			// chunked last
-			spx_log_("chunked last piece");
-			if (cl._buf.find_pos_(CR) == 0) {
-				spx_log_("chunked last no extension");
-				// no extention
-				cl._req._cnt_len = cl._req._body_size;
-				cl._state		 = REQ_HOLD;
-				return true;
-			} else {
-				spx_log_("chunked extension");
-				throw(std::exception());
-				// yoma's code..? end check..??
-			}
+			cl._req._cnt_len = cl._req._body_size;
+			cl._state		 = REQ_HOLD;
+			return true;
 		}
-	} else {
-		// try next.
-		spx_log_("chunked try next");
-		return false;
+		return true;
 	}
+	spx_log_("chunked try next");
+	return false;
 }
 
 bool
-ChunkedField::chunked_body_can_parse_chnkd_skip_(Client& cl, size_t size) {
-	if (cl._buf.buf_size_() >= size) {
-		cl._buf.delete_size_(size);
-		cl._req._body_size += size;
-		if (cl._req._body_size > cl._req._body_limit) {
+ChunkedField::chunked_body_can_parse_chnkd_skip_(Client& cl) {
+	if (_chnkd_size > 2) {
+		_chnkd_size -= cl._buf.delete_size_(_chnkd_size - 2);
+		if (_chnkd_size != 2) {
+			return true;
+		}
+	}
+	if (cl._buf.buf_size_() >= 2) {
+		if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
+			// chunked error
 			throw(std::exception());
 		}
-		if (size != 0) {
-			if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
-				// chunked error
-				throw(std::exception());
-			}
-			cl._buf.delete_size_(2);
-			return true;
-		} else {
+		_chnkd_size -= cl._buf.delete_size_(2);
+		if (_last_chnkd) {
 			// chunked last
-			spx_log_("chunked last piece");
-			if (cl._buf.find_pos_(CR) == 0) {
-				spx_log_("chunked last no extension");
-				// no extention
-				cl._req._cnt_len = cl._req._body_size;
-				cl._state		 = REQ_HOLD;
-				return true;
-			} else {
-				spx_log_("chunked extension");
-				throw(std::exception());
-				// yoma's code..? end check..??
-			}
+			cl._req._cnt_len = cl._req._body_size;
+			cl._state		 = REQ_HOLD;
+			return true;
 		}
-	} else {
-		// try next.
-		spx_log_("chunked try next");
-		return false;
+		return true;
 	}
+	spx_log_("chunked try next");
+	return false;
 }
 
 bool
 ChunkedField::chunked_body_(Client& cl) {
-	// rdsaved_ -> chunked_body_buffer_
-	// buffer_t::iterator crlf_pos = rdsaved_.begin() + rdchecked_;
 	std::string len;
-	uint32_t	size = 0;
 	int			start_line_end;
 
 	if (_first_chnkd) {
@@ -423,17 +398,27 @@ ChunkedField::chunked_body_(Client& cl) {
 	spx_log_("controller - req body chunked.");
 	try {
 		while (true) {
+			if (_chnkd_size) {
+				if ((chunked_body_can_parse_chnkd_(cl) == false) || _chnkd_size) {
+					return false;
+				}
+				if (_last_chnkd) {
+					return true;
+				}
+			}
 			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
 				spx_log_("size str len", len);
-				if (spx_chunked_syntax_start_line(len, size, cl._req._header) != spx_error) {
-					if (chunked_body_can_parse_chnkd_(cl, size) == false) {
-						return false;
-					} else if (cl._state == REQ_HOLD) {
-						// parsed
-						spx_log_("parsed");
-						return false;
+				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
+					if (_chnkd_size == 0) {
+						_last_chnkd = true;
 					}
+					cl._req._body_size += _chnkd_size;
+					_chnkd_size += 2;
+					if (cl._req._body_size > cl._req._body_limit) {
+						throw(std::exception());
+					}
+					continue;
 				} else {
 					// chunked error
 					spx_log_("chunked error. len", len);
@@ -466,27 +451,35 @@ ChunkedField::chunked_body_(Client& cl) {
 bool
 ChunkedField::skip_chunked_body_(Client& cl) {
 	std::string len;
-	uint32_t	size = 0;
 	int			start_line_end;
 
 	spx_log_("controller - req skip body chunked.");
-	// spx_log_("req skip body chunked. req body size", cl._req._body_size);
-	// spx_log_("req skip body chunked. req body limit", cl._req._body_limit);
-	// spx_log_("req skip body chunked. is chunked", cl._req._is_chnkd);
 	try {
 		while (true) {
+			if (_chnkd_size) {
+				if ((chunked_body_can_parse_chnkd_skip_(cl) == false) || _chnkd_size) {
+					return false;
+				}
+				if (_last_chnkd) {
+					return true;
+				}
+			}
 			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
-				if (spx_chunked_syntax_start_line(len, size, cl._req._header) == spx_ok) {
-					if (chunked_body_can_parse_chnkd_skip_(cl, size) == false) {
-						return false;
-					} else if (cl._state == REQ_HOLD) {
-						// parsed
-						return false;
+				spx_log_("size str len", len);
+				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
+					if (_chnkd_size == 0) {
+						_last_chnkd = true;
 					}
+					cl._req._body_size += _chnkd_size;
+					_chnkd_size += 2;
+					if (cl._req._body_size > cl._req._body_limit) {
+						throw(std::exception());
+					}
+					continue;
 				} else {
 					// chunked error
-					spx_log_("chunked error");
+					spx_log_("chunked error. len", len);
 					throw(std::exception());
 				}
 			} else {
