@@ -7,12 +7,13 @@ namespace {
 
 	inline void
 	close_socket_and_exit__(int const prev_socket_size, port_info_vec& port_info) {
-		for (int i = 0; i <= prev_socket_size; ++i) {
+		spx_log_(COLOR_RED "close_socket_and_exit__" COLOR_RESET);
+		for (int i = 1; i <= prev_socket_size; ++i) {
 			if (i == port_info[i].listen_sd) {
 				close(port_info[i].listen_sd);
 			}
 		}
-		error_exit_msg_perror("socket error");
+		error_exit_msg_perror(COLOR_RED "socket error" COLOR_RESET);
 	}
 
 } // namespace
@@ -517,14 +518,17 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
 				if (temp_port_info.listen_sd < 0) {
+					spx_log_(COLOR_RED "socket error" COLOR_RESET);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				int opt(1);
 				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) { // NOTE:: SO_REUSEPORT
+					spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
 					error_fn("setsockopt", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (fcntl(temp_port_info.listen_sd, F_SETFL, O_NONBLOCK) == -1) {
+					spx_log_(COLOR_RED "fcntl error" COLOR_RESET);
 					error_fn("fcntl", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
@@ -532,6 +536,9 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.addr_server.sin_port		   = htons(temp_port_info.my_port);
 				temp_port_info.addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
 				if (bind(temp_port_info.listen_sd, (struct sockaddr*)&temp_port_info.addr_server, sizeof(temp_port_info.addr_server)) == -1) {
+					spx_log_(COLOR_RED "bind error" COLOR_RESET);
+					spx_log_("current listen_sd : ", temp_port_info.listen_sd);
+					spx_log_("prev_socket_size", prev_socket_size);
 					std::stringstream ss;
 					ss << temp_port_info.my_port;
 					std::string err = "bind port " + ss.str() + " ";
@@ -539,6 +546,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
+					spx_log_(COLOR_RED "listen error" COLOR_RESET);
 					error_fn("listen", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}

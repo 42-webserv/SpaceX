@@ -184,44 +184,34 @@ Client::host_check_(std::string& host) {
 	}
 	return false;
 }
-void
-printing(client_t& c) {
-	for (req_header_t::iterator it = c._req._header.begin(); it != c._req._header.end(); ++it) {
-		std::cout << "HEADERSS " << (*it).first << ":" << (*it).second << std::endl;
-	}
-}
 
 void
 Client::set_cookie_() {
 	cookie_t			   cookie;
 	req_header_t::iterator req_cookie = _req._header.find("cookie");
-	printing(*this);
 	if (req_cookie != _req._header.end()) {
-		spx_log_("COOKIE", "FOUND");
 		std::string req_cookie_value = (*req_cookie).second;
-		spx_log_("REQ_COOKIE_VALUE", req_cookie_value);
 		if (!req_cookie_value.empty()) {
 			cookie.parse_cookie_header(req_cookie_value);
 			cookie_t::key_val_t::iterator find_cookie = cookie.content.find("sessionID");
 			if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty() || !_storage->is_key_exsits((*find_cookie).second)) {
-				// spx_log_("COOKIE ERROR ", "Invalid_COOKIE");
 				spx_log_("MAKING NEW SESSION");
 				std::string hash_value = _storage->make_hash(_client_fd);
 				_storage->add_new_session(hash_value);
-				_req.session_id = SESSIONID + hash_value;
+				_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
 			} else {
 				session_t& session = _storage->find_value_by_key((*find_cookie).second);
 				session.count_++;
-				_req.session_id = SESSIONID + (*find_cookie).second;
+				_req.session_id = SESSIONID + (*find_cookie).second + "; " + MAX_AGE + AGE_TIME;
 				// spx_log_("SESSIONCOUNT", session.count_);
 			}
 		}
 	} else // if first connection or (no session id on cookie)
 	{
-		spx_log_("MAKING NEW SESSION NOT FOUND SESSION");
+		spx_log_("NOT FOUND SESSION => MAKING NEW SESSION");
 		std::string hash_value = _storage->make_hash(_client_fd);
 		_storage->add_new_session(hash_value);
-		_req.session_id = SESSIONID + hash_value;
+		_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
 	}
 	// COOKIE & SESSION END
 }
