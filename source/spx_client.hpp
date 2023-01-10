@@ -323,7 +323,7 @@ public:
 	int					   _skip_size;
 	port_info_t*		   _port_info;
 	const struct sockaddr* _sockaddr;
-	SessionStorage		   storage; // add by space
+	session_storage_t*	   _storage; // add by space
 
 	Client(event_list_t* chnage_list);
 	~Client();
