@@ -184,12 +184,6 @@ Client::host_check_(std::string& host) {
 	}
 	return false;
 }
-void
-printing(client_t& c) {
-	for (req_header_t::iterator it = c._req._header.begin(); it != c._req._header.end(); ++it) {
-		std::cout << "HEADERSS " << (*it).first << ":" << (*it).second << std::endl;
-	}
-}
 
 void
 Client::set_cookie_() {
