@@ -189,7 +189,6 @@ void
 Client::set_cookie_() {
 	cookie_t			   cookie;
 	req_header_t::iterator req_cookie = _req._header.find("cookie");
-	printing(*this);
 	if (req_cookie != _req._header.end()) {
 		spx_log_("COOKIE", "FOUND");
 		std::string req_cookie_value = (*req_cookie).second;
