@@ -342,7 +342,7 @@ ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
 	spx_log_("chunked_body_can_parse_chnkd");
 	if (cl._buf.buf_size_() >= 2) {
 		spx_log_("cl._buf.buf_size_", cl._buf.buf_size_());
-		cl._buf.write_debug_();
+		// cl._buf.write_debug_();
 		spx_log_("posval0", (int)cl._buf.pos_val_(0));
 		spx_log_("posval1", (int)cl._buf.pos_val_(1));
 		// if (cl._buf.pos_val_(0) != CR || cl._buf.pos_val_(1) != LF) {
@@ -561,7 +561,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		}
 
 		// set cookie
-		set_cookie_();
+		// set_cookie_();
 
 		// spx_log_("req_uri set ok");
 		switch (_req._req_mthd) {
@@ -640,6 +640,7 @@ Client::disconnect_client_() {
 // read only request header & body message
 void
 Client::read_to_client_buffer_(struct kevent* cur_event) {
+	// spx_log_("cur_event->data", cur_event->data);
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
 	if (n_read < 0) {
 		// TODO: error handle
@@ -649,11 +650,12 @@ Client::read_to_client_buffer_(struct kevent* cur_event) {
 	// 	write(STDOUT_FILENO, &rdbuf_, std::min(200, n_read));
 	// #endif
 	// _buf.write_debug_();
-	spx_log_("\nread_to_client", n_read);
-	spx_log_("read_to_client state", _state);
+	spx_log_("read_to_client", n_read);
+	// spx_log_("read_to_client state", _state);
+	spx_log_("buf partial point", _buf.get_partial_point_());
 	if (_state != REQ_HOLD) {
 		req_res_controller_(cur_event);
-		spx_log_("req_res_controller check finished. buf stat", _state);
+		// spx_log_("req_res_controller check finished. buf stat", _state);
 	};
 	// spx_log_("enable write", _res.flag_ & WRITE_READY);
 }
@@ -1014,7 +1016,7 @@ Client::write_response_() {
 	// no chunked case.
 	int n_write;
 	if (_res._header_sent == false) {
-		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
+		// n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
 			spx_log_("write error");
