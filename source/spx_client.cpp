@@ -56,7 +56,7 @@ Client::request_line_parser_() {
 		if (req_line.size())
 			break;
 	}
-	spx_log_("REQ_LINE_PARSER ok");
+	spx_log_("REQ_LINE_PARSER ok", req_line);
 	// bad request will return false and disconnect client.
 	_state = REQ_HEADER_PARSING;
 	return request_line_check_(req_line);
@@ -70,8 +70,8 @@ Client::header_field_parser_() {
 	while (true) {
 		key_val.clear();
 		if (_buf.get_crlf_line_(key_val)) {
-			spx_log_("key_val", key_val);
-			spx_log_("key_val size", key_val.size());
+			// spx_log_("key_val", key_val);
+			// spx_log_("key_val size", key_val.size());
 			if (key_val.empty()) {
 				break;
 			}
@@ -315,7 +315,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		}
 
 		// set cookie
-		// set_cookie_();
+		set_cookie_();
 
 		// spx_log_("req_uri set ok");
 		switch (_req._req_mthd) {
@@ -402,10 +402,6 @@ Client::read_to_client_buffer_(struct kevent* cur_event) {
 		// TODO: error handle
 		return;
 	}
-	// #ifdef DEBUG
-	// 	write(STDOUT_FILENO, &rdbuf_, std::min(200, n_read));
-	// #endif
-	// _buf.write_debug_();
 	spx_log_("read_to_client", n_read);
 	spx_log_("read_to_client state", _state);
 	// spx_log_("buf partial point", _buf.get_partial_point_());
