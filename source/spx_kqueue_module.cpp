@@ -171,6 +171,7 @@ kqueue_module(port_list_t& port_info) {
 
 	int			   event_len;
 	struct kevent* cur_event;
+	int			   l = 0;
 
 	while (true) {
 		event_len = kevent(kq, &change_list.front(), change_list.size(),
@@ -187,10 +188,10 @@ kqueue_module(port_list_t& port_info) {
 		// std::cout << "current loop: " << l++ << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
-			// spx_log_("event_len:", event_len);
-			// spx_log_("cur->ident:", cur_event->ident);
-			// spx_log_("cur->flags:", cur_event->flags);
 			cur_event = &event_list[i];
+			// spx_log_("event_len:", event_len);
+			spx_log_("cur->ident:", cur_event->ident);
+			spx_log_("cur->flags:", cur_event->flags);
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
 					// kevent_error_handler(port_info, cur_event, change_list);
