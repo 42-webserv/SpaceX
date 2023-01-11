@@ -523,11 +523,13 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				int opt(1);
+
 				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) { // NOTE:: SO_REUSEPORT
 					spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
 					error_fn("setsockopt", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
+
 				// int buf_size = 65536; //NOTE : need to check so_rcvbuf setting need it
 				// if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_RCVBUF, &buf_size, sizeof(opt)) == -1) {
 				// 	spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
