@@ -453,6 +453,7 @@ ChunkedField::chunked_body_(Client& cl) {
 	} catch (...) {
 		if (cl._req._body_read > cl._req._body_limit) {
 			// send over limit.
+			spx_log_("send over limit");
 			close(cl._req._body_fd);
 			remove(cl._req._upld_fn.c_str());
 			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
@@ -760,7 +761,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 		return;
 	}
 	spx_log_("read to cgi buffer. n_read", n_read);
-	if (_cgi._cgi_state != CGI_HOLD) {
+	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != -1) {
 		_cgi.cgi_controller_(*this);
 	}
 }
@@ -944,7 +945,6 @@ ResField::make_cgi_response_header_(Client& cl) {
 	spx_log_("make_cgi_res_header");
 	std::map<std::string, std::string>::iterator it;
 
-	_headers.clear();
 	it = cl._cgi._cgi_header.find("status");
 	if (it != cl._cgi._cgi_header.end()) {
 		_status_code = strtol(it->second.c_str(), NULL, 10);
@@ -959,8 +959,9 @@ ResField::make_cgi_response_header_(Client& cl) {
 	if (it != cl._cgi._cgi_header.end()) {
 		_headers.push_back(header(CONTENT_LENGTH, it->second));
 	} else {
+		_body_size = cl._cgi._cgi_read;
 		std::stringstream ss;
-		ss << cl._cgi._from_cgi.buf_size_();
+		ss << _body_size;
 		_headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
 		// headers_.push_back(header(CONTENT_LENGTH, "0"));
 	}
@@ -1077,38 +1078,23 @@ Client::write_response_() {
 	} else {
 		// file write
 		if (_req._uri_resolv.is_cgi_) {
-			// if (_cgi._is_chnkd) {
-			// 	n_write = _chnkd._chnkd_body.write_(_client_fd);
-			// } else {
-			// }
 			n_write = _cgi._from_cgi.write_(_client_fd);
-			if (n_write < 0) {
-				spx_log_("write error");
-				// disconnect_client_();
-				return false;
-			}
-			_res._body_write += n_write;
-			if (_res._body_write == _cgi._cgi_read) {
-				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DISABLE, 0, 0, this);
-				_res._write_finished = true;
-				if (_state != REQ_SKIP_BODY_CHUNKED) {
-					_state = REQ_CLEAR;
-				}
-			}
 		} else {
 			n_write = _res._res_buf.write_(_client_fd);
-			if (n_write < 0) {
-				spx_log_("write error");
-				// disconnect_client_();
-				return false;
-			}
-			_res._body_write += n_write;
-			if (_res._body_write == _res._body_size) {
-				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DISABLE, 0, 0, this);
-				_res._write_finished = true;
-				if (_state != REQ_SKIP_BODY_CHUNKED) {
-					_state = REQ_CLEAR;
-				}
+		}
+		if (n_write < 0) {
+			spx_log_("write error");
+			// disconnect_client_();
+			return false;
+		}
+		_res._body_write += n_write;
+		if (_req._uri_resolv.is_cgi_ && _res._body_write == _cgi._cgi_read
+			|| _req._uri_resolv.is_cgi_ == false && _res._body_write == _res._body_size) {
+
+			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DISABLE, 0, 0, this);
+			_res._write_finished = true;
+			if (_state != REQ_SKIP_BODY_CHUNKED) {
+				_state = REQ_CLEAR;
 			}
 		}
 	}
