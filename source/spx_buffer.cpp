@@ -43,15 +43,13 @@ SpxBuffer::delete_size_(size_t size) {
 	iov_t::iterator it		 = _buf.begin();
 	size_t			tmp_size = size;
 	if (tmp_size < _buf_size) {
-		// _buf_size -= tmp_size;
+		_buf_size -= tmp_size;
 		while (tmp_size >= it->iov_len) {
 			delete[] static_cast<char*>(it->iov_base);
 			tmp_size -= it->iov_len;
-			_buf_size -= it->iov_len;
 			++it;
 		}
 		it->iov_len -= tmp_size;
-		_buf_size -= tmp_size;
 		if (it == _buf.begin()) {
 			_partial_point += tmp_size;
 		} else {
@@ -71,14 +69,12 @@ SpxBuffer::delete_size_for_move_(size_t size) {
 	iov_t::iterator it		 = _buf.begin();
 	size_t			tmp_size = size;
 	if (tmp_size < _buf_size) {
-		// _buf_size -= tmp_size;
+		_buf_size -= tmp_size;
 		while (tmp_size >= it->iov_len) {
 			tmp_size -= it->iov_len;
-			_buf_size -= it->iov_len;
 			++it;
 		}
 		it->iov_len -= tmp_size;
-		_buf_size -= tmp_size;
 		if (it == _buf.begin()) {
 			_partial_point += tmp_size;
 		} else {
