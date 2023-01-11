@@ -2,6 +2,7 @@
 #include "spx_core_type.hpp"
 
 #include <dirent.h>
+#include <sys/socket.h>
 
 namespace {
 
@@ -527,11 +528,18 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					error_fn("setsockopt", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
+				// int buf_size = 65536; //NOTE : need to check so_rcvbuf setting need it
+				// if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_RCVBUF, &buf_size, sizeof(opt)) == -1) {
+				// 	spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
+				// 	error_fn("setsockopt", close, temp_port_info.listen_sd);
+				// 	close_socket_and_exit__(prev_socket_size, port_info);
+				// }
 				if (fcntl(temp_port_info.listen_sd, F_SETFL, O_NONBLOCK) == -1) {
 					spx_log_(COLOR_RED "fcntl error" COLOR_RESET);
 					error_fn("fcntl", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
+				bzero((char*)&temp_port_info.addr_server, sizeof(temp_port_info.addr_server));
 				temp_port_info.addr_server.sin_family	   = AF_INET;
 				temp_port_info.addr_server.sin_port		   = htons(temp_port_info.my_port);
 				temp_port_info.addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
