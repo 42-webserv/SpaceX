@@ -24,8 +24,8 @@
 #include "spx_session_storage.hpp"
 #include "spx_syntax_checker.hpp"
 
-#define BUFFER_SIZE 8 * 1024
-#define IOV_VEC_SIZE 6
+#define BUFFER_SIZE 4 * 1024
+#define IOV_VEC_SIZE 16
 
 #define MAX_EVENT_LIST 200
 

@@ -50,7 +50,7 @@ read_event_handler(port_list_t& port_info, struct kevent* cur_event,
 	}
 	client_t* cl = static_cast<client_t*>(cur_event->udata);
 	if (cur_event->ident == cl->_client_fd) {
-		spx_log_("read_event_handler - client_fd");
+		spx_log_("read_event_handler - client_fd. data size", cur_event->data);
 		cl->read_to_client_buffer_(cur_event);
 	} else if (cl->_req._uri_resolv.is_cgi_) {
 		// read from cgi output.
