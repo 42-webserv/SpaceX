@@ -29,7 +29,7 @@
 #define BUFFER_SIZE 4 * 1024
 #define IOV_VEC_SIZE 16
 
-#define MAX_EVENT_LIST 200
+#define MAX_EVENT_LIST 500
 
 // // gzip & deflate are not implemented. for extension.
 // enum e_transfer_encoding { TE_CHUNKED = 1 << 0,

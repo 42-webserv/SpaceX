@@ -81,9 +81,10 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 		if (cl != NULL && cl->_client_fd == cur_event->ident) {
 			cl->disconnect_client_();
 			delete cl;
-		} else if (cl != NULL) {
-			spx_log_("cgi_fd_error?");
 		}
+		// else if (cl != NULL) {
+		// 	spx_log_("cgi_fd_error?");
+		// }
 	}
 }
 
@@ -96,26 +97,25 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 		return;
 	}
 	if (cur_event->ident == cl->_client_fd) {
-		spx_log_("write event handler - cl state", cl->_state);
+		// spx_log_("write event handler - cl state", cl->_state);
 		if (cl->write_response_() == false) {
 			return;
 		}
 		if (cl->_state != REQ_HOLD) {
-			spx_log_("write_event_handler - not REQ_HOLD");
-			spx_log_("write event handler - cl state", cl->_state);
+			// spx_log_("write_event_handler - not REQ_HOLD");
+			// spx_log_("write event handler - cl state", cl->_state);
 			cl->req_res_controller_(cur_event);
 		}
 	} else {
 		if (cur_event->ident == cl->_req._body_fd) {
 			// spx_log_("write_for_upload");
 			if (cl->write_for_upload_(cur_event) == false) {
-				spx_log_("too large file to upload");
+				// spx_log_("too large file to upload");
 				cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
 				return;
 			}
 		} else {
-			spx_log_("write_to_cgi");
-			// cgi logic
+			// spx_log_("write_to_cgi");
 			cl->write_to_cgi_(cur_event);
 		}
 	}
@@ -124,13 +124,12 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 void
 proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// need to check exit status??
-	client_t* cl = (client_t*)cur_event->udata;
+	client_t* cl = static_cast<client_t*>(cur_event->udata);
 	int		  status;
-	waitpid(cur_event->ident, &status, 0);
-	spx_log_("status: ", status);
 
-	// close(cl->req_res_queue_.front().first.cgi_in_fd_);
-	// close(cl->req_res_queue_.front().first.cgi_out_fd_);
+	waitpid(cur_event->ident, &status, 0);
+	// spx_log_("status: ", status);
+
 	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
 }
 
@@ -190,16 +189,16 @@ kqueue_module(port_list_t& port_info) {
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			// spx_log_("event_len:", event_len);
-			spx_log_("cur->ident:", cur_event->ident);
-			spx_log_("cur->flags:", cur_event->flags);
+			// spx_log_("cur->ident:", cur_event->ident);
+			// spx_log_("cur->flags:", cur_event->flags);
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
-					// kevent_error_handler(port_info, cur_event, change_list);
-					switch (cur_event->data) {
-					case ENOENT:
-						break;
-					}
-					continue;
+					kevent_error_handler(port_info, cur_event, change_list);
+					// switch (cur_event->data) {
+					// case ENOENT:
+					// 	break;
+					// }
+					// continue;
 				} else {
 					// eof close fd.
 					client_t* cl = static_cast<client_t*>(cur_event->udata);
@@ -207,7 +206,8 @@ kqueue_module(port_list_t& port_info) {
 						continue;
 					}
 					if (cur_event->ident == cl->_client_fd) {
-						main_log_("client socket eof", COLOR_PURPLE);
+						// main_log_("client socket eof", COLOR_PURPLE);
+						spx_log_("client socket closed", cur_event->ident);
 						cl->disconnect_client_();
 						delete cl;
 					} else {
@@ -250,11 +250,14 @@ kqueue_module(port_list_t& port_info) {
 				// usleep(1000);
 				write_event_handler(port_info, cur_event, change_list);
 				break;
-			case EVFILT_TIMER:
-				spx_log_("event_timer");
-				timer_event_handler(cur_event, change_list);
-				// TODO: timer
+			case EVFILT_PROC:
+				proc_event_handler(cur_event, change_list);
 				break;
+				// case EVFILT_TIMER:
+				// 	// spx_log_("event_timer");
+				// 	timer_event_handler(cur_event, change_list);
+				// 	// TODO: timer
+				// 	break;
 			}
 		}
 	}
