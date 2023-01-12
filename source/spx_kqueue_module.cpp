@@ -77,12 +77,13 @@ void
 kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 					 event_list_t& change_list) {
 	if (cur_event->ident < port_info.size()) {
+		error_msg("kevent() error");
 		for (int i = 0; i < port_info.size(); i++) {
 			if (port_info[i].listen_sd == i) {
 				close(i);
 			}
 		}
-		error_exit_msg("kevent()");
+		exit(spx_error);
 	} else {
 		client_t* cl = static_cast<client_t*>(cur_event->udata);
 		if (cl != NULL && cl->_client_fd == cur_event->ident) {
@@ -161,12 +162,13 @@ kqueue_module(port_list_t& port_info) {
 
 	kq = kqueue();
 	if (kq == -1) {
+		error_msg("kqueue() error");
 		for (int i = 0; i < port_info.size(); i++) {
 			if (port_info[i].listen_sd == i) {
 				close(i);
 			}
 		}
-		error_exit_msg("kqueue() error");
+		exit(spx_error);
 	}
 
 	for (int i = 0; i < port_info.size(); i++) {
@@ -183,12 +185,13 @@ kqueue_module(port_list_t& port_info) {
 		event_len = kevent(kq, &change_list.front(), change_list.size(),
 						   event_list, MAX_EVENT_LIST, NULL);
 		if (event_len == -1) {
+			error_msg("kevent() error");
 			for (int i = 0; i < port_info.size(); i++) {
 				if (port_info[i].listen_sd == i) {
 					close(i);
 				}
 			}
-			error_exit_msg("kevent() error");
+			exit(spx_error);
 		}
 		change_list.clear();
 		// std::cout << "current loop: " << l++ << std::endl;
