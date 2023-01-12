@@ -242,6 +242,7 @@ Client::res_for_get_head_req_() {
 bool
 Client::res_for_post_put_req_() {
 	_req._upld_fn = _req._uri_resolv.script_filename_;
+	spx_log_("res_for_post. scriptfilename", _req._uri_resolv.script_filename_);
 	if (_req._req_mthd & REQ_POST) {
 		_req._body_fd = open(_req._upld_fn.c_str(), O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
 	} else {
@@ -250,7 +251,7 @@ Client::res_for_post_put_req_() {
 	// error case
 	if (_req._body_fd < 0) {
 		// 405 not allowed error with keep-alive connection.
-		error_response_keep_alive_(HTTP_STATUS_METHOD_NOT_ALLOWED);
+		error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
 		return false;
 	}
 
@@ -526,7 +527,7 @@ Client::write_response_() {
 	// no chunked case.
 	int n_write;
 	if (_res._header_sent == false) {
-		// n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
+		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
 			spx_log_("write error");
@@ -572,6 +573,7 @@ Client::write_response_() {
 			}
 		}
 	}
+	spx_log_("client fd", _client_fd);
 	spx_log_("body size", _res._body_size);
 	spx_log_("body read", _res._body_write);
 	return true;

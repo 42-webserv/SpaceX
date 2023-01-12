@@ -84,6 +84,10 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 			}
 		}
 		exit(spx_error);
+	} else if (cur_event->filter == EVFILT_PROC) {
+		// spx_log_("PROC ERROR?", strerror(cur_event->data));
+		// exit(1);
+		proc_event_wait_pid_(cur_event, change_list);
 	} else {
 		client_t* cl = static_cast<client_t*>(cur_event->udata);
 		if (cl != NULL && cl->_client_fd == cur_event->ident) {
@@ -130,15 +134,16 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 }
 
 void
-proc_event_handler(struct kevent* cur_event, event_list_t& change_list) {
+proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
 	// need to check exit status??
 	client_t* cl = static_cast<client_t*>(cur_event->udata);
 	int		  status;
+	id_t	  pid;
 
-	waitpid(cur_event->ident, &status, 0);
-	// spx_log_("status: ", status);
-
-	add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
+	pid = waitpid(cur_event->ident, &status, WNOHANG);
+	if (pid == cur_event->ident) {
+		add_change_list(change_list, cur_event->ident, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
+	}
 }
 
 void
@@ -221,8 +226,7 @@ kqueue_module(port_list_t& port_info) {
 						delete cl;
 					} else {
 						if (cur_event->filter == EVFILT_PROC) {
-							spx_log_("event_proc");
-							proc_event_handler(cur_event, change_list);
+							proc_event_wait_pid_(cur_event, change_list);
 						} else {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
@@ -260,7 +264,7 @@ kqueue_module(port_list_t& port_info) {
 				write_event_handler(port_info, cur_event, change_list);
 				break;
 			case EVFILT_PROC:
-				proc_event_handler(cur_event, change_list);
+				proc_event_wait_pid_(cur_event, change_list);
 				break;
 				// case EVFILT_TIMER:
 				// 	// spx_log_("event_timer");
