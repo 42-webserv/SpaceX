@@ -9,9 +9,12 @@ namespace {
 	inline void
 	close_socket_and_exit__(int const prev_socket_size, port_info_vec& port_info) {
 		spx_log_(COLOR_RED "close_socket_and_exit__" COLOR_RESET);
-		for (int i = 1; i <= prev_socket_size; ++i) {
-			if (i == port_info[i].listen_sd) {
-				close(port_info[i].listen_sd);
+		if (prev_socket_size != 0) {
+			for (int i = 0; i <= prev_socket_size; ++i) {
+				if (i == port_info[i].listen_sd) {
+					spx_log_("close port: ", port_info[i].my_port);
+					close(port_info[i].listen_sd);
+				}
 			}
 		}
 		exit(spx_error);
@@ -540,7 +543,8 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					spx_log_("prev_socket_size", prev_socket_size);
 					std::stringstream ss;
 					ss << temp_port_info.my_port;
-					std::string err = "bind port " + ss.str() + " ";
+					std::string err = "bind at port " + ss.str();
+					error_log_(err);
 					error_fn("bind error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
