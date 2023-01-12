@@ -171,6 +171,7 @@ ResField::make_response_header_(Client& cl) {
 			std::stringstream ss;
 			ss << content.size();
 			_headers.push_back(header(CONTENT_LENGTH, ss.str()));
+			_body_size = content.size();
 			if (content.empty()) {
 				// autoindex fail case
 				make_error_response_(cl, HTTP_STATUS_FORBIDDEN);
@@ -205,7 +206,6 @@ ResField::make_response_header_(Client& cl) {
 	// }
 	write_to_response_buffer_(make_to_string_());
 	if (!content.empty()) {
-		// write_to_response_buffer_(content);
 		_res_buf.add_str(content);
 	}
 	if (cl._req._req_mthd & REQ_HEAD) {
