@@ -6,13 +6,12 @@ import cgitb
 cgitb.enable()
 # import cgitb; cgitb.enable(display=0, logdir="./log")
 
-# save_path = os.getenv("SAVED_PATH")
+save_path = os.getenv("SAVED_PATH")
 
-# if save_path is None:
-# 	save_path = "./tmp/"
-# else:
-# 	save_path += "/"
-save_path = "./data/cgi_bin/store"
+if save_path is None:
+    save_path = "./tmp/"
+else:
+    save_path += "/"
 
 print("Content-Type: text/html")
 

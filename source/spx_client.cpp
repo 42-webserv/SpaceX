@@ -301,6 +301,8 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			_req._body_limit = _req._uri_loc->client_max_body_size;
 		}
 
+		set_cookie_();
+
 		if (_req._uri_loc == NULL || (_req._uri_loc->accepted_methods_flag & _req._req_mthd) == false) {
 			spx_log_("uri_loc == NULL or not allowed");
 			if (_req._uri_loc == NULL) {
@@ -316,7 +318,6 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		}
 
 		// set cookie
-		set_cookie_();
 
 		// spx_log_("req_uri set ok");
 		switch (_req._req_mthd) {
@@ -364,11 +365,13 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		return _chnkd.skip_chunked_body_(*this);
 
 	case REQ_CGI_BODY: {
-		int n_move = _buf.move_(_req._body_buf, _req._cnt_len - _req._body_read);
+		int n_move = _buf.move_(_cgi._to_cgi, _req._cnt_len - _req._body_read);
 
+		spx_log_("moved", _cgi._to_cgi.buf_size_());
 		_req._body_read += n_move;
 		if (_req._body_read == _req._cnt_len) {
 			_state = REQ_HOLD;
+			add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, this);
 		}
 		break;
 	}
@@ -381,6 +384,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			return false;
 		} else {
 			_chnkd._chnkd_body.move_(_cgi._to_cgi, -1);
+			_state = REQ_HOLD;
 		}
 		break;
 
