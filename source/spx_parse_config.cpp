@@ -1,4 +1,5 @@
 #include "spx_parse_config.hpp"
+#include "spx_port_info.hpp"
 
 #include <dirent.h>
 namespace {
@@ -590,11 +591,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 							temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
 						}
 					}
-					DIR* dir = opendir(temp_uri_location_info.root.c_str());
-					if (dir == NULL) {
-						return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
+					if (!(flag_location_part & Kflag_redirect)) {
+						DIR* dir = opendir(temp_uri_location_info.root.c_str());
+						if (dir == NULL) {
+							return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
+						}
+						closedir(dir);
 					}
-					closedir(dir);
 
 					if (temp_uri_location_info.accepted_methods_flag & (KPost | KPut) && !(flag_location_part & Kflag_saved_path)) {
 						return error__("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);

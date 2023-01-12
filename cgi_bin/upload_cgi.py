@@ -13,7 +13,6 @@ else:
 if not os.path.exists(save_path):
 	os.mkdir(save_path)
 
-print("Content-Type: text/html")
 # Parse the form data
 form = cgi.FieldStorage()
 # Extract the uploaded files
@@ -38,6 +37,7 @@ for field, filename in files.items():
     response += "<p>{}: {}</p>\n".format(field, filename)
 response += "</center></body></html>"
 
+print("Content-Type: text/html")
 print("Content-Length: {}".format(len(response)))
 print()
 print(response)
