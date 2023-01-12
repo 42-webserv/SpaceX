@@ -266,13 +266,16 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 
-			DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
-			if ((uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) && !temp_index.empty()) { // TODO: only get case add index, when put or post case add saved_path
+			if (uri_resolved_sets.is_same_location_ && !temp_index.empty()) {
 				uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
-			}
-			if (dir) {
-				closedir(dir);
+			} else if (flag_check_dup & Kuri_inner_uri && !temp_index.empty()) { // TODO: only get case add index, when put or post case add saved_path
+				DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
+				if (dir) {
+					uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
+					uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
+					closedir(dir);
+				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
