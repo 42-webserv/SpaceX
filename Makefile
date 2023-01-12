@@ -88,6 +88,8 @@ $(OBJ)		:	| $(OBJ_DIR)
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
 		$(CXX) $(CXXFLAGS) -o $@ -c $<
 
+logsntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG) $(DEBUG) $(SNTZ)"
+
 sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(DEBUG) $(SNTZ)"
 
 log			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG)"
