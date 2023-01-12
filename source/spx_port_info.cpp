@@ -287,6 +287,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 		} // switch end
 	} // while end
+
+	uri_resolved_sets.print_();
 	return return_location;
 }
 
