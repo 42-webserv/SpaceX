@@ -62,7 +62,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 	}
 	close(read_from_cgi[1]);
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
-	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 50000, cur_event->udata);
+	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
 
 	return true;
@@ -238,13 +238,13 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 			}
 		}
 	} catch (...) {
-		if (cl._req._body_read > cl._req._body_limit) {
-			// send over limit.
-			close(cl._req._body_fd);
-			remove(cl._req._upld_fn.c_str());
-			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-			cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
-			cl._state = REQ_SKIP_BODY_CHUNKED;
+		if (cl._req._body_size > cl._req._body_limit) {
+			// // send over limit.
+			// close(cl._req._body_fd);
+			// remove(cl._req._upld_fn.c_str());
+			// add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+			// cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
+			// cl._state = REQ_SKIP_BODY_CHUNKED;
 		} else {
 			cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
 			if (cl._req._body_fd != -1) {
