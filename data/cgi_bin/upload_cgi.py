@@ -16,9 +16,6 @@ save_path = "./data/cgi_bin/store"
 
 print("Content-Type: text/html")
 
-# with open("aaa") as up:
-# 	up.read()
-
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 

@@ -363,8 +363,15 @@ Client::req_res_controller_(struct kevent* cur_event) {
 	case REQ_SKIP_BODY_CHUNKED:
 		return _chnkd.skip_chunked_body_(*this);
 
-	case REQ_CGI_BODY:
+	case REQ_CGI_BODY: {
+		int n_move = _buf.move_(_req._body_buf, _req._cnt_len - _req._body_read);
+
+		_req._body_read += n_move;
+		if (_req._body_read == _req._cnt_len) {
+			_state = REQ_HOLD;
+		}
 		break;
+	}
 
 	case REQ_CGI_BODY_CHUNKED:
 		if (_chnkd.chunked_body_(*this) == false) {
@@ -399,8 +406,8 @@ void
 Client::read_to_client_buffer_(struct kevent* cur_event) {
 	// spx_log_("cur_event->data", cur_event->data);
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
-	int fd	   = open("aaa", O_CREAT | O_TRUNC | O_WRONLY, 0644);
-	_buf.write_debug_(fd);
+	// int fd	   = open("aaa", O_CREAT | O_TRUNC | O_WRONLY, 0644);
+	// _buf.write_debug_(fd);
 	if (n_read < 0) {
 		// TODO: error handle
 		return;
@@ -437,6 +444,7 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
 	// _res._res_buf.write_debug_();
 	if (n_read < 0) {
+		spx_log_("INTERNAL");
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
 		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
@@ -575,10 +583,9 @@ Client::write_response_() {
 			}
 		}
 	}
-
-	spx_log_("n_write", n_write);
-	spx_log_("client fd", _client_fd);
-	spx_log_("body size", _res._body_size);
-	spx_log_("body read", _res._body_write);
+	// spx_log_("n_write", n_write);
+	// spx_log_("client fd", _client_fd);
+	// spx_log_("body size", _res._body_size);
+	// spx_log_("body read", _res._body_write);
 	return true;
 }

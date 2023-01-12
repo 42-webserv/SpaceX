@@ -67,15 +67,6 @@ ChunkedField::chunked_body_(Client& cl) {
 			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
 		}
 	}
-	// if (cl._req._uri_resolv.is_cgi_) {
-	// 	if (cl._cgi._to_cgi.buf_size_()) {
-	// 		add_change_list(*cl.change_list, cl._cgi._write_to_cgi_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
-	// 	}
-	// } else {
-	// 	if (cl._req._body_buf.buf_size_()) {
-	// 		add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
-	// 	}
-	// }
 	spx_log_("controller - req body chunked.");
 	try {
 		while (true) {
@@ -159,9 +150,9 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 					}
 					cl._req._body_size += _chnkd_size;
 					_chnkd_size += 2;
-					if (cl._req._body_size > cl._req._body_limit) {
-						throw(std::exception());
-					}
+					// if (cl._req._body_size > cl._req._body_limit) {
+					// 	throw(std::exception());
+					// }
 					continue;
 				} else {
 					// chunked error
@@ -174,20 +165,20 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 			}
 		}
 	} catch (...) {
-		if (cl._req._body_size > cl._req._body_limit) {
-			// // send over limit.
-			// close(cl._req._body_fd);
-			// remove(cl._req._upld_fn.c_str());
-			// add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-			// cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
-			// cl._state = REQ_SKIP_BODY_CHUNKED;
-		} else {
-			cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
-			if (cl._req._body_fd != -1) {
-				add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
-			}
-			cl._state = E_BAD_REQ;
+		// if (cl._req._body_size > cl._req._body_limit) {
+		// send over limit.
+		// close(cl._req._body_fd);
+		// remove(cl._req._upld_fn.c_str());
+		// add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		// cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
+		// cl._state = REQ_SKIP_BODY_CHUNKED;
+		// } else {
+		cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
+		if (cl._req._body_fd != -1) {
+			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		}
+		cl._state = E_BAD_REQ;
+		// }
 		return false;
 	}
 }
@@ -220,26 +211,24 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		return false;
 	}
 	if (pid == 0) {
+		CgiModule	cgi(req._uri_resolv, req._header, req._uri_loc);
 		char const* script[3];
+
 		script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();
 		script[1] = req._uri_resolv.script_filename_.c_str();
 		script[2] = NULL;
-		spx_log_("CGIIIII 0", script[0]);
-		spx_log_("CGIIIII 1", script[1]);
-		// child. run cgi
-		// set_cgi_envp()
-		CgiModule cgi(req._uri_resolv, req._header, req._uri_loc);
-
 		cgi.made_env_for_cgi_(req._req_mthd);
 
-		write(STDERR_FILENO, "asdlfkjasdklfjlajksdf\n", 22);
+		spx_log_("CGIIIII 0", script[0]);
+		spx_log_("CGIIIII 1", script[1]);
+
 		dup2(write_to_cgi[0], STDIN_FILENO);
 		close(write_to_cgi[1]);
 		close(read_from_cgi[0]);
 		dup2(read_from_cgi[1], STDOUT_FILENO);
+
 		execve(script[0], const_cast<char* const*>(script),
 			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
-		write(STDERR_FILENO, "asdlfkjasdklfjlajksdf\n", 22);
 		exit(EXIT_FAILURE);
 	}
 	// parent

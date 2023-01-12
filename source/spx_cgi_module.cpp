@@ -271,5 +271,10 @@ CgiModule::made_env_for_cgi_(int status) {
 		}
 		}
 	}
+
+	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
+		env_for_cgi_.push_back(vec_env_[i].c_str());
+	}
+
 	env_for_cgi_.push_back(NULL);
 }
