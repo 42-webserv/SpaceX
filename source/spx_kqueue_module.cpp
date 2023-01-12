@@ -18,7 +18,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
 
 	if (client_fd == -1) {
-		std::cerr << strerror(errno) << std::endl;
+		error_msg("accept error");
 		return false;
 	} else {
 		// std::cout << "accept new client: " << client_fd << std::endl;
@@ -26,7 +26,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 
 		struct linger opt = { 1, 0 };
 		if (setsockopt(client_fd, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt)) < 0) {
-			spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
+			error_msg("setsockopt error");
 		}
 
 		client_t* new_cl   = new client_t(&change_list);
