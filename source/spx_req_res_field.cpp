@@ -32,6 +32,9 @@ ReqField::clear_() {
 	_uri.clear();
 	_http_ver.clear();
 	_upld_fn.clear();
+	if (_body_fd > 0) {
+		close(_body_fd);
+	}
 	_body_size	= 0;
 	_body_read	= 0;
 	_body_limit = -1;
@@ -341,6 +344,9 @@ ResField::clear_() {
 	_dwnl_fn.clear();
 	_headers.clear();
 	_res_buf.clear_();
+	if (_body_fd > 0) {
+		close(_body_fd);
+	}
 	_body_fd		= -1;
 	_body_read		= 0;
 	_body_write		= 0;

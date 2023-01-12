@@ -573,6 +573,8 @@ Client::write_response_() {
 			}
 		}
 	}
+
+	spx_log_("n_write", n_write);
 	spx_log_("client fd", _client_fd);
 	spx_log_("body size", _res._body_size);
 	spx_log_("body read", _res._body_write);
