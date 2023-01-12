@@ -18,7 +18,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
 
 	if (client_fd == -1) {
-		error_msg("accept error");
+		error_str("accept error");
 		return false;
 	} else {
 		// std::cout << "accept new client: " << client_fd << std::endl;
@@ -26,7 +26,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 
 		struct linger opt = { 1, 0 };
 		if (setsockopt(client_fd, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt)) < 0) {
-			error_msg("setsockopt error");
+			error_str("setsockopt error");
 		}
 
 		client_t* new_cl   = new client_t(&change_list);
@@ -77,7 +77,7 @@ void
 kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 					 event_list_t& change_list) {
 	if (cur_event->ident < port_info.size()) {
-		error_msg("kevent() error");
+		error_str("kevent() error");
 		for (int i = 0; i < port_info.size(); i++) {
 			if (port_info[i].listen_sd == i) {
 				close(i);
@@ -162,7 +162,7 @@ kqueue_module(port_list_t& port_info) {
 
 	kq = kqueue();
 	if (kq == -1) {
-		error_msg("kqueue() error");
+		error_str("kqueue() error");
 		for (int i = 0; i < port_info.size(); i++) {
 			if (port_info[i].listen_sd == i) {
 				close(i);
@@ -185,7 +185,7 @@ kqueue_module(port_list_t& port_info) {
 		event_len = kevent(kq, &change_list.front(), change_list.size(),
 						   event_list, MAX_EVENT_LIST, NULL);
 		if (event_len == -1) {
-			error_msg("kevent() error");
+			error_str("kevent() error");
 			for (int i = 0; i < port_info.size(); i++) {
 				if (port_info[i].listen_sd == i) {
 					close(i);
@@ -216,7 +216,6 @@ kqueue_module(port_list_t& port_info) {
 						continue;
 					}
 					if (cur_event->ident == cl->_client_fd) {
-						// main_log_("client socket eof", COLOR_PURPLE);
 						spx_log_("client socket closed", cur_event->ident);
 						cl->disconnect_client_();
 						delete cl;

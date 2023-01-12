@@ -519,7 +519,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
 				if (temp_port_info.listen_sd < 0) {
-					error_msg("socket error");
+					error_str("socket error");
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				int opt(1);

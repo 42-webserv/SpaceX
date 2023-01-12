@@ -69,19 +69,19 @@ spx_log_(std::string id, T msg) {
 }
 
 inline void
-main_log_(std::string const& msg, std::string const& color = COLOR_WHITE) {
-	std::cout << color << msg << COLOR_RESET << std::endl;
+error_log_(std::string const& msg) {
+	std::cerr << BCOLOR_RED << msg << COLOR_RESET << std::endl;
 }
 
 inline void
-error_msg(std::string err) {
+error_str(std::string err) {
 	std::cerr << BCOLOR_RED << "[" << err << "]" << COLOR_RESET << "\terrno: " << errno << "\t" << strerror(errno) << std::endl;
 }
 
 template <typename T>
 inline void
 error_fn(std::string err, T (*func)(int), int fd) {
-	error_msg(err);
+	error_str(err);
 	if (func != NULL) {
 		func(fd);
 	}
@@ -89,7 +89,7 @@ error_fn(std::string err, T (*func)(int), int fd) {
 
 inline void
 error_exit(std::string err) {
-	std::cerr << BCOLOR_RED << err << COLOR_RESET << std::endl;
+	error_log_(err);
 	exit(spx_error);
 }
 
