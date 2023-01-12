@@ -21,6 +21,8 @@ ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
 endif
 
+# CXXFLAGS	+=	$(LOG)
+
 SRC			=	spacex.cpp \
 				spx_autoindex_generator.cpp \
 				spx_buffer.cpp \
@@ -87,6 +89,8 @@ $(OBJ)		:	| $(OBJ_DIR)
 
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
 		$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+spx			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG) $(DEBUG) $(SNTZ)"
 
 sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(DEBUG) $(SNTZ)"
 
