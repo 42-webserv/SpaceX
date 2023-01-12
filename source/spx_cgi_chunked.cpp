@@ -5,70 +5,6 @@
 #include "spx_session_storage.hpp"
 
 bool
-CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* cur_event) {
-	int	  write_to_cgi[2];
-	int	  read_from_cgi[2];
-	pid_t pid;
-
-	if (pipe(write_to_cgi) == -1) {
-		// pipe error
-		std::cerr << "pipe error" << std::endl;
-		return false;
-	}
-	if (pipe(read_from_cgi) == -1) {
-		// pipe error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		std::cerr << "pipe error" << std::endl;
-		return false;
-	}
-	pid = fork();
-	if (pid < 0) {
-		// fork error
-		close(write_to_cgi[0]);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		close(read_from_cgi[1]);
-		return false;
-	}
-	if (pid == 0) {
-		// child. run cgi
-		dup2(write_to_cgi[0], STDIN_FILENO);
-		close(write_to_cgi[1]);
-		close(read_from_cgi[0]);
-		dup2(read_from_cgi[1], STDOUT_FILENO);
-		// set_cgi_envp()
-		CgiModule cgi(req._uri_resolv, req._header, req._uri_loc);
-
-		cgi.made_env_for_cgi_(req._req_mthd);
-
-		char const* script[3];
-		script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();
-		script[1] = req._uri_resolv.script_filename_.c_str();
-		script[2] = NULL;
-
-		execve(script[0], const_cast<char* const*>(script),
-			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
-		exit(EXIT_FAILURE);
-	}
-	// parent
-	close(write_to_cgi[0]);
-	if (req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
-		close(write_to_cgi[1]);
-	} else {
-		fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
-		add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, cur_event->udata);
-		_write_to_cgi_fd = write_to_cgi[1];
-	}
-	close(read_from_cgi[1]);
-	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
-	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
-
-	return true;
-}
-
-bool
 ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
 	// spx_log_("cl._buf.buf_size_", cl._buf.buf_size_());
 	if (_chnkd_size > 2) {
@@ -254,6 +190,73 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 		}
 		return false;
 	}
+}
+
+bool
+CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* cur_event) {
+	int	  write_to_cgi[2];
+	int	  read_from_cgi[2];
+	pid_t pid;
+
+	if (pipe(write_to_cgi) == -1) {
+		// pipe error
+		std::cerr << "pipe error" << std::endl;
+		return false;
+	}
+	if (pipe(read_from_cgi) == -1) {
+		// pipe error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		std::cerr << "pipe error" << std::endl;
+		return false;
+	}
+	pid = fork();
+	if (pid < 0) {
+		// fork error
+		close(write_to_cgi[0]);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		close(read_from_cgi[1]);
+		return false;
+	}
+	if (pid == 0) {
+		char const* script[3];
+		script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();
+		script[1] = req._uri_resolv.script_filename_.c_str();
+		script[2] = NULL;
+		spx_log_("CGIIIII 0", script[0]);
+		spx_log_("CGIIIII 1", script[1]);
+		// child. run cgi
+		// set_cgi_envp()
+		CgiModule cgi(req._uri_resolv, req._header, req._uri_loc);
+
+		cgi.made_env_for_cgi_(req._req_mthd);
+
+		write(STDERR_FILENO, "asdlfkjasdklfjlajksdf\n", 22);
+		dup2(write_to_cgi[0], STDIN_FILENO);
+		close(write_to_cgi[1]);
+		close(read_from_cgi[0]);
+		dup2(read_from_cgi[1], STDOUT_FILENO);
+		execve(script[0], const_cast<char* const*>(script),
+			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
+		write(STDERR_FILENO, "asdlfkjasdklfjlajksdf\n", 22);
+		exit(EXIT_FAILURE);
+	}
+	// parent
+	close(write_to_cgi[0]);
+	if (req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
+		close(write_to_cgi[1]);
+	} else {
+		fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
+		add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, cur_event->udata);
+		_write_to_cgi_fd = write_to_cgi[1];
+	}
+	close(read_from_cgi[1]);
+	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
+	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+
+	return true;
 }
 
 bool

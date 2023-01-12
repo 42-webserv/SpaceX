@@ -399,6 +399,8 @@ void
 Client::read_to_client_buffer_(struct kevent* cur_event) {
 	// spx_log_("cur_event->data", cur_event->data);
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
+	int fd	   = open("aaa", O_CREAT | O_TRUNC | O_WRONLY, 0644);
+	_buf.write_debug_(fd);
 	if (n_read < 0) {
 		// TODO: error handle
 		return;

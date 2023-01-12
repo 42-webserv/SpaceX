@@ -1,0 +1,101 @@
+POST /cgi_bin/upload_cgi.py HTTP/1.1
+Host: localhost:8080
+Connection: keep-alive
+Content-Length: 1935
+Cache-Control: max-age=0
+sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "macOS"
+Upgrade-Insecure-Requests: 1
+Origin: http://localhost:8080
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryYiWPNeejE2jIUKAK
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: http://localhost:8080/upload
+Accept-Encoding: gzip, deflate, br
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7,es;q=0.6,pl;q=0.5,de;q=0.4
+
+------WebKitFormBoundaryYiWPNeejE2jIUKAK
+Content-Disposition: form-data; name="file"; filename="add_cgi.pl"
+Content-Type: text/x-perl-script
+
+#!/usr/bin/perl
+
+use CGI;
+
+# Create a new CGI object
+my $cgi = CGI->new;
+
+# Get the values of the two numbers to add from the query string
+# if query string case
+# print $ENV{QUERY_STRING};
+
+# else if post put case
+my $num1 = $cgi->param('num1');
+my $num2 = $cgi->param('num2');
+
+# print "num1 : $num1 \n";
+# print "num2 : $num2 \n";
+# Convert the numbers to integers
+
+if ($num1 eq "" || $num2 eq "") {
+	if (exists $ENV{QUERY_STRING}) {
+
+		$query = $ENV{'QUERY_STRING'};
+		@list = split( /\&/, $query);
+		foreach (@list) {
+			($var, $val) = split(/=/);
+			$val =~ s/\'//g;
+			$val =~ s/\+/ /g;
+			$val =~ s/%(\w\w)/sprintf("%c", hex($1))/ge;
+			if ($var eq "num1") {
+				if ($val ne ""){
+					$num1 = int($val);
+				}
+			} elsif ($var eq "num2") {
+				if ($val ne ""){
+					$num2 = int($val);
+				}
+			}
+		}
+		if ($num1 eq "" || $num2 eq "") {
+			print $cgi->header,
+			  $cgi->start_html("Addition Result"),
+			  $cgi->center($cgi->h1("Addition Result"), $cgi->p("num1 or num2 does not exist.")),
+			  $cgi->end_html;
+			exit;
+		}else {
+			my $sum = $num1 + $num2;
+
+			print $cgi->header,
+			$cgi->start_html("Addition Result"),
+			$cgi->center($cgi->h1("Addition Result"), $cgi->p("The sum of $num1 and $num2 is $sum.")),
+			$cgi->end_html;
+			exit;
+		}
+	}else{
+		print $cgi->header,
+		  $cgi->start_html("Addition Result"),
+		  $cgi->center($cgi->h1("Addition Result"), $cgi->p("num1 and num2 does not exist.")),
+		  $cgi->end_html;
+		exit;
+	}
+}else{
+	$num1 = int($num1);
+	$num2 = int($num2);
+	# Add the numbers
+	my $sum = $num1 + $num2;
+
+
+	# Print the HTML response
+	print $cgi->header,
+		$cgi->start_html("Addition Result"),
+		$cgi->center($cgi->h1("Addition Result"), $cgi->p("The sum of $num1 and $num2 is $sum.")),
+		$cgi->end_html;
+}
+
+------WebKitFormBoundaryYiWPNeejE2jIUKAK--
