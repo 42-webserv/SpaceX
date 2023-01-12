@@ -149,6 +149,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (!(flag_default_part & Kflag_root)) {
 					temp_basic_server_info.root = cur_path;
 				}
+				DIR* dir = opendir(temp_basic_server_info.root.c_str());
+				if (dir == NULL) {
+					return error__("conf_zero", "server root is not valid dir_name. check exist or control level", line_number_count);
+				}
+				closedir(dir);
 				total_port_server_map_p::iterator check_default_server;
 				check_default_server = saved_total_port_map_3.find(temp_basic_server_info.port);
 				if (check_default_server == saved_total_port_map_3.end()) {
