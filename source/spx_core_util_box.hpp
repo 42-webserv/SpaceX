@@ -55,6 +55,7 @@ spx_log_(std::string id, T msg) {
 #ifdef DEBUG
 	std::cout << COLOR_GREEN << id << ": " << msg << COLOR_RESET << std::endl;
 #else
+	(void)id;
 	(void)msg;
 #endif
 }

@@ -23,13 +23,11 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 	} else {
 		// std::cout << "accept new client: " << client_fd << std::endl;
 		fcntl(client_fd, F_SETFL, O_NONBLOCK);
-		/* for siege test*/
-		/*
+
 		struct linger opt = { 1, 0 };
-		if (setsockopt(client_fd, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt) < 0)) {
+		if (setsockopt(client_fd, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt)) < 0) {
 			spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
 		}
-		*/
 
 		client_t* new_cl   = new client_t(&change_list);
 		new_cl->_client_fd = client_fd;

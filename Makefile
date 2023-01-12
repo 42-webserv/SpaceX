@@ -60,7 +60,8 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
-CXXFLAGS	+=	$(DEBUG) #$(SNTZ)
+CXXFLAGS	+=	$(DEBUG)
+CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
