@@ -225,7 +225,12 @@ Client::res_for_get_head_req_() {
 		spx_log_("No file descriptor");
 	} else {
 		spx_log_("READ event added");
-		add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+		if (_res._body_size) {
+			add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
+		} else {
+			close(_res._body_fd);
+			_res._body_fd = -1;
+		}
 	}
 	// _res._write_ready = true;
 	if (_req._is_chnkd) {
@@ -468,7 +473,7 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 		spx_log_("read_to_res_buffer finished");
 		close(cur_event->ident);
 		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-		// add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
+		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 	}
 }
 
@@ -576,6 +581,7 @@ Client::write_response_() {
 			// n_write = _cgi._from_cgi.write_debug_();
 			n_write = _cgi._from_cgi.write_(_client_fd);
 		} else {
+			n_write = _res._res_buf.write_debug_();
 			n_write = _res._res_buf.write_(_client_fd);
 			if (n_write == 0) {
 				spx_log_("_client_fd", _client_fd);

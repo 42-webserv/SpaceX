@@ -122,7 +122,9 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 
 	spx_log_("ERROR_RESPONSE!!");
 	write_to_response_buffer_(make_to_string_());
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
+	if (_body_fd <= 0) {
+		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
+	}
 }
 
 // this is main logic to make response
@@ -211,7 +213,9 @@ ResField::make_response_header_(Client& cl) {
 	if (cl._req._req_mthd & REQ_HEAD) {
 		_body_size = 0;
 	}
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
+	if (_body_fd <= 0) {
+		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
+	}
 }
 
 void
