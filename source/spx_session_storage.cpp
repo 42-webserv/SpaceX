@@ -26,7 +26,7 @@ SessionStorage::add_new_session(SessionID id) {
 }
 
 std::string
-SessionStorage::make_hash(uintptr_t& seed_in) {
+SessionStorage::generate_session_id(uintptr_t& seed_in) {
 	struct timeval time;
 	gettimeofday(&time, NULL);
 
@@ -62,6 +62,13 @@ SessionStorage::make_hash(uintptr_t& seed_in) {
 }
 
 void
-SessionStorage::addCount() {
-	++count;
+SessionStorage::session_cleaner() {
+	for (storage_t::iterator it = storage_.begin(); it != storage_.end();) {
+		if ((*it).second.valid_time_ < std::time(NULL)) {
+			std::string session_id = (*it++).first;
+			storage_.erase(session_id);
+		} else {
+			++it;
+		}
+	}
 }

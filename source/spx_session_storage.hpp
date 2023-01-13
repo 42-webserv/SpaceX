@@ -13,6 +13,7 @@
 #define SESSIONID "sessionID="
 #define MAX_AGE "Max-Age="
 #define AGE_TIME "10"
+#define AGE_TIME_INT 10
 
 typedef struct Cookie {
 	typedef std::map<std::string, std::string> key_val_t;
@@ -56,14 +57,26 @@ typedef struct Session {
 
 	typedef std::pair<std::string, std::string> session_content;
 
-	int count_;
+	int	   count_;
+	time_t valid_time_;
+
+	Session() {
+		refresh_time();
+		count_ = 0;
+	}
 	Session(int i) {
+		refresh_time();
 		count_ = i;
 	}
 	~Session() { }
 	void
 	addCount() {
 		count_++;
+	}
+	void
+	refresh_time() {
+		valid_time_ = std::time(NULL);
+		valid_time_ += AGE_TIME_INT;
 	}
 
 } session_t;
@@ -75,7 +88,6 @@ class SessionStorage {
 	typedef std::map<SessionID, session_t>	storage_t;
 
 	storage_t storage_;
-	int		  count;
 
 public:
 	SessionStorage();
@@ -86,10 +98,9 @@ public:
 	bool		is_key_exsits(const std::string& c_key) const;
 	session_t&	find_value_by_key(std::string& c_key);
 	std::string find_session_to_string(const std::string& c_key);
-	// void		add_new_session(SessionID id, session_t session);
 	void		add_new_session(SessionID id);
-	std::string make_hash(uintptr_t& seed_in);
-	void		addCount();
+	std::string generate_session_id(uintptr_t& seed_in);
+	void		session_cleaner();
 };
 typedef SessionStorage session_storage_t;
 
