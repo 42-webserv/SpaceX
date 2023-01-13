@@ -32,9 +32,6 @@ ReqField::clear_() {
 	_uri.clear();
 	_http_ver.clear();
 	_upld_fn.clear();
-	if (_body_fd > 0) {
-		close(_body_fd);
-	}
 	_body_size	= 0;
 	_body_read	= 0;
 	_body_limit = -1;
@@ -164,6 +161,7 @@ ResField::make_response_header_(Client& cl) {
 			return;
 		} else if (req_fd == -1
 				   && (cl._req._uri_loc == NULL || cl._req._uri_loc->autoindex_flag == Kautoindex_off)) {
+			// std::cerr << "ERROR!!" << std::endl;
 			make_error_response_(cl, HTTP_STATUS_NOT_FOUND);
 			return;
 		} else if (req_fd == -1
@@ -352,9 +350,6 @@ ResField::clear_() {
 	_dwnl_fn.clear();
 	_headers.clear();
 	_res_buf.clear_();
-	if (_body_fd > 0) {
-		close(_body_fd);
-	}
 	_body_fd		= -1;
 	_body_read		= 0;
 	_body_write		= 0;
