@@ -200,7 +200,7 @@ kqueue_module(port_list_t& port_info) {
 	}
 
 	// Session Checker
-	add_change_list(change_list, 0, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 3600,
+	add_change_list(change_list, 0, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, EXPIRED_CLEANER_TIME,
 					&storage);
 
 	int			   event_len;
