@@ -1,6 +1,7 @@
 #include "spx_port_info.hpp"
 #include "spx_core_type.hpp"
 
+#include <cstddef>
 #include <dirent.h>
 #include <sys/socket.h>
 
@@ -80,9 +81,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	std::string					temp_location;
 	std::string					temp_extension;
 	std::string					temp_index;
-	uint16_t					flag_check_dup = 0;
-	uint16_t					root_uri_flag  = 0;
-	std::string::const_iterator it			   = uri.begin();
+	uint16_t					flag_check_dup	= 0;
+	uint16_t					root_uri_flag	= 0;
+	uint16_t					cgi_before_flag = 0;
+	std::string::const_iterator it				= uri.begin();
 
 	//  initialize
 	uri_resolved_sets.is_cgi_			= false;
@@ -132,6 +134,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				temp_root		= it_->second.root;
 				temp_location	= it_->second.uri;
 				flag_check_dup |= Kuri_same_uri;
+				if (it_->second.uri == "/") {
+					root_uri_flag |= 1;
+				}
 			} else {
 				it_ = uri_case.find("/");
 				if (it_ != uri_case.end()) {
@@ -164,10 +169,14 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				break;
 			}
 			case '.': {
+				if (root_uri_flag & 1) {
+					cgi_before_flag |= 1;
+				}
 				state = uri_cgi;
 				break;
 			}
 			case '/': {
+				flag_check_dup |= Kuri_depth_uri;
 				while (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
 					++it;
 				}
@@ -194,8 +203,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				}
 				if (temp.size() != 1) {
 					flag_check_dup &= ~Kuri_same_uri;
-					uri_resolved_sets.script_name_ += temp;
+				} else {
+					cgi_before_flag |= 1;
 				}
+				uri_resolved_sets.script_name_ += temp;
 			} else {
 				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp;
@@ -220,12 +231,15 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp_extension;
 			} else {
-				std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
-				cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
-				if (it_ != cgi_case.end()) {
-					uri_resolved_sets.is_cgi_  = true;
-					uri_resolved_sets.cgi_loc_ = &it_->second;
-					flag_check_dup |= Kuri_cgi;
+				size_t pos_ = temp_extension.find_last_of(".");
+				if (pos_ != std::string::npos && !(cgi_before_flag & 1)) {
+					std::string				 check_ext = temp_extension.substr(pos_);
+					cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
+					if (it_ != cgi_case.end()) {
+						uri_resolved_sets.is_cgi_  = true;
+						uri_resolved_sets.cgi_loc_ = &it_->second;
+						flag_check_dup |= Kuri_cgi;
+					}
 				}
 				uri_resolved_sets.script_name_ += temp_extension;
 			}
@@ -257,11 +271,13 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_done: {
-			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
+			spx_log_(flag_check_dup);
+			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info)) && !(cgi_before_flag & 1)) {
 				uri_resolved_sets.is_same_location_ = true;
 			}
-			if (flag_check_dup & Kuri_path_info && root_uri_flag & 1) {
-				return_location = NULL;
+			if (flag_check_dup & Kuri_depth_uri && root_uri_flag & 1) {
+				return_location			  = NULL;
+				uri_resolved_sets.is_cgi_ = false;
 			}
 			uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
@@ -290,7 +306,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 		} // switch end
 	} // while end
-
+	spx_log_(return_location);
 	uri_resolved_sets.print_();
 	return return_location;
 }
