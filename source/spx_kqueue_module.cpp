@@ -109,7 +109,7 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 		return;
 	}
 	if (cur_event->ident == cl->_client_fd) {
-		// spx_log_("write event handler - cl state", cl->_state);
+		spx_log_("write event handler - cl state", cl->_state);
 		if (cl->write_response_() == false) {
 			return;
 		}
@@ -120,14 +120,14 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 		}
 	} else {
 		if (cur_event->ident == cl->_req._body_fd) {
-			// spx_log_("write_for_upload");
+			spx_log_("write_for_upload");
 			if (cl->write_for_upload_(cur_event) == false) {
 				// spx_log_("too large file to upload");
 				cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
 				return;
 			}
 		} else {
-			// spx_log_("write_to_cgi");
+			spx_log_("write_to_cgi");
 			cl->write_to_cgi_(cur_event);
 		}
 	}
@@ -135,11 +135,20 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 
 void
 proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
-	client_t* cl = static_cast<client_t*>(cur_event->udata);
-	int		  status;
-	id_t	  pid;
+	client_t*  cl = static_cast<client_t*>(cur_event->udata);
+	int		   status;
+	id_t	   pid;
+	static int l;
 
-	pid = waitpid(cur_event->ident, &status, 0);
+	pid = waitpid(-1, &status, 0);
+	spx_log_("pid", pid);
+	spx_log_("cl->_client_fd", cl->_client_fd);
+	spx_log_("cur_event->ident", cur_event->ident);
+	// if (l == 2) {
+	// 	sleep(10);
+	// 	exit(1);
+	// }
+	++l;
 }
 
 void
@@ -200,6 +209,7 @@ kqueue_module(port_list_t& port_info) {
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			spx_log_("event_len:", event_len);
+			spx_log_("event_filter:", cur_event->filter);
 			spx_log_("cur->ident:", cur_event->ident);
 			spx_log_("cur->flags:", cur_event->flags);
 			if (cur_event->udata != NULL) {
@@ -210,7 +220,8 @@ kqueue_module(port_list_t& port_info) {
 					if (cur_event->filter == EVFILT_PROC) {
 						spx_log_("PROC1 flags", cur_event->flags);
 						spx_log_("PROC1 fflags", cur_event->fflags);
-						exit(1);
+						// exit(1);
+						proc_event_wait_pid_(cur_event, change_list);
 					}
 					// kevent_error_handler(port_info, cur_event, change_list);
 					// switch (cur_event->data) {
@@ -245,6 +256,10 @@ kqueue_module(port_list_t& port_info) {
 									delete cl;
 									return;
 								}
+								cl->_cgi._cgi_done = true;
+								// if (cl->_cgi._is_chnkd == false) {
+								// 	cl->_cgi._cgi_state = CGI_HEADER;
+								// }
 								if (cl->_cgi._cgi_state == CGI_HEADER) {
 									cl->_cgi.cgi_controller_(*cl);
 								}

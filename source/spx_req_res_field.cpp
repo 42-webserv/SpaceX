@@ -236,7 +236,11 @@ ResField::make_cgi_response_header_(Client& cl) {
 	if (it != cl._cgi._cgi_header.end()) {
 		_headers.push_back(header(CONTENT_LENGTH, it->second));
 	} else {
-		_body_size = cl._cgi._cgi_read;
+		// if (cl._cgi._is_chnkd) {
+		// 	_body_size = cl._cgi._cgi_read;
+		// } else {
+		_body_size = cl._cgi._from_cgi.buf_size_();
+		// }
 		std::stringstream ss;
 		ss << _body_size;
 		_headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));

@@ -1,8 +1,24 @@
 #include "spx_cgi_chunked.hpp"
 #include "spx_cgi_module.hpp"
 #include "spx_kqueue_module.hpp"
-
 #include "spx_session_storage.hpp"
+
+ChunkedField::ChunkedField()
+	: _chnkd_body()
+	, _chnkd_size(0)
+	, _first_chnkd(true)
+	, _last_chnkd(false) {
+}
+ChunkedField::~ChunkedField() {
+}
+
+void
+ChunkedField::clear_() {
+	_chnkd_body.clear_();
+	_chnkd_size	 = 0;
+	_first_chnkd = true;
+	_last_chnkd	 = false;
+}
 
 bool
 ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
@@ -147,6 +163,9 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
 					if (_chnkd_size == 0) {
 						_last_chnkd = true;
+						if (cl._state == REQ_HOLD) {
+							cl._state = REQ_CLEAR;
+						}
 					}
 					cl._req._body_size += _chnkd_size;
 					_chnkd_size += 2;
@@ -181,6 +200,34 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 		// }
 		return false;
 	}
+}
+
+CgiField::CgiField()
+	: _cgi_header()
+	, _from_cgi()
+	, _to_cgi()
+	, _cgi_size(0)
+	, _cgi_read(0)
+	, _write_to_cgi_fd(0)
+	, _cgi_state(CGI_HEADER)
+	, _is_chnkd(false)
+	, _cgi_done(false) {
+}
+
+CgiField::~CgiField() {
+}
+
+void
+CgiField::clear_() {
+	_cgi_header.clear();
+	_from_cgi.clear_();
+	_to_cgi.clear_();
+	_cgi_size		 = 0;
+	_cgi_read		 = 0;
+	_write_to_cgi_fd = 0;
+	_cgi_state		 = CGI_HEADER;
+	_is_chnkd		 = false;
+	_cgi_done		 = false;
 }
 
 bool
@@ -223,9 +270,11 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		spx_log_("CGIIIII 1", script[1]);
 
 		dup2(write_to_cgi[0], STDIN_FILENO);
+		close(write_to_cgi[0]);
 		close(write_to_cgi[1]);
 		close(read_from_cgi[0]);
 		dup2(read_from_cgi[1], STDOUT_FILENO);
+		close(read_from_cgi[1]);
 
 		execve(script[0], const_cast<char* const*>(script),
 			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
@@ -244,6 +293,9 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
 	add_change_list(change_list, pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+	spx_log_("CGIIIII cgi pid", pid);
+	spx_log_("CGIIIII client_fd", ((Client*)cur_event->udata)->_client_fd);
+	// sleep(10);
 
 	return true;
 }
@@ -288,25 +340,27 @@ bool
 CgiField::cgi_controller_(Client& cl) {
 	switch (_cgi_state) {
 	case CGI_HEADER: {
-		if (cgi_header_parser_() == false) {
-			// read more?
-			spx_log_("cgi_header_parser false");
-			return false;
-		}
-		_cgi_state = CGI_HOLD;
+		if (_cgi_done) {
+			if (cgi_header_parser_() == false) {
+				// read more?
+				spx_log_("cgi_header_parser false");
+				return false;
+			}
+			_cgi_state = CGI_HOLD;
 
-		std::map<std::string, std::string>::iterator it;
-		it = _cgi_header.find("content-length");
-		if (it != _cgi_header.end()) {
-			_cgi_size = strtol(it->second.c_str(), NULL, 10);
-			// TODO: make_cgi_response_header.
-			// make_cgi_response_header();
-		} else {
-			// no content-length case.
-			// res.cgi_state_ = CGI_BODY_CHUNKED;
-			_cgi_size = -1;
+			std::map<std::string, std::string>::iterator it;
+			it = _cgi_header.find("content-length");
+			if (it != _cgi_header.end()) {
+				_cgi_size = strtol(it->second.c_str(), NULL, 10);
+				// TODO: make_cgi_response_header.
+				// make_cgi_response_header();
+			} else {
+				// no content-length case.
+				// res.cgi_state_ = CGI_BODY_CHUNKED;
+				_cgi_size = -1;
+			}
+			cl._res.make_cgi_response_header_(cl);
 		}
-		cl._res.make_cgi_response_header_(cl);
 	}
 	case CGI_HOLD:
 		break;

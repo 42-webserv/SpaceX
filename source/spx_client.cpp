@@ -196,15 +196,17 @@ Client::do_cgi_(struct kevent* cur_event) {
 			if (_req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
 				_state = REQ_SKIP_BODY_CHUNKED;
 			} else {
-				_state			= REQ_CGI_BODY_CHUNKED;
-				_cgi._cgi_state = CGI_HOLD;
+				_state = REQ_CGI_BODY_CHUNKED;
+				// _cgi._cgi_state = CGI_HOLD;
 			}
 		} else {
 			if (_req._cnt_len != 0) {
+				spx_log_("cgi cntlen", _req._cnt_len);
 				if (_req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
 					_state = REQ_SKIP_BODY;
 				} else {
 					_state = REQ_CGI_BODY;
+					// _cgi._cgi_state = CGI_HOLD;
 				}
 			} else {
 				_state = REQ_HOLD;
@@ -527,6 +529,7 @@ Client::write_to_cgi_(struct kevent* cur_event) {
 	// }
 	_cgi._cgi_read += n_write;
 	spx_log_("write to cgi. _cgi._cgi_read", _cgi._cgi_read);
+	spx_log_("write to cgi. _req._cnt_len", _req._cnt_len);
 	if (_cgi._cgi_read == _req._cnt_len) {
 		close(cur_event->ident);
 		add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
@@ -567,6 +570,7 @@ Client::write_response_() {
 	} else {
 		// file write
 		if (_req._uri_resolv.is_cgi_) {
+			// n_write = _cgi._from_cgi.write_debug_();
 			n_write = _cgi._from_cgi.write_(_client_fd);
 		} else {
 			n_write = _res._res_buf.write_(_client_fd);
@@ -577,8 +581,8 @@ Client::write_response_() {
 			return false;
 		}
 		_res._body_write += n_write;
-		if (_req._uri_resolv.is_cgi_ && _res._body_write == _cgi._cgi_read
-			|| _req._uri_resolv.is_cgi_ == false && _res._body_write == _res._body_size) {
+		if ((_req._uri_resolv.is_cgi_ && _res._body_write == _cgi._cgi_read)
+			|| (_req._uri_resolv.is_cgi_ == false && _res._body_write == _res._body_size)) {
 
 			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DISABLE, 0, 0, this);
 			_res._write_finished = true;
