@@ -52,7 +52,7 @@ CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-CXXFLAGS	+=	$(LOG)
+# CXXFLAGS	+=	$(LOG)
 
 RM			=	rm -f
 
@@ -62,7 +62,7 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
-CXXFLAGS	+=	$(DEBUG)
+# CXXFLAGS	+=	$(DEBUG)
 # CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC

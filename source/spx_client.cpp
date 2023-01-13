@@ -56,6 +56,7 @@ Client::request_line_parser_() {
 		if (req_line.size())
 			break;
 	}
+	// std::cerr << req_line << std::endl;
 	spx_log_("REQ_LINE_PARSER ok", req_line);
 	// bad request will return false and disconnect client.
 	_state = REQ_HEADER_PARSING;
@@ -72,6 +73,7 @@ Client::header_field_parser_() {
 		if (_buf.get_crlf_line_(key_val)) {
 			// spx_log_("key_val", key_val);
 			// spx_log_("key_val size", key_val.size());
+			// std::cerr << key_val << std::endl;
 			if (key_val.empty()) {
 				break;
 			}
@@ -457,6 +459,12 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	// _res._res_buf.write_debug_();
 	if (n_read < 0) {
 		spx_log_("INTERNAL");
+		// std::cerr << "INTERNAL!!" << std::endl;
+		// std::cerr << "cur_event->fd : " << cur_event->ident << std::endl;
+		// std::cerr << "cur_event->data : " << cur_event->data << std::endl;
+		// std::cerr << "cur_event->flter : " << cur_event->filter << std::endl;
+		// std::cerr << "cur_event->flags : " << cur_event->flags << std::endl;
+		// std::cerr << "cur_event->fflags : " << cur_event->fflags << std::endl;
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
 		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
@@ -581,7 +589,7 @@ Client::write_response_() {
 			// n_write = _cgi._from_cgi.write_debug_();
 			n_write = _cgi._from_cgi.write_(_client_fd);
 		} else {
-			n_write = _res._res_buf.write_debug_();
+			// n_write = _res._res_buf.write_debug_();
 			n_write = _res._res_buf.write_(_client_fd);
 			if (n_write == 0) {
 				spx_log_("_client_fd", _client_fd);

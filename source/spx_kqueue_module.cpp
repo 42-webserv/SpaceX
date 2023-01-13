@@ -21,7 +21,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		error_str("accept error");
 		return false;
 	} else {
-		// std::cout << "accept new client: " << client_fd << std::endl;
+		// std::cerr << "accept new client: " << client_fd << std::endl;
 		fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
 		struct linger opt = { 1, 0 };
@@ -240,6 +240,7 @@ kqueue_module(port_list_t& port_info) {
 					}
 					if (cur_event->ident == cl->_client_fd) {
 						spx_log_("client socket closed", cur_event->ident);
+						// std::cerr << "client socket closed : " << cur_event->ident << std::endl;
 						cl->disconnect_client_();
 						delete cl;
 					} else {
