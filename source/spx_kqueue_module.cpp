@@ -164,6 +164,15 @@ timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 }
 
+// added by space 23.1.14
+void
+session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
+	// execute every 1hour (3600s)
+	session_storage_t* storage;
+	storage = (session_storage_t*)(cur_event->udata);
+	storage->session_cleaner();
+}
+
 void
 kqueue_module(port_list_t& port_info) {
 
@@ -189,6 +198,10 @@ kqueue_module(port_list_t& port_info) {
 			add_change_list(change_list, i, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 		}
 	}
+
+	// Session Checker
+	add_change_list(change_list, 0, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 3600,
+					&storage);
 
 	int			   event_len;
 	struct kevent* cur_event;
@@ -302,11 +315,12 @@ kqueue_module(port_list_t& port_info) {
 				}
 				proc_event_wait_pid_(cur_event, change_list);
 				break;
-				// case EVFILT_TIMER:
-				// 	// spx_log_("event_timer");
-				// 	timer_event_handler(cur_event, change_list);
-				// 	// TODO: timer
-				// 	break;
+			case EVFILT_TIMER:
+				spx_log_("event_timer");
+				// added by space 23.1.14
+				session_timer_event_handler(cur_event, change_list);
+				// TODO: timer
+				break;
 			}
 		}
 	}

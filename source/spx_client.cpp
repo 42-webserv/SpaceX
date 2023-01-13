@@ -136,12 +136,13 @@ Client::set_cookie_() {
 			cookie_t::key_val_t::iterator find_cookie = cookie.content.find("sessionID");
 			if (find_cookie == cookie.content.end() || ((*find_cookie).second).empty() || !_storage->is_key_exsits((*find_cookie).second)) {
 				spx_log_("MAKING NEW SESSION");
-				std::string hash_value = _storage->make_hash(_client_fd);
-				_storage->add_new_session(hash_value);
-				_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
+				std::string session_key = _storage->generate_session_id(_client_fd);
+				_storage->add_new_session(session_key);
+				_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME;
 			} else {
 				session_t& session = _storage->find_value_by_key((*find_cookie).second);
 				session.count_++;
+				session.refresh_time();
 				_req.session_id = SESSIONID + (*find_cookie).second + "; " + MAX_AGE + AGE_TIME;
 				// spx_log_("SESSIONCOUNT", session.count_);
 			}
@@ -149,9 +150,9 @@ Client::set_cookie_() {
 	} else // if first connection or (no session id on cookie)
 	{
 		spx_log_("NOT FOUND SESSION => MAKING NEW SESSION");
-		std::string hash_value = _storage->make_hash(_client_fd);
-		_storage->add_new_session(hash_value);
-		_req.session_id = SESSIONID + hash_value + "; " + MAX_AGE + AGE_TIME;
+		std::string session_key = _storage->generate_session_id(_client_fd);
+		_storage->add_new_session(session_key);
+		_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME;
 	}
 	// COOKIE & SESSION END
 }

@@ -44,7 +44,6 @@ typedef std::map<std::string, std::string>	cgi_header_t;
 typedef std::map<std::string, std::string>	req_header_t;
 typedef std::pair<std::string, std::string> header;
 
-// class SessionStorage;
 class Client;
 class ReqField;
 class ResField;
@@ -70,7 +69,7 @@ public:
 	int					   _skip_size;
 	port_info_t*		   _port_info;
 	const struct sockaddr* _sockaddr;
-	session_storage_t*	   _storage; // add by space
+	session_storage_t*	   _storage;
 
 	Client(event_list_t* chnage_list);
 	~Client();
