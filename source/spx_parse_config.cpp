@@ -144,6 +144,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_zero: {
 			if (server_count != 0) {
+				if (!(flag_default_part & Kflag_root_slash)) {
+					return error__("conf_zero", "server root need to set '/' location ", line_number_count);
+				}
 				if (!(flag_default_part & Kflag_server_name)) {
 					temp_basic_server_info.server_name = "localhost";
 				}
@@ -776,6 +779,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state				   = state;
 				state					   = conf_start;
 				next_state				   = conf_location_CB_open;
+				if (!temp_uri_location_info.uri.compare("/")) {
+					flag_default_part |= Kflag_root_slash;
+				}
 				temp_string.clear();
 				break;
 			}

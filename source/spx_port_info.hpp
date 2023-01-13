@@ -47,7 +47,8 @@ typedef enum {
 	Kflag_root		  = 1 << 0,
 	Kflag_listen	  = 1 << 1,
 	Kflag_server_name = 1 << 2,
-	Kflag_error_page  = 1 << 3
+	Kflag_error_page  = 1 << 3,
+	Kflag_root_slash  = 1 << 4
 } flag_config_parse_basic_part_e;
 
 typedef enum {
