@@ -52,7 +52,7 @@ CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-CXXFLAGS	+=	$(LOG)
+# CXXFLAGS	+=	$(LOG)
 
 RM			=	rm -f
 
