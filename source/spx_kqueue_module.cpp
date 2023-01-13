@@ -36,7 +36,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		new_cl->_storage   = storage;
 
 		add_change_list(change_list, client_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, new_cl);
-		add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);
+		// add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);
 		// add_change_list(change_list, client_fd, EVFILT_TIMER,
 		// 				EV_ADD, NOTE_SECONDS, 60, new_cl);
 		return true;
@@ -137,10 +137,13 @@ void
 proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
 	client_t*  cl = static_cast<client_t*>(cur_event->udata);
 	int		   status;
-	id_t	   pid;
+	int		   pid;
 	static int l;
 
-	pid = waitpid(-1, &status, 0);
+	pid = waitpid(cl->_cgi._pid, &status, 0);
+	if (status == EXIT_FAILURE) {
+		std::cerr << "cgi error" << std::endl;
+	}
 	spx_log_("pid", pid);
 	spx_log_("cl->_client_fd", cl->_client_fd);
 	spx_log_("cur_event->ident", cur_event->ident);
@@ -221,7 +224,7 @@ kqueue_module(port_list_t& port_info) {
 						spx_log_("PROC1 flags", cur_event->flags);
 						spx_log_("PROC1 fflags", cur_event->fflags);
 						// exit(1);
-						proc_event_wait_pid_(cur_event, change_list);
+						// proc_event_wait_pid_(cur_event, change_list);
 					}
 					// kevent_error_handler(port_info, cur_event, change_list);
 					// switch (cur_event->data) {
@@ -241,12 +244,10 @@ kqueue_module(port_list_t& port_info) {
 						delete cl;
 					} else {
 						if (cur_event->filter == EVFILT_PROC) {
-							if (cur_event->filter == EVFILT_PROC) {
-								spx_log_("PROC2 flags", cur_event->flags);
-								spx_log_("PROC2 fflags", cur_event->fflags);
-								// exit(1);
-							}
-							proc_event_wait_pid_(cur_event, change_list);
+							spx_log_("PROC2 flags", cur_event->flags);
+							spx_log_("PROC2 fflags", cur_event->fflags);
+							// exit(1);
+							// proc_event_wait_pid_(cur_event, change_list);
 						} else {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
@@ -257,16 +258,19 @@ kqueue_module(port_list_t& port_info) {
 									return;
 								}
 								if (n_read == cur_event->data) {
-									cl->_cgi._cgi_done = true;
+									cl->_cgi._cgi_done	= true;
+									cl->_cgi._cgi_state = CGI_HEADER;
+
 									// if (cl->_cgi._is_chnkd == false) {
 									// 	cl->_cgi._cgi_state = CGI_HEADER;
 									// }
-									if (cl->_cgi._cgi_state == CGI_HEADER) {
-										cl->_cgi.cgi_controller_(*cl);
-									}
+									// if (cl->_cgi._cgi_state == CGI_HEADER) {
+									cl->_cgi.cgi_controller_(*cl);
+									// }
 									spx_log_("cgi read close");
 									close(cur_event->ident);
 									add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
+									proc_event_wait_pid_(cur_event, change_list);
 								}
 								break;
 							} else {

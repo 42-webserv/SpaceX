@@ -108,7 +108,7 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 			// write_to_response_buffer_(error_page);
 			cl._res._res_buf.add_str(error_page);
 		}
-		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
+		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		return;
 	}
 	if ((cl._req._req_mthd & REQ_HEAD) == false) {
@@ -122,7 +122,7 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 
 	spx_log_("ERROR_RESPONSE!!");
 	write_to_response_buffer_(make_to_string_());
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
+	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 }
 
 // this is main logic to make response
@@ -211,7 +211,7 @@ ResField::make_response_header_(Client& cl) {
 	if (cl._req._req_mthd & REQ_HEAD) {
 		_body_size = 0;
 	}
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
+	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 }
 
 void
@@ -247,7 +247,7 @@ ResField::make_cgi_response_header_(Client& cl) {
 		// headers_.push_back(header(CONTENT_LENGTH, "0"));
 	}
 	write_to_response_buffer_(make_to_string_());
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
+	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 }
 
 void
@@ -257,7 +257,7 @@ ResField::make_redirect_response_(Client& cl) {
 	_status		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
 	_headers.push_back(header("Location", cl._req._uri_loc->redirect));
 	write_to_response_buffer_(make_to_string_());
-	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ENABLE, 0, 0, &cl);
+	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 }
 
 void
