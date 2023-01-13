@@ -256,16 +256,18 @@ kqueue_module(port_list_t& port_info) {
 									delete cl;
 									return;
 								}
-								cl->_cgi._cgi_done = true;
-								// if (cl->_cgi._is_chnkd == false) {
-								// 	cl->_cgi._cgi_state = CGI_HEADER;
-								// }
-								if (cl->_cgi._cgi_state == CGI_HEADER) {
-									cl->_cgi.cgi_controller_(*cl);
+								if (n_read == cur_event->data) {
+									cl->_cgi._cgi_done = true;
+									// if (cl->_cgi._is_chnkd == false) {
+									// 	cl->_cgi._cgi_state = CGI_HEADER;
+									// }
+									if (cl->_cgi._cgi_state == CGI_HEADER) {
+										cl->_cgi.cgi_controller_(*cl);
+									}
+									spx_log_("cgi read close");
+									close(cur_event->ident);
+									add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
 								}
-								spx_log_("cgi read close");
-								close(cur_event->ident);
-								add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
 								break;
 							} else {
 								spx_log_("cgi write close");
