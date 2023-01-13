@@ -19,6 +19,14 @@
 #define COLOR_WHITE "\033[1;37m"
 #define COLOR_RESET "\033[0m"
 
+#define BCOLOR_RED "\033[1;41m"
+#define BCOLOR_GREEN "\033[1;42m"
+#define BCOLOR_YELLOW "\033[1;43m"
+#define BCOLOR_BLUE "\033[1;44m"
+#define BCOLOR_PURPLE "\033[1;45m"
+#define BCOLOR_CYAN "\033[1;46m"
+#define BCOLOR_WHITE "\033[1;47m"
+
 std::string const generator_error_page_(uint32_t const& error_code);
 
 template <typename T>
@@ -55,34 +63,33 @@ spx_log_(std::string id, T msg) {
 #ifdef DEBUG
 	std::cout << COLOR_GREEN << id << ": " << msg << COLOR_RESET << std::endl;
 #else
+	(void)id;
 	(void)msg;
 #endif
 }
 
 inline void
-main_log_(std::string const& msg, std::string const& color = COLOR_WHITE) {
-	std::cout << color << msg << COLOR_RESET << std::endl;
+error_log_(std::string const& msg) {
+	std::cerr << BCOLOR_RED << msg << COLOR_RESET << std::endl;
 }
 
 inline void
-error_fn(std::string err, int (*func)(int), int fd) {
+error_str(std::string err) {
+	std::cerr << BCOLOR_RED << "[" << err << "]" << COLOR_RESET << "\terrno: " << errno << "\t" << strerror(errno) << std::endl;
+}
+
+template <typename T>
+inline void
+error_fn(std::string err, T (*func)(int), int fd) {
+	error_str(err);
 	if (func != NULL) {
 		func(fd);
 	}
-	std::cerr << errno << std::endl;
-	perror(err.c_str());
 }
 
 inline void
-error_exit_msg(std::string err) {
-	std::cerr << COLOR_RED << err << COLOR_RESET << std::endl;
-	exit(spx_error);
-}
-
-inline void
-error_exit_msg_perror(std::string err) {
-	std::cerr << errno << std::endl;
-	perror(err.c_str());
+error_exit(std::string err) {
+	error_log_(err);
 	exit(spx_error);
 }
 

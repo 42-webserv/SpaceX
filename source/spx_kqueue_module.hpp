@@ -17,7 +17,7 @@ void kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 						  event_list_t& change_list);
 void write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 						 event_list_t& change_list);
-void proc_event_handler(struct kevent* cur_event, event_list_t& change_list);
+void proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list);
 void timer_event_handler(struct kevent* cur_event, event_list_t& change_list);
 void cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 void kqueue_module(port_list_t& port_info);

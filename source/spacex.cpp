@@ -3,6 +3,8 @@
 #include "spx_client.hpp"
 #include "spx_kqueue_module.hpp"
 
+#include <cstdlib>
+
 namespace {
 
 #ifdef LEAK
@@ -23,21 +25,21 @@ namespace {
 			file.open(argv[1], std::ios_base::in);
 			break;
 		default:
-			error_exit_msg("usage: ./spacex [config_file]");
+			error_exit("usage: ./spacex [config_file]");
 		}
 		if (file.is_open() == false) {
-			error_exit_msg_perror("file open error");
+			error_fn("file open error", exit, spx_error);
 		}
 		std::stringstream ss;
 		ss << file.rdbuf();
 		if (ss.fail()) {
 			file.close();
-			error_exit_msg_perror("file read error");
+			error_fn("file read error", exit, spx_error);
 		}
 		file.close();
 		total_port_server_map_p temp_config;
 		if (spx_config_syntax_checker(ss.str(), temp_config, cur_path) != spx_ok) {
-			error_exit_msg("config syntax error");
+			error_exit("config syntax error");
 		}
 		return temp_config;
 	}
@@ -46,7 +48,7 @@ namespace {
 	get_current_path__(std::string& cur_path) {
 		char buf[8192];
 		if (getcwd(buf, sizeof(buf)) == NULL) {
-			error_exit_msg_perror("getcwd error");
+			error_fn("getcwd error", exit, spx_error);
 		}
 		cur_path = buf;
 	}
@@ -54,13 +56,14 @@ namespace {
 	inline void
 	port_info_print__(main_info_t const& spx) {
 		uint32_t i = 3;
-		std::cout << "\n-------------- [ " << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
-				  << " ] -------------\n"
+		std::cout << "\n--------------- [ " << COLOR_BLUE << "SpaceX Info" << COLOR_RESET
+				  << " ] ---------------\n"
 				  << std::endl;
 		while (i < spx.socket_size) {
 			for (server_map_p::const_iterator it2 = spx.port_info[i].my_port_map.begin();
 				 it2 != spx.port_info[i].my_port_map.end(); ++it2) {
-				std::cout << "port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
+				std::cout << "socket: " << COLOR_GREEN << i << COLOR_RESET;
+				std::cout << "\t| port: " << COLOR_GREEN << it2->second.port << COLOR_RESET;
 				std::cout << "\t| name: " << COLOR_GREEN << it2->second.server_name << COLOR_RESET;
 				if (it2->second.default_server_flag == Kdefault_server) {
 					std::cout << COLOR_RED << "\t <---- default server" << COLOR_RESET << std::endl;
@@ -71,7 +74,7 @@ namespace {
 			std::cout << std::endl;
 			++i;
 		}
-		std::cout << "--------------------------------------------" << std::endl;
+		std::cout << "-----------------------------------------------" << std::endl;
 	}
 
 } // namespace
@@ -98,7 +101,7 @@ main(int argc, char const* argv[]) {
 		kqueue_module(spx.port_info);
 
 	} else {
-		error_exit_msg("usage: ./spacex [config_file]");
+		error_exit("usage: ./spacex [config_file]");
 	}
 	return spx_ok;
 }

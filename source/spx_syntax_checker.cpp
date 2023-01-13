@@ -535,7 +535,7 @@ spx_chunked_syntax_start_line(std::string&						  line,
 				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;
 			case ' ':
-			case '\r':
+			case '\t':
 				state = chunked_BWS_before_ext;
 				chunk_ext.insert(std::make_pair(temp_str_key, temp_str_value));
 				break;

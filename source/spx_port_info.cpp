@@ -1,19 +1,24 @@
 #include "spx_port_info.hpp"
 #include "spx_core_type.hpp"
 
+#include <cstddef>
 #include <dirent.h>
+#include <sys/socket.h>
 
 namespace {
 
 	inline void
 	close_socket_and_exit__(int const prev_socket_size, port_info_vec& port_info) {
 		spx_log_(COLOR_RED "close_socket_and_exit__" COLOR_RESET);
-		for (int i = 1; i <= prev_socket_size; ++i) {
-			if (i == port_info[i].listen_sd) {
-				close(port_info[i].listen_sd);
+		if (prev_socket_size != 0) {
+			for (int i = 0; i <= prev_socket_size; ++i) {
+				if (i == port_info[i].listen_sd) {
+					spx_log_("close port: ", port_info[i].my_port);
+					close(port_info[i].listen_sd);
+				}
 			}
 		}
-		error_exit_msg_perror(COLOR_RED "socket error" COLOR_RESET);
+		exit(spx_error);
 	}
 
 } // namespace
@@ -76,9 +81,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	std::string					temp_location;
 	std::string					temp_extension;
 	std::string					temp_index;
-	uint16_t					flag_check_dup = 0;
-	uint16_t					root_uri_flag  = 0;
-	std::string::const_iterator it			   = uri.begin();
+	uint16_t					flag_check_dup	= 0;
+	uint16_t					root_uri_flag	= 0;
+	uint16_t					cgi_before_flag = 0;
+	std::string::const_iterator it				= uri.begin();
 
 	//  initialize
 	uri_resolved_sets.is_cgi_			= false;
@@ -128,6 +134,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				temp_root		= it_->second.root;
 				temp_location	= it_->second.uri;
 				flag_check_dup |= Kuri_same_uri;
+				if (it_->second.uri == "/") {
+					root_uri_flag |= 1;
+				}
 			} else {
 				it_ = uri_case.find("/");
 				if (it_ != uri_case.end()) {
@@ -160,10 +169,14 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				break;
 			}
 			case '.': {
+				if (root_uri_flag & 1) {
+					cgi_before_flag |= 1;
+				}
 				state = uri_cgi;
 				break;
 			}
 			case '/': {
+				flag_check_dup |= Kuri_depth_uri;
 				while (syntax_(only_slash_, static_cast<uint8_t>(*it))) {
 					++it;
 				}
@@ -190,8 +203,10 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				}
 				if (temp.size() != 1) {
 					flag_check_dup &= ~Kuri_same_uri;
-					uri_resolved_sets.script_name_ += temp;
+				} else {
+					cgi_before_flag |= 1;
 				}
+				uri_resolved_sets.script_name_ += temp;
 			} else {
 				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp;
@@ -216,12 +231,15 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				flag_check_dup |= Kuri_path_info;
 				uri_resolved_sets.path_info_ += temp_extension;
 			} else {
-				std::string				 check_ext = temp_extension.substr(temp_extension.find_last_of("."));
-				cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
-				if (it_ != cgi_case.end()) {
-					uri_resolved_sets.is_cgi_  = true;
-					uri_resolved_sets.cgi_loc_ = &it_->second;
-					flag_check_dup |= Kuri_cgi;
+				size_t pos_ = temp_extension.find_last_of(".");
+				if (pos_ != std::string::npos && !(cgi_before_flag & 1)) {
+					std::string				 check_ext = temp_extension.substr(pos_);
+					cgi_list_map_p::iterator it_	   = cgi_case.find(check_ext);
+					if (it_ != cgi_case.end()) {
+						uri_resolved_sets.is_cgi_  = true;
+						uri_resolved_sets.cgi_loc_ = &it_->second;
+						flag_check_dup |= Kuri_cgi;
+					}
 				}
 				uri_resolved_sets.script_name_ += temp_extension;
 			}
@@ -253,22 +271,27 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 
 		case uri_done: {
-			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info))) {
+			spx_log_(flag_check_dup);
+			if (flag_check_dup & Kuri_same_uri && !(flag_check_dup & (Kuri_cgi | Kuri_path_info)) && !(cgi_before_flag & 1)) {
 				uri_resolved_sets.is_same_location_ = true;
 			}
-			if (flag_check_dup & Kuri_path_info && root_uri_flag & 1) {
-				return_location = NULL;
+			if (flag_check_dup & Kuri_depth_uri && root_uri_flag & 1) {
+				return_location			  = NULL;
+				uri_resolved_sets.is_cgi_ = false;
 			}
 			uri_resolved_sets.script_filename_ = path_resolve_(temp_root + "/" + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_	   = path_resolve_(temp_location + uri_resolved_sets.script_name_);
 
-			DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
-			if ((uri_resolved_sets.is_same_location_ || ((flag_check_dup & Kuri_inner_uri) && dir)) && !temp_index.empty()) { // TODO: only get case add index, when put or post case add saved_path
+			if (uri_resolved_sets.is_same_location_ && !temp_index.empty()) {
 				uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
 				uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
-			}
-			if (dir) {
-				closedir(dir);
+			} else if (flag_check_dup & Kuri_inner_uri && !temp_index.empty()) { // TODO: only get case add index, when put or post case add saved_path
+				DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
+				if (dir) {
+					uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + temp_index);
+					uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + temp_index);
+					closedir(dir);
+				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
 			uri_resolved_sets.resolved_request_uri_ = uri_resolved_sets.script_name_ + uri_resolved_sets.path_info_;
@@ -283,6 +306,8 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 		} // switch end
 	} // while end
+	spx_log_(return_location);
+	uri_resolved_sets.print_();
 	return return_location;
 }
 
@@ -514,40 +539,38 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.my_port	   = it->first;
 				temp_port_info.my_port_map = it->second;
 
-				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0); // TODO :: key
+				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0);
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
 				if (temp_port_info.listen_sd < 0) {
-					spx_log_(COLOR_RED "socket error" COLOR_RESET);
+					error_str("socket error");
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				int opt(1);
-				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) { // NOTE:: SO_REUSEPORT
-					spx_log_(COLOR_RED "setsockopt error" COLOR_RESET);
-					error_fn("setsockopt", close, temp_port_info.listen_sd);
+				if (setsockopt(temp_port_info.listen_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+					error_fn("setsockopt error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (fcntl(temp_port_info.listen_sd, F_SETFL, O_NONBLOCK) == -1) {
-					spx_log_(COLOR_RED "fcntl error" COLOR_RESET);
-					error_fn("fcntl", close, temp_port_info.listen_sd);
+					error_fn("fcntl error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
+				bzero((char*)&temp_port_info.addr_server, sizeof(temp_port_info.addr_server));
 				temp_port_info.addr_server.sin_family	   = AF_INET;
 				temp_port_info.addr_server.sin_port		   = htons(temp_port_info.my_port);
 				temp_port_info.addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
 				if (bind(temp_port_info.listen_sd, (struct sockaddr*)&temp_port_info.addr_server, sizeof(temp_port_info.addr_server)) == -1) {
-					spx_log_(COLOR_RED "bind error" COLOR_RESET);
 					spx_log_("current listen_sd : ", temp_port_info.listen_sd);
 					spx_log_("prev_socket_size", prev_socket_size);
 					std::stringstream ss;
 					ss << temp_port_info.my_port;
-					std::string err = "bind port " + ss.str() + " ";
-					error_fn(err, close, temp_port_info.listen_sd);
+					std::string err = "bind at port " + ss.str();
+					error_log_(err);
+					error_fn("bind error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (listen(temp_port_info.listen_sd, LISTEN_BACKLOG_SIZE) < 0) {
-					spx_log_(COLOR_RED "listen error" COLOR_RESET);
-					error_fn("listen", close, temp_port_info.listen_sd);
+					error_fn("listen error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
 				if (prev_socket_size == 0) {
@@ -574,7 +597,7 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 		}
 	}
 	if (socket_size == 0) {
-		error_exit_msg("socket size error");
+		error_exit("socket size error");
 	}
 	++socket_size;
 	config_info.clear();

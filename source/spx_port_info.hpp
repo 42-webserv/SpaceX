@@ -136,7 +136,8 @@ typedef enum {
 	Kuri_path_info	 = 1 << 2,
 	Kuri_fragment	 = 1 << 3,
 	Kuri_same_uri	 = 1 << 4,
-	Kuri_inner_uri	 = 1 << 5
+	Kuri_inner_uri	 = 1 << 5,
+	Kuri_depth_uri	 = 1 << 6
 } uri_flag_e;
 
 typedef struct uri_resolved {
@@ -181,7 +182,7 @@ typedef struct server_info {
  */
 
 #ifndef LISTEN_BACKLOG_SIZE
-#define LISTEN_BACKLOG_SIZE 500
+#define LISTEN_BACKLOG_SIZE 1024
 #endif
 
 typedef struct port_info {

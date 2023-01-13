@@ -48,6 +48,7 @@ public:
 	void	add_str(const std::string& str);
 	size_t& buf_size_();
 	iov_t&	get_buf_();
+	size_t	get_partial_point_();
 };
 
 class SpxReadBuffer {

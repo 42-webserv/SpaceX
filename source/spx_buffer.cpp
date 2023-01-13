@@ -10,9 +10,7 @@ SpxBuffer::SpxBuffer()
 
 SpxBuffer::~SpxBuffer() {
 	// std::cout << "destructor buf size " << _buf.size() << std::endl;
-	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
-		delete[] static_cast<char*>(it->iov_base);
-	}
+	clear_();
 }
 
 char*
@@ -80,7 +78,7 @@ SpxBuffer::delete_size_for_move_(size_t size) {
 		if (it == _buf.begin()) {
 			_partial_point += tmp_size;
 		} else {
-			_partial_point = size;
+			_partial_point = tmp_size;
 			_buf.erase(_buf.begin(), it);
 		}
 		return size;
@@ -96,11 +94,10 @@ SpxBuffer::delete_size_for_move_(size_t size) {
 size_t
 SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 	// std::cout << "partial" << std::endl;
-	size_t			del_size;
-	struct iovec	new_iov;
-	iov_t::iterator it = _buf.begin();
+	size_t		 del_size = _buf.front().iov_len;
+	struct iovec new_iov;
 
-	if (size < it->iov_len) {
+	if (size < del_size) {
 		new_iov.iov_base = new char[size];
 		new_iov.iov_len	 = size;
 		memcpy(new_iov.iov_base, push_front_addr_(), size);
@@ -110,10 +107,9 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 		return size;
 	}
 
-	new_iov.iov_base = new char[it->iov_len];
-	new_iov.iov_len	 = it->iov_len;
-	memcpy(new_iov.iov_base, push_front_addr_(), it->iov_len);
-	del_size = it->iov_len;
+	new_iov.iov_base = new char[del_size];
+	new_iov.iov_len	 = del_size;
+	memcpy(new_iov.iov_base, push_front_addr_(), del_size);
 	to_buf._buf.push_back(new_iov);
 	to_buf._buf_size += del_size;
 	delete_size_(del_size);
@@ -176,7 +172,7 @@ SpxBuffer::write_(int fd) {
 		return 0;
 	}
 	_buf.front().iov_base = push_front_addr_();
-	ssize_t n_write		  = writev(fd, &_buf.front(), _buf.size());
+	ssize_t n_write		  = writev(fd, &_buf.front(), std::min(_buf.size(), (size_t)IOV_MAX));
 	_buf.front().iov_base = pull_front_addr_();
 	if (n_write <= 0) {
 		return n_write;
@@ -191,7 +187,7 @@ SpxBuffer::write_debug_(int fd) {
 		return 0;
 	}
 	_buf.front().iov_base = push_front_addr_();
-	ssize_t n_write		  = writev(fd, &_buf.front(), _buf.size());
+	ssize_t n_write		  = writev(fd, &_buf.front(), std::min(_buf.size(), (size_t)IOV_MAX));
 	_buf.front().iov_base = pull_front_addr_();
 	if (n_write <= 0) {
 		return n_write;
@@ -388,6 +384,11 @@ SpxBuffer::get_buf_() {
 	return _buf;
 }
 
+size_t
+SpxBuffer::get_partial_point_() {
+	return _partial_point;
+}
+
 /*
 SPX READ BUFFER
 */
@@ -396,7 +397,9 @@ SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size)
 	: _rdbuf()
 	, _rdbuf_buf_size(_rdbuf_buf_size)
 	, _rdbuf_iov_vec_size(_rdbuf_iov_vec_size) {
-	// set_empty_buf_();
+	if (_rdbuf_buf_size == 0 || _rdbuf_iov_vec_size == 0) {
+		throw(std::exception());
+	}
 }
 
 SpxReadBuffer::~SpxReadBuffer() {
@@ -411,9 +414,9 @@ void
 SpxReadBuffer::set_empty_buf_() {
 	struct iovec tmp;
 
-	tmp.iov_len = _rdbuf_buf_size;
 	while (_rdbuf.size() < _rdbuf_iov_vec_size) {
 		tmp.iov_base = new char[_rdbuf_buf_size];
+		tmp.iov_len	 = _rdbuf_buf_size;
 		_rdbuf.push_back(tmp);
 	}
 }
@@ -422,7 +425,7 @@ ssize_t
 SpxReadBuffer::read_(int fd, SpxBuffer& buf) {
 	set_empty_buf_();
 	// std::cout << "empty_buf size " << _rdbuf.size() << std::endl;
-	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf_iov_vec_size);
+	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf.size());
 
 	if (n_read <= 0) {
 		return n_read;

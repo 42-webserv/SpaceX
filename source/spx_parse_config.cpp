@@ -1,5 +1,7 @@
 #include "spx_parse_config.hpp"
+#include "spx_port_info.hpp"
 
+#include <dirent.h>
 namespace {
 
 #ifdef CONFIG_STATE_DEBUG
@@ -148,6 +150,11 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (!(flag_default_part & Kflag_root)) {
 					temp_basic_server_info.root = cur_path;
 				}
+				DIR* dir = opendir(temp_basic_server_info.root.c_str());
+				if (dir == NULL) {
+					return error__("conf_zero", "server root is not valid dir_name. check exist or control level", line_number_count);
+				}
+				closedir(dir);
 				total_port_server_map_p::iterator check_default_server;
 				check_default_server = saved_total_port_map_3.find(temp_basic_server_info.port);
 				if (check_default_server == saved_total_port_map_3.end()) {
@@ -584,6 +591,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 							temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
 						}
 					}
+					if (!(flag_location_part & Kflag_redirect)) {
+						DIR* dir = opendir(temp_uri_location_info.root.c_str());
+						if (dir == NULL) {
+							return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
+						}
+						closedir(dir);
+					}
+
 					if (temp_uri_location_info.accepted_methods_flag & (KPost | KPut) && !(flag_location_part & Kflag_saved_path)) {
 						return error__("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);
 					}
