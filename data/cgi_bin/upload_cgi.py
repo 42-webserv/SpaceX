@@ -39,6 +39,7 @@ else:
 # Print the uploaded files
 response = "<html><body><center>"
 response += "<h1>{}<h1>".format(message)
+response += "<p>{}</p>\n".format(save_path)
 for field, filename in files.items():
     response += "<p>{}: {}</p>\n".format(field, filename)
 response += "</center></body></html>"

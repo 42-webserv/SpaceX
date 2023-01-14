@@ -132,15 +132,15 @@ typedef struct uri_location {
  */
 
 typedef enum {
-	Kuri_matched_uri = 1 << 0,
-	Kuri_remain_uri	 = 1 << 1,
-	Kuri_cgi		 = 1 << 2,
-	Kuri_path_info	 = 1 << 3,
+	Kuri_notfound_uri	 = 1 << 0,
+	Kuri_depth_uri		 = 1 << 1,
+	Kuri_check_extension = 1 << 2,
+	Kuri_cgi			 = 1 << 3,
+	Kuri_path_info		 = 1 << 4
 } uri_flag_e;
 
 typedef struct uri_resolved {
 	bool			is_cgi_;
-	bool			is_same_location_;
 	uri_location_t* cgi_loc_;
 	std::string		request_uri_;
 	std::string		resolved_request_uri_;

@@ -12,15 +12,16 @@ typedef std::map<std::string, std::string> header_field_map;
 class CgiModule {
 
 private:
-	uri_resolved_t const&	cgi_resolved_;
-	header_field_map const& header_map_;
-	uri_location_t const*	cgi_loc_info_;
+	uri_resolved_t const&	_cgi_resolved;
+	header_field_map const& _header_map;
+	uri_location_t const*	_cgi_loc_info;
+	server_info_t const*	_server_info;
 
 public:
 	std::vector<std::string> vec_env_;
 	std::vector<const char*> env_for_cgi_;
 
-	CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& req_header, uri_location_t const* cgi_loc_info);
+	CgiModule(uri_resolved_t const& org_cgi_loc, header_field_map const& req_header, uri_location_t const* cgi_loc_info, server_info_t const* server_info);
 	~CgiModule();
 
 	void made_env_for_cgi_(int status);
