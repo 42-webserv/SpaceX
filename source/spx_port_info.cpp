@@ -256,8 +256,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				return_location			   = NULL;
 				uri_resolved_sets.cgi_loc_ = NULL;
 				uri_resolved_sets.is_cgi_  = false;
-			}
-			if (return_location->accepted_methods_flag & request_method && !(flag_for_uri_status & Kuri_notfound_uri) && !(return_location->cgi_path_info.empty())) {
+			} else if (return_location->accepted_methods_flag & request_method && !(flag_for_uri_status & Kuri_notfound_uri) && !(return_location->cgi_path_info.empty())) {
 				uri_resolved_sets.cgi_loc_ = return_location;
 				uri_resolved_sets.is_cgi_  = true;
 			}
