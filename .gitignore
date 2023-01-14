@@ -38,3 +38,4 @@ tmp/**
 .cache
 
 **/multiple_same
+**/file_should_exist_after
