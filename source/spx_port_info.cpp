@@ -257,21 +257,23 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				uri_resolved_sets.cgi_loc_ = NULL;
 				uri_resolved_sets.is_cgi_  = false;
 			}
+			if (return_location->accepted_methods_flag & request_method && !(flag_for_uri_status & Kuri_notfound_uri) && !(return_location->cgi_path_info.empty())) {
+				uri_resolved_sets.cgi_loc_ = return_location;
+				uri_resolved_sets.is_cgi_  = true;
+			}
 			uri_resolved_sets.script_filename_ = path_resolve_(candidate_physical_path + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_	   = path_resolve_(candidate_phenomenon_path + uri_resolved_sets.script_name_);
 
 			if (!(flag_for_uri_status & (Kuri_notfound_uri | Kuri_cgi | Kuri_check_extension))
 				&& !(candidate_surfix_index.empty())) {
-				if (request_method & (REQ_POST | REQ_PUT)) {
-					DIR* dir = opendir(uri_resolved_sets.script_filename_.c_str());
-					if (dir) {
-						uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + candidate_surfix_index);
-						uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + candidate_surfix_index);
-						closedir(dir);
-					}
-				} else {
+				DIR* dir = NULL;
+				if (request_method & (REQ_GET | REQ_HEAD)
+					|| ((request_method & (REQ_POST | REQ_PUT)) && (dir = opendir(uri_resolved_sets.script_filename_.c_str())))) {
 					uri_resolved_sets.script_filename_ = path_resolve_(uri_resolved_sets.script_filename_ + "/" + candidate_surfix_index);
 					uri_resolved_sets.script_name_	   = path_resolve_(uri_resolved_sets.script_name_ + "/" + candidate_surfix_index);
+					if (dir) {
+						closedir(dir);
+					}
 				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);

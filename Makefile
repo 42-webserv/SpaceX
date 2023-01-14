@@ -56,12 +56,14 @@ CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
 
 RM			=	rm -f
 
+OPT			=	-O3
 DEBUG		=	-g
 SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
+CXXFLAGS	+=	$(OPT)
 # CXXFLAGS	+=	$(DEBUG)
 # CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	-fno-sanitize-recover

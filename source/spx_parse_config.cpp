@@ -602,13 +602,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 					}
 					if (flag_location_part & Kflag_saved_path) {
-						if (temp_uri_location_info.saved_path.at(0) == '.') {
+						if (!(flag_location_part & Kflag_cgi_path_info) && temp_uri_location_info.saved_path.at(0) == '.') {
 							return error__("conf_location_zero", "location saved_path must not start with '.' ", line_number_count);
 						}
 					} else {
 						temp_uri_location_info.saved_path = temp_uri_location_info.uri + "_saved";
 					}
-					if (!(flag_location_part & Kflag_redirect)) {
+					if (!(flag_location_part & (Kflag_redirect | Kflag_cgi_path_info))) {
 						DIR* dir = opendir(temp_uri_location_info.root.c_str());
 						if (dir == NULL) {
 							return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
@@ -776,6 +776,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (*it == '/') {
 					return error__("conf_location_uri", "only allowed one depth slash", line_number_count);
 				} else if (*it == '.') {
+					if (cgi_dot_checker_ == 0) {
+						return error__("conf_location_uri", "location uri doesn't support '.' character to prevent ambiguous", line_number_count);
+					}
 					++cgi_dot_checker_;
 					if (cgi_dot_checker_ > 1) {
 						return error__("conf_location_uri", "only allowed one depth dot", line_number_count);
