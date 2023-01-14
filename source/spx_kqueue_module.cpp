@@ -21,7 +21,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		error_str("accept error");
 		return false;
 	} else {
-		// std::cout << "accept new client: " << client_fd << std::endl;
+		// std::cerr << "accept new client: " << client_fd << std::endl;
 		fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
 		struct linger opt = { 1, 0 };
@@ -36,7 +36,7 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		new_cl->_storage   = storage;
 
 		add_change_list(change_list, client_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, new_cl);
-		add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);
+		// add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);
 		// add_change_list(change_list, client_fd, EVFILT_TIMER,
 		// 				EV_ADD, NOTE_SECONDS, 60, new_cl);
 		return true;
@@ -109,7 +109,7 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 		return;
 	}
 	if (cur_event->ident == cl->_client_fd) {
-		// spx_log_("write event handler - cl state", cl->_state);
+		spx_log_("write event handler - cl state", cl->_state);
 		if (cl->write_response_() == false) {
 			return;
 		}
@@ -120,14 +120,14 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 		}
 	} else {
 		if (cur_event->ident == cl->_req._body_fd) {
-			// spx_log_("write_for_upload");
+			spx_log_("write_for_upload");
 			if (cl->write_for_upload_(cur_event) == false) {
 				// spx_log_("too large file to upload");
 				cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
 				return;
 			}
 		} else {
-			// spx_log_("write_to_cgi");
+			spx_log_("write_to_cgi");
 			cl->write_to_cgi_(cur_event);
 		}
 	}
@@ -135,11 +135,23 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 
 void
 proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
-	client_t* cl = static_cast<client_t*>(cur_event->udata);
-	int		  status;
-	id_t	  pid;
+	client_t*  cl = static_cast<client_t*>(cur_event->udata);
+	int		   status;
+	int		   pid;
+	static int l;
 
-	pid = waitpid(cur_event->ident, &status, 0);
+	pid = waitpid(cl->_cgi._pid, &status, 0);
+	if (status == EXIT_FAILURE) {
+		std::cerr << "cgi error" << std::endl;
+	}
+	spx_log_("pid", pid);
+	spx_log_("cl->_client_fd", cl->_client_fd);
+	spx_log_("cur_event->ident", cur_event->ident);
+	// if (l == 2) {
+	// 	sleep(10);
+	// 	exit(1);
+	// }
+	++l;
 }
 
 void
@@ -150,6 +162,15 @@ timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
 	add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
 	add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 	add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+}
+
+// added by space 23.1.14
+void
+session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
+	// execute every 1hour (3600s)
+	session_storage_t* storage;
+	storage = (session_storage_t*)(cur_event->udata);
+	storage->session_cleaner();
 }
 
 void
@@ -178,6 +199,10 @@ kqueue_module(port_list_t& port_info) {
 		}
 	}
 
+	// Session Checker
+	add_change_list(change_list, 0, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, EXPIRED_CLEANER_TIME,
+					&storage);
+
 	int			   event_len;
 	struct kevent* cur_event;
 	// int			   l = 0;
@@ -200,6 +225,7 @@ kqueue_module(port_list_t& port_info) {
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
 			spx_log_("event_len:", event_len);
+			spx_log_("event_filter:", cur_event->filter);
 			spx_log_("cur->ident:", cur_event->ident);
 			spx_log_("cur->flags:", cur_event->flags);
 			if (cur_event->udata != NULL) {
@@ -210,7 +236,8 @@ kqueue_module(port_list_t& port_info) {
 					if (cur_event->filter == EVFILT_PROC) {
 						spx_log_("PROC1 flags", cur_event->flags);
 						spx_log_("PROC1 fflags", cur_event->fflags);
-						exit(1);
+						// exit(1);
+						// proc_event_wait_pid_(cur_event, change_list);
 					}
 					// kevent_error_handler(port_info, cur_event, change_list);
 					// switch (cur_event->data) {
@@ -226,16 +253,15 @@ kqueue_module(port_list_t& port_info) {
 					}
 					if (cur_event->ident == cl->_client_fd) {
 						spx_log_("client socket closed", cur_event->ident);
+						// std::cerr << "client socket closed : " << cur_event->ident << std::endl;
 						cl->disconnect_client_();
 						delete cl;
 					} else {
 						if (cur_event->filter == EVFILT_PROC) {
-							if (cur_event->filter == EVFILT_PROC) {
-								spx_log_("PROC2 flags", cur_event->flags);
-								spx_log_("PROC2 fflags", cur_event->fflags);
-								// exit(1);
-							}
-							proc_event_wait_pid_(cur_event, change_list);
+							spx_log_("PROC2 flags", cur_event->flags);
+							spx_log_("PROC2 fflags", cur_event->fflags);
+							// exit(1);
+							// proc_event_wait_pid_(cur_event, change_list);
 						} else {
 							// cgi case. server file does not return EV_EOF.
 							if (cur_event->filter == EVFILT_READ) {
@@ -245,12 +271,21 @@ kqueue_module(port_list_t& port_info) {
 									delete cl;
 									return;
 								}
-								if (cl->_cgi._cgi_state == CGI_HEADER) {
+								if (n_read == cur_event->data) {
+									cl->_cgi._cgi_done	= true;
+									cl->_cgi._cgi_state = CGI_HEADER;
+
+									// if (cl->_cgi._is_chnkd == false) {
+									// 	cl->_cgi._cgi_state = CGI_HEADER;
+									// }
+									// if (cl->_cgi._cgi_state == CGI_HEADER) {
 									cl->_cgi.cgi_controller_(*cl);
+									// }
+									spx_log_("cgi read close");
+									close(cur_event->ident);
+									add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
+									proc_event_wait_pid_(cur_event, change_list);
 								}
-								spx_log_("cgi read close");
-								close(cur_event->ident);
-								add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
 								break;
 							} else {
 								spx_log_("cgi write close");
@@ -280,11 +315,12 @@ kqueue_module(port_list_t& port_info) {
 				}
 				proc_event_wait_pid_(cur_event, change_list);
 				break;
-				// case EVFILT_TIMER:
-				// 	// spx_log_("event_timer");
-				// 	timer_event_handler(cur_event, change_list);
-				// 	// TODO: timer
-				// 	break;
+			case EVFILT_TIMER:
+				spx_log_("event_timer");
+				// added by space 23.1.14
+				session_timer_event_handler(cur_event, change_list);
+				// TODO: timer
+				break;
 			}
 		}
 	}

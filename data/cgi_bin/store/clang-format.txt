@@ -1,0 +1,14 @@
+---
+BasedOnStyle: Google
+AlignConsecutiveDeclarations: "true"
+AllowShortFunctionsOnASingleLine: None
+#AllowShortIfStatementsOnASingleLine: Never
+ConstructorInitializerIndentWidth: "4"
+IndentWidth: "4"
+Language: Cpp
+SortIncludes: "false"
+SpacesInParentheses: "true"
+SpacesInSquareBrackets: "false"
+TabWidth: "4"
+UseTab: ForContinuationAndIndentation
+Standard: Cpp03

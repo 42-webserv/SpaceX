@@ -4,6 +4,10 @@
 
 #include "spx_client.hpp"
 
+#ifndef EXPIRED_CLEANER_TIME
+#define EXPIRED_CLEANER_TIME 3600
+#endif
+
 void add_change_list(event_list_t& change_list,
 					 uintptr_t ident, int64_t filter, uint16_t flags,
 					 uint32_t fflags, intptr_t data, void* udata);
@@ -19,6 +23,7 @@ void write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 						 event_list_t& change_list);
 void proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list);
 void timer_event_handler(struct kevent* cur_event, event_list_t& change_list);
+void session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list);
 void cgi_handler(struct kevent* cur_event, event_list_t& change_list);
 void kqueue_module(port_list_t& port_info);
 

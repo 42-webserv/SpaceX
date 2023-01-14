@@ -72,3 +72,5 @@ if ($num1 eq "" || $num2 eq "") {
 		$cgi->center($cgi->h1("Addition Result"), $cgi->p("The sum of $num1 and $num2 is $sum.")),
 		$cgi->end_html;
 }
+
+exit;
