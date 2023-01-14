@@ -36,3 +36,5 @@ CMake*
 tmp/**
 
 .cache
+
+**/**/multiple_same
