@@ -260,7 +260,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		return false;
 	}
 	if (_pid == 0) {
-		CgiModule	cgi(req._uri_resolv, req._header, req._uri_loc);
+		CgiModule	cgi(req._uri_resolv, req._header, req._uri_loc, req._serv_info);
 		char const* script[3];
 
 		script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();

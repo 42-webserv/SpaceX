@@ -144,6 +144,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 
 		case conf_zero: {
 			if (server_count != 0) {
+				if (!(flag_default_part & Kflag_root_slash)) {
+					return error__("conf_zero", "server root need to set '/' location ", line_number_count);
+				}
 				if (!(flag_default_part & Kflag_server_name)) {
 					temp_basic_server_info.server_name = "localhost";
 				}
@@ -573,15 +576,22 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (!(flag_location_part & Kflag_cgi_path_info)) {
 						return error__("conf_location_zero", "cgi_path_info not defined", line_number_count);
 					}
-					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
-					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
-					if (check_dup.second == false) {
-						return error__("conf_location_zero", "duplicate cgi location", line_number_count);
-					}
 					if (temp_uri_location_info.module_state == Kmodule_none) {
 						temp_uri_location_info.module_state = Kmodule_cgi;
 					} else {
 						return error__("conf_location_zero", "module_state already defined", line_number_count);
+					}
+					if (flag_location_part & Kflag_saved_path) {
+						if (temp_uri_location_info.saved_path.at(0) != '.') {
+							return error__("conf_location_zero", "cgi saved_path must start with '.' ", line_number_count);
+						}
+					} else {
+						temp_uri_location_info.saved_path = temp_basic_server_info.root + "/cgi_saved";
+					}
+					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
+					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
+					if (check_dup.second == false) {
+						return error__("conf_location_zero", "duplicate cgi location", line_number_count);
 					}
 				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
 					if (!(flag_location_part & Kflag_root)) {
@@ -591,24 +601,27 @@ spx_config_syntax_checker(std::string const&	   buf,
 							temp_uri_location_info.root = temp_basic_server_info.root + temp_uri_location_info.uri;
 						}
 					}
-					if (!(flag_location_part & Kflag_redirect)) {
+					if (flag_location_part & Kflag_saved_path) {
+						if (!(flag_location_part & Kflag_cgi_path_info) && temp_uri_location_info.saved_path.at(0) == '.') {
+							return error__("conf_location_zero", "location saved_path must not start with '.' ", line_number_count);
+						}
+					} else {
+						temp_uri_location_info.saved_path = temp_uri_location_info.uri + "_saved";
+					}
+					if (!(flag_location_part & (Kflag_redirect | Kflag_cgi_path_info))) {
 						DIR* dir = opendir(temp_uri_location_info.root.c_str());
 						if (dir == NULL) {
 							return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
 						}
 						closedir(dir);
 					}
-
-					if (temp_uri_location_info.accepted_methods_flag & (KPost | KPut) && !(flag_location_part & Kflag_saved_path)) {
-						return error__("conf_location_zero", "Post, Put found, but saved_path not defined", line_number_count);
+					if (temp_uri_location_info.module_state == Kmodule_none) {
+						temp_uri_location_info.module_state = Kmodule_serve;
 					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_location_uri_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
 						return error__("conf_location_zero", "duplicate location", line_number_count);
-					}
-					if (temp_uri_location_info.module_state == Kmodule_none) {
-						temp_uri_location_info.module_state = Kmodule_serve;
 					}
 				} else {
 					return error__("conf_location_zero", "location uri syntax error", line_number_count);
@@ -763,6 +776,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				if (*it == '/') {
 					return error__("conf_location_uri", "only allowed one depth slash", line_number_count);
 				} else if (*it == '.') {
+					if (cgi_dot_checker_ == 0) {
+						return error__("conf_location_uri", "location uri doesn't support '.' character to prevent ambiguous", line_number_count);
+					}
 					++cgi_dot_checker_;
 					if (cgi_dot_checker_ > 1) {
 						return error__("conf_location_uri", "only allowed one depth dot", line_number_count);
@@ -776,6 +792,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				prev_state				   = state;
 				state					   = conf_start;
 				next_state				   = conf_location_CB_open;
+				if (!temp_uri_location_info.uri.compare("/")) {
+					flag_default_part |= Kflag_root_slash;
+				}
 				temp_string.clear();
 				break;
 			}

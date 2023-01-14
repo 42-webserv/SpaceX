@@ -305,7 +305,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			_state = E_BAD_REQ;
 			return false;
 		}
-		_req._uri_loc = _req._serv_info->get_uri_location_t_(_req._uri, _req._uri_resolv);
+		_req._uri_loc = _req._serv_info->get_uri_location_t_(_req._uri, _req._uri_resolv, _req._req_mthd);
 
 		if (_req._uri_loc) {
 			_req._body_limit = _req._uri_loc->client_max_body_size;
@@ -316,8 +316,10 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		if (_req._uri_loc == NULL || (_req._uri_loc->accepted_methods_flag & _req._req_mthd) == false) {
 			spx_log_("uri_loc == NULL or not allowed");
 			if (_req._uri_loc == NULL) {
+				spx_log_("uri_loc == NULL");
 				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
 			} else {
+				spx_log_(_req._req_mthd);
 				error_response_keep_alive_(HTTP_STATUS_METHOD_NOT_ALLOWED);
 			}
 			return false;

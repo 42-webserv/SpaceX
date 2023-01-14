@@ -56,6 +56,7 @@ CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
 
 RM			=	rm -f
 
+OPT			=	-O3
 DEBUG		=	-g
 SNTZ		=	-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer
 MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
@@ -64,6 +65,7 @@ LEAK		=	-fsanitize=leak
 
 # CXXFLAGS	+=	$(DEBUG)
 # CXXFLAGS	+=	$(SNTZ)
+#CXXFLAGS	+=	$(OPT)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
@@ -90,7 +92,7 @@ $(OBJ)		:	| $(OBJ_DIR)
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.cpp $(INC_DIR)
 		$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-spx			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG) $(DEBUG) $(SNTZ)"
+spx			: ; make re CXXFLAGS="$(CXXFLAGS) $(LOG) $(DEBUG) $(SNTZ) $(OPT)"
 
 sntz		: ; make re CXXFLAGS="$(CXXFLAGS) $(DEBUG) $(SNTZ)"
 

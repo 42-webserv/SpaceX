@@ -47,7 +47,8 @@ typedef enum {
 	Kflag_root		  = 1 << 0,
 	Kflag_listen	  = 1 << 1,
 	Kflag_server_name = 1 << 2,
-	Kflag_error_page  = 1 << 3
+	Kflag_error_page  = 1 << 3,
+	Kflag_root_slash  = 1 << 4
 } flag_config_parse_basic_part_e;
 
 typedef enum {
@@ -131,18 +132,15 @@ typedef struct uri_location {
  */
 
 typedef enum {
-	Kuri_basic_slash = 1 << 0,
-	Kuri_cgi		 = 1 << 1,
-	Kuri_path_info	 = 1 << 2,
-	Kuri_fragment	 = 1 << 3,
-	Kuri_same_uri	 = 1 << 4,
-	Kuri_inner_uri	 = 1 << 5,
-	Kuri_depth_uri	 = 1 << 6
+	Kuri_notfound_uri	 = 1 << 0,
+	Kuri_depth_uri		 = 1 << 1,
+	Kuri_check_extension = 1 << 2,
+	Kuri_cgi			 = 1 << 3,
+	Kuri_path_info		 = 1 << 4
 } uri_flag_e;
 
 typedef struct uri_resolved {
 	bool			is_cgi_;
-	bool			is_same_location_;
 	uri_location_t* cgi_loc_;
 	std::string		request_uri_;
 	std::string		resolved_request_uri_;
@@ -171,7 +169,7 @@ typedef struct server_info {
 	~server_info();
 
 	std::string const		 get_error_page_path_(uint32_t const& error_code) const;
-	uri_location_t const*	 get_uri_location_t_(std::string const& uri, uri_resolved_t& uri_resolved_sets) const;
+	uri_location_t const*	 get_uri_location_t_(std::string const& uri, uri_resolved_t& uri_resolved_sets, int request_method) const;
 	static std::string const path_resolve_(std::string const& unvalid_path);
 	void					 print_(void) const;
 
