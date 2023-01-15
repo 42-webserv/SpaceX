@@ -283,7 +283,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 
 		execve(script[0], const_cast<char* const*>(script),
 			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
-		spx_log_("CGI execve error");
+		spx_log_(COLOR_RED "CGI execve error" COLOR_RESET);
 		exit(EXIT_FAILURE);
 	}
 	// parent

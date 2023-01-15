@@ -3,6 +3,7 @@
 #include "spx_client.hpp"
 #include "spx_kqueue_module.hpp"
 
+#include <csignal>
 #include <cstdlib>
 
 namespace {
@@ -87,6 +88,9 @@ main(int argc, char const* argv[]) {
 #endif
 
 	if (argc <= 2) {
+		// signal(SIGPIPE, SIG_IGN);
+		// signal(SIGCHLD, SIG_IGN);
+
 		std::string cur_dir;
 		get_current_path__(cur_dir);
 
