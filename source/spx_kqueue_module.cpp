@@ -130,7 +130,7 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 }
 
 void
-proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
+proc_event_wait_pid(struct kevent* cur_event, event_list_t& change_list) {
 	client_t*  cl = static_cast<client_t*>(cur_event->udata);
 	int		   status;
 	int		   pid;
@@ -178,6 +178,51 @@ session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list)
 	session_storage_t* storage;
 	storage = (session_storage_t*)(cur_event->udata);
 	storage->session_cleaner();
+}
+
+void
+eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
+	// eof close fd.
+	client_t* cl = static_cast<client_t*>(cur_event->udata);
+	if (cl == NULL) {
+		return;
+	}
+	// if (cur_event->ident == cl->_client_fd) {
+	// 	if (cur_event->filter == EVFILT_READ) {
+	// 		spx_log_("client socket closed", cur_event->ident);
+	// 		// std::cerr << "client socket closed : " << cur_event->ident << std::endl;
+	// 	}
+	// } else {
+	// cgi case. server file does not return EV_EOF.
+	if (cur_event->filter == EVFILT_READ) {
+		if (cur_event->ident == cl->_client_fd) {
+			cl->disconnect_client_();
+			delete cl;
+			return;
+		}
+		int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
+		if (n_read < 0) {
+			// cl->disconnect_client_();
+			// delete cl;
+			return;
+		}
+		if (n_read == cur_event->data) {
+			cl->_cgi._cgi_done	= true;
+			cl->_cgi._cgi_state = CGI_HEADER;
+
+			cl->_cgi.cgi_controller_(*cl);
+
+			spx_log_("cgi read close");
+			close(cur_event->ident);
+			// add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
+			proc_event_wait_pid(cur_event, change_list);
+		}
+	} else {
+		spx_log_("cgi write close");
+		close(cur_event->ident);
+		// add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DELETE, 0, 0, NULL);
+	}
+	// }
 }
 
 void
@@ -244,7 +289,7 @@ kqueue_module(port_list_t& port_info) {
 						spx_log_("PROC1 flags", cur_event->flags);
 						spx_log_("PROC1 fflags", cur_event->fflags);
 						// exit(1);
-						// proc_event_wait_pid_(cur_event, change_list);
+						// proc_event_wait_pid(cur_event, change_list);
 					}
 					kevent_error_handler(port_info, cur_event, change_list);
 					// switch (cur_event->data) {
@@ -253,50 +298,7 @@ kqueue_module(port_list_t& port_info) {
 					// }
 					// continue;
 				} else {
-					// eof close fd.
-					client_t* cl = static_cast<client_t*>(cur_event->udata);
-					if (cl == NULL) {
-						continue;
-					}
-					if (cur_event->ident == cl->_client_fd) {
-						spx_log_("client socket closed", cur_event->ident);
-						// std::cerr << "client socket closed : " << cur_event->ident << std::endl;
-						cl->disconnect_client_();
-						delete cl;
-					} else {
-						if (cur_event->filter == EVFILT_PROC) {
-							spx_log_("PROC2 flags", cur_event->flags);
-							spx_log_("PROC2 fflags", cur_event->fflags);
-							// exit(1);
-							// proc_event_wait_pid_(cur_event, change_list);
-						} else {
-							// cgi case. server file does not return EV_EOF.
-							if (cur_event->filter == EVFILT_READ) {
-								int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
-								if (n_read < 0) {
-									cl->disconnect_client_();
-									delete cl;
-									return;
-								}
-								if (n_read == cur_event->data) {
-									cl->_cgi._cgi_done	= true;
-									cl->_cgi._cgi_state = CGI_HEADER;
-
-									cl->_cgi.cgi_controller_(*cl);
-
-									spx_log_("cgi read close");
-									close(cur_event->ident);
-									add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
-									proc_event_wait_pid_(cur_event, change_list);
-								}
-								break;
-							} else {
-								spx_log_("cgi write close");
-								close(cur_event->ident);
-								add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DELETE, 0, 0, NULL);
-							}
-						}
-					}
+					eof_case_handler(cur_event, change_list);
 				}
 				continue;
 			}

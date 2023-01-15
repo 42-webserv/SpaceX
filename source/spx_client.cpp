@@ -425,25 +425,25 @@ Client::req_res_controller_(struct kevent* cur_event) {
 void
 Client::disconnect_client_() {
 	// client status, tmp file...? check.
-	if (_req._body_fd > 0) {
-		close(_req._body_fd);
-		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-		// remove(_req._uri_resolv.script_filename_.c_str());
-	}
-	if (_res._body_fd > 0) {
-		close(_res._body_fd);
-		add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	}
-	if (_cgi._read_from_cgi_fd > 0) {
-		close(_cgi._read_from_cgi_fd);
-		add_change_list(*change_list, _cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	}
-	if (_cgi._write_to_cgi_fd > 0) {
-		close(_cgi._write_to_cgi_fd);
-		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	}
-	add_change_list(*change_list, _client_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	// if (_req._body_fd > 0) {
+	// 	close(_req._body_fd);
+	// 	add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	// 	// remove(_req._uri_resolv.script_filename_.c_str());
+	// }
+	// if (_res._body_fd > 0) {
+	// 	close(_res._body_fd);
+	// 	add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	// }
+	// if (_cgi._read_from_cgi_fd > 0) {
+	// 	close(_cgi._read_from_cgi_fd);
+	// 	add_change_list(*change_list, _cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	// }
+	// if (_cgi._write_to_cgi_fd > 0) {
+	// 	close(_cgi._write_to_cgi_fd);
+	// 	add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	// }
+	// add_change_list(*change_list, _client_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	// add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 	close(_client_fd);
 }
 
@@ -624,11 +624,11 @@ Client::write_response_() {
 		} else {
 			// n_write = _res._res_buf.write_debug_();
 			n_write = _res._res_buf.write_(_client_fd);
-			if (n_write == 0) {
-				spx_log_("_client_fd", _client_fd);
-				spx_log_("write error");
-				exit(1);
-			}
+			// if (n_write == 0) {
+			// 	spx_log_("_client_fd", _client_fd);
+			// 	spx_log_("write error");
+			// 	exit(1);
+			// }
 		}
 		if (n_write < 0) {
 			spx_log_("write error");
