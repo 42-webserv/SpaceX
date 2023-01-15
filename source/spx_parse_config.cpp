@@ -1052,9 +1052,14 @@ spx_config_syntax_checker(std::string const&	   buf,
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.cgi_path_info = temp_string;
-				prev_state							 = state;
-				state								 = conf_start;
-				next_state							 = conf_waiting_location_value;
+				std::fstream exist_test;
+				exist_test.open(temp_uri_location_info.cgi_path_info.c_str(), std::ios::in);
+				if (!exist_test.is_open()) {
+					return error__("conf_cgi_path_info", "invalid cgi script", line_number_count);
+				}
+				prev_state = state;
+				state	   = conf_start;
+				next_state = conf_waiting_location_value;
 				flag_location_part |= Kflag_cgi_path_info;
 				temp_string.clear();
 				break;
