@@ -15,13 +15,15 @@ NAME		= spacex
 # DEBUG_FLAG	+= LOG_FILE_MODE
 # DEBUG_FLAG	+= LOG_MODE
 # DEBUG_FLAG 	+= CONFIG_DEBUG
-DEBUG_FLAG	+=	DEBUG
+# DEBUG_FLAG	+=	DEBUG
+
+DEBUG_FLAG	+=	CONSOLE_LOG
 
 ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
 endif
 
-# CXXFLAGS	+=	$(LOG)
+CXXFLAGS	+=	$(LOG)
 
 SRC			=	spacex.cpp \
 				spx_autoindex_generator.cpp \
@@ -52,7 +54,6 @@ CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))
 CXXFLAGS	+= -pedantic
 CXXFLAGS	+=	$(addprefix -std=, $(CXX_STD_FLAGS))
-# CXXFLAGS	+=	$(LOG)
 
 RM			=	rm -f
 

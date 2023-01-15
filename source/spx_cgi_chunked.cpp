@@ -266,11 +266,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 	if (_pid == 0) {
 		CgiModule	cgi(req._uri_resolv, req._header, req._uri_loc, req._serv_info);
 		char const* script[3];
-		if (req._uri_resolv.cgi_loc_->cgi_path_info.empty()) {
-			script[0] = req._uri_resolv.script_filename_.c_str();
-		} else {
-			script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();
-		}
+		script[0] = req._uri_resolv.cgi_loc_->cgi_path_info.c_str();
 		script[1] = req._uri_resolv.script_filename_.c_str();
 		script[2] = NULL;
 		cgi.made_env_for_cgi_(req._req_mthd);

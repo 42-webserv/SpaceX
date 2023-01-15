@@ -15,9 +15,13 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 					event_list_t& change_list, port_info_t& port_info,
 					rdbuf_t* rdbuf, session_storage_t* storage) {
 
+#ifdef CONSOLE_LOG
 	struct sockaddr_in client_sockaddr;
 	socklen_t		   client_sock_len = sizeof(sockaddr_in);
 	uintptr_t		   client_fd	   = accept(serv_sd, (struct sockaddr*)&client_sockaddr, &client_sock_len);
+#else
+	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
+#endif
 
 	if (client_fd == -1) {
 		error_str("accept error");
@@ -36,7 +40,9 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 		new_cl->_rdbuf	   = rdbuf;
 		new_cl->_port_info = &port_info;
 		new_cl->_storage   = storage;
-		new_cl->_sockaddr  = client_sockaddr;
+#ifdef CONSOLE_LOG
+		new_cl->_sockaddr = client_sockaddr;
+#endif
 
 		add_change_list(change_list, client_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, new_cl);
 		// add_change_list(change_list, client_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, new_cl);

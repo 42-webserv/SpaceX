@@ -12,6 +12,7 @@
 #include <string>
 #include <sys/event.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <map>
@@ -70,6 +71,7 @@ public:
 	port_info_t*	   _port_info;
 	struct sockaddr_in _sockaddr;
 	session_storage_t* _storage;
+	struct timeval	   _established_time;
 
 	Client(event_list_t* chnage_list);
 	~Client();
