@@ -573,9 +573,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (flag_location_part & (Kflag_index | Kflag_autoindex | Kflag_redirect)) {
 						return error__("conf_location_zero", "index, autoindex, redirect can't be used in cgi location", line_number_count);
 					}
-					if (!(flag_location_part & Kflag_cgi_path_info)) {
-						return error__("conf_location_zero", "cgi_path_info not defined", line_number_count);
-					}
 					if (temp_uri_location_info.module_state == Kmodule_none) {
 						temp_uri_location_info.module_state = Kmodule_cgi;
 					} else {

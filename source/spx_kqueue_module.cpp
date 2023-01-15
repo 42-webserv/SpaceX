@@ -141,8 +141,12 @@ proc_event_wait_pid_(struct kevent* cur_event, event_list_t& change_list) {
 	static int l;
 
 	pid = waitpid(cl->_cgi._pid, &status, 0);
+	spx_log_("waitpid stat_loc", status);
 	if (status == EXIT_FAILURE) {
 		std::cerr << "cgi error" << std::endl;
+	}
+	if (WEXITSTATUS(status)) { // NOTE: cgi_process error exit case
+		spx_log_(COLOR_RED "not detected by EXIT_FAILURE");
 	}
 	spx_log_("pid", pid);
 	spx_log_("cl->_client_fd", cl->_client_fd);

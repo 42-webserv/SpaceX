@@ -563,7 +563,7 @@ Client::write_response_() {
 	int n_write;
 	spx_log_("write_response_ _res._header_sent", _res._header_sent);
 	if (_res._header_sent == false) {
-		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size());
+		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size()); // NOTE : check response log
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
 			spx_log_("write error");
