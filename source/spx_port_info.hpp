@@ -78,7 +78,7 @@ typedef std::map<const uint32_t, server_map_p>		total_port_server_map_p;
 typedef struct uri_location_for_copy_stage {
 	std::string			uri;
 	module_case_state_e module_state;
-	uint8_t				accepted_methods_flag;
+	uint16_t			accepted_methods_flag;
 	std::string			redirect;
 	std::string			root;
 	std::string			index;
@@ -111,7 +111,7 @@ typedef struct server_info_for_copy_stage {
 typedef struct uri_location {
 	const std::string		  uri;
 	const module_case_state_e module_state;
-	const uint8_t			  accepted_methods_flag;
+	const uint16_t			  accepted_methods_flag;
 	const std::string		  redirect;
 	const std::string		  root;
 	const std::string		  index;
