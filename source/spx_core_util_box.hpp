@@ -10,6 +10,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <iomanip>
+#include <ios>
 #include <sys/time.h>
 
 #define COLOR_RED "\033[1;31m"
@@ -183,10 +185,15 @@ spx_console_log_(std::string start_line, struct timeval const& established, cons
 		msec += 1000;
 		now.tv_sec--;
 	}
+	// std::cout
+	// 	<< color << start_line << "\t\t\t\t" << now.tv_sec - established.tv_sec << "."
+	// 	<< std::setfill('0') << std::setw(3) << msec << " secs:\t" << byte << " bytes ==> \t"
+	// 	<< method_map_str_color_(method) << "  " << color << "\t" << uri << COLOR_RESET << std::endl;
+
 	std::cout
-		<< color << start_line << "\t\t\t\t" << now.tv_sec - established.tv_sec << "."
-		<< std::setfill('0') << std::setw(3) << msec << " secs:\t" << byte << " bytes ==> \t"
-		<< method_map_str_color_(method) << "  " << color << "\t" << uri << COLOR_RESET << std::endl;
+		<< color << start_line << "\t\t\t\t" << std::setfill(' ') << std::setw(5) << now.tv_sec - established.tv_sec << "."
+		<< std::setfill('0') << std::setw(3) << msec << " secs:\t" << std::setfill(' ') << std::setw(10) << byte << " bytes ==>\t"
+		<< method_map_str_color_(method) << "\t" << color << uri << COLOR_RESET << std::endl;
 }
 
 #endif
