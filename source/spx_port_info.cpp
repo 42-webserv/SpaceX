@@ -223,10 +223,12 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					std::string				 check_extension = temp.substr(pos_);
 					cgi_list_map_p::iterator cgi_it			 = cgi_case.find(check_extension);
 					if (cgi_it != cgi_case.end()) {
-						uri_resolved_sets.is_cgi_  = true;
 						uri_resolved_sets.cgi_loc_ = &cgi_it->second;
-						return_location			   = &cgi_it->second;
-						flag_for_uri_status |= Kuri_cgi;
+						if (uri_resolved_sets.cgi_loc_->accepted_methods_flag & request_method) {
+							uri_resolved_sets.is_cgi_ = true;
+							return_location			  = &cgi_it->second;
+							flag_for_uri_status |= Kuri_cgi;
+						}
 					}
 				}
 				if (!(flag_for_uri_status & Kuri_cgi)) {
