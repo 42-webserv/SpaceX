@@ -314,13 +314,14 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		set_cookie_();
 
 		if (_req._uri_loc == NULL || (_req._uri_loc->accepted_methods_flag & _req._req_mthd) == false) {
-			spx_log_("uri_loc == NULL or not allowed");
+			spx_log_("uri_loc == NULL or not allowed error. req_mthd", _req._req_mthd);
+			_req._uri_resolv.is_cgi_ = false;
 			if (_req._uri_loc == NULL) {
-				spx_log_("uri_loc == NULL");
 				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
+				return false;
 			} else {
-				spx_log_(_req._req_mthd);
 				error_response_keep_alive_(HTTP_STATUS_METHOD_NOT_ALLOWED);
+				return false;
 			}
 			return false;
 		} else if (_req._uri_resolv.is_cgi_) {
