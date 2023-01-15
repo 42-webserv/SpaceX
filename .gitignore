@@ -39,3 +39,5 @@ tmp/**
 
 **/multiple_same
 **/file_should_exist_after
+
+**/store/**
