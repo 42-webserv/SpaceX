@@ -12,6 +12,8 @@ if save_path is None:
 else:
     save_path += "/"
 
+print("Content-Type: text/html\r")
+
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 
@@ -39,7 +41,8 @@ for field, filename in files.items():
     response += "<p>{}: {}</p>\n".format(field, filename)
 response += "</center></body></html>"
 
-print("Content-Type: text/html\r")
 # print("Content-Length: {}".format(len(response)))
 print("\r")
 print(response)
+
+exit()
