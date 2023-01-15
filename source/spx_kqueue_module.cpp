@@ -31,7 +31,8 @@ create_client_event(uintptr_t serv_sd, struct kevent* cur_event,
 			error_str("setsockopt error");
 		}
 
-		client_t* new_cl   = new client_t(&change_list);
+		client_t* new_cl = new client_t(&change_list);
+		gettimeofday(&new_cl->_established_time, NULL);
 		new_cl->_client_fd = client_fd;
 		new_cl->_rdbuf	   = rdbuf;
 		new_cl->_port_info = &port_info;
