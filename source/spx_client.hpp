@@ -57,19 +57,19 @@ private:
 	Client& operator=(const Client& client);
 
 public:
-	event_list_t*		   change_list;
-	ReqField			   _req;
-	ResField			   _res;
-	CgiField			   _cgi;
-	ChunkedField		   _chnkd;
-	uintptr_t			   _client_fd;
-	rdbuf_t*			   _rdbuf;
-	buf_t				   _buf;
-	int					   _state;
-	int					   _skip_size;
-	port_info_t*		   _port_info;
-	const struct sockaddr* _sockaddr;
-	session_storage_t*	   _storage;
+	event_list_t*	   change_list;
+	ReqField		   _req;
+	ResField		   _res;
+	CgiField		   _cgi;
+	ChunkedField	   _chnkd;
+	uintptr_t		   _client_fd;
+	rdbuf_t*		   _rdbuf;
+	buf_t			   _buf;
+	int				   _state;
+	int				   _skip_size;
+	port_info_t*	   _port_info;
+	struct sockaddr_in _sockaddr;
+	session_storage_t* _storage;
 
 	Client(event_list_t* chnage_list);
 	~Client();

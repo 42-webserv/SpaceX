@@ -15,7 +15,7 @@ Client::Client(event_list_t* change_list)
 	, _state(REQ_LINE_PARSING)
 	, _skip_size(0)
 	, _port_info()
-	, _sockaddr(NULL)
+	, _sockaddr()
 	, _storage() {
 }
 
