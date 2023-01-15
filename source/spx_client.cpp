@@ -4,6 +4,8 @@
 
 #include "spx_session_storage.hpp"
 
+#include "spx_core_util_box.hpp"
+
 Client::Client(event_list_t* change_list)
 	: change_list(change_list)
 	, _req()
@@ -285,6 +287,9 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		reset_();
 		_state = REQ_LINE_PARSING;
 	case REQ_LINE_PARSING:
+#ifdef CONSOLE_LOG
+		gettimeofday(&(static_cast<client_t*>(cur_event->udata))->_established_time, NULL);
+#endif
 		if (request_line_parser_() == false) {
 			spx_log_("controller-req_line false. read more.", _state);
 			return false;
@@ -564,8 +569,17 @@ Client::write_response_() {
 	int n_write;
 	spx_log_("write_response_ _res._header_sent", _res._header_sent);
 	if (_res._header_sent == false) {
-		spx_log_(this->_established_time);
+
+#ifdef CONSOLE_LOG
+		spx_console_log_(_res._res_header.substr(0, _res._res_header.find("\n")),
+						 this->_established_time,
+						 _res._body_size,
+						 _req._req_mthd,
+						 _req._uri);
+#endif
+#ifdef DEBUG
 		n_write = write(STDOUT_FILENO, _res._res_header.c_str(), _res._res_header.size()); // NOTE : check response log
+#endif
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
 			spx_log_("write error");

@@ -3,26 +3,6 @@
 #include <sstream>
 namespace {
 
-#define METHOD__MAP(XX) \
-	XX(1, GET)          \
-	XX(2, POST)         \
-	XX(3, PUT)          \
-	XX(4, DELETE)       \
-	XX(5, HEAD)
-
-	std::string
-	method_map_str_(int const status) {
-		switch (status) {
-#define XX(num, name) \
-	case REQ_##name:  \
-		return #name;
-			METHOD__MAP(XX)
-#undef XX
-		default:
-			return "<unknown>";
-		}
-	}
-
 	std::string
 	dashline_to_underline__(std::string const& str) {
 		std::string ret;
