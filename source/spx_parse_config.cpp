@@ -998,6 +998,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 				next_state						= conf_waiting_location_value;
 				flag_location_part |= Kflag_redirect;
 				temp_uri_location_info.module_state = Kmodule_redirect;
+				{
+					uri_location_map_p::iterator dup_check = saved_location_uri_map_1.find(server_info_t::path_resolve_('/' + temp_string));
+					if (dup_check != saved_location_uri_map_1.end()
+						&& server_info_t::path_resolve_('/' + dup_check->second.redirect) == temp_uri_location_info.uri) {
+						return error__("conf_redirect", "recursive redirect found", line_number_count);
+					}
+				}
 				temp_string.clear();
 				break;
 			}
