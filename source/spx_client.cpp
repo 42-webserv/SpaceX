@@ -252,6 +252,18 @@ Client::res_for_get_head_req_() {
 }
 
 bool
+Client::state_req_body_() {
+	int n_move = _buf.move_(_req._body_buf, _req._cnt_len - _req._body_read);
+
+	_req._body_read += n_move;
+	if (_req._body_read == _req._cnt_len) {
+		_state = REQ_HOLD;
+		_res.make_response_header_(*this);
+	}
+	return true;
+}
+
+bool
 Client::res_for_post_put_req_() {
 	_req._upld_fn = _req._uri_resolv.script_filename_;
 	spx_log_("res_for_post. scriptfilename", _req._uri_resolv.script_filename_);
@@ -276,6 +288,7 @@ Client::res_for_post_put_req_() {
 	} else {
 		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 		_state = REQ_BODY;
+		state_req_body_();
 	}
 	return false;
 }
@@ -346,23 +359,22 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		case REQ_PUT:
 			return res_for_post_put_req_();
 		case REQ_DELETE:
-			if (_req._header.empty()) {
+			if (remove(_req._uri_resolv.script_filename_.c_str()) == -1) {
+				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
+			} else {
+				_res.make_response_header_(*this);
 			}
+
+			// if (_req._header.empty()) {
+			// }
 			//  HEADER?
 			break;
 		}
 		break;
 	}
 
-	case REQ_BODY: {
-		int n_move = _buf.move_(_req._body_buf, _req._cnt_len - _req._body_read);
-
-		_req._body_read += n_move;
-		if (_req._body_read == _req._cnt_len) {
-			_state = REQ_HOLD;
-		}
-		break;
-	}
+	case REQ_BODY:
+		return state_req_body_();
 
 	case REQ_BODY_CHUNKED:
 		return _chnkd.chunked_body_(*this);
@@ -418,6 +430,23 @@ Client::req_res_controller_(struct kevent* cur_event) {
 void
 Client::disconnect_client_() {
 	// client status, tmp file...? check.
+	if (_req._body_fd > 0) {
+		close(_req._body_fd);
+		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		// remove(_req._uri_resolv.script_filename_.c_str());
+	}
+	if (_res._body_fd > 0) {
+		close(_res._body_fd);
+		add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	}
+	if (_cgi._read_from_cgi_fd > 0) {
+		close(_cgi._read_from_cgi_fd);
+		add_change_list(*change_list, _cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	}
+	if (_cgi._write_to_cgi_fd > 0) {
+		close(_cgi._write_to_cgi_fd);
+		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	}
 	add_change_list(*change_list, _client_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 	add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 	close(_client_fd);

@@ -197,6 +197,8 @@ ResField::make_response_header_(Client& cl) {
 	case REQ_PUT:
 		_headers.push_back(header(CONTENT_LENGTH, "0"));
 		break;
+	case REQ_DELETE:
+		_headers.push_back(header(CONTENT_LENGTH, "0"));
 	}
 	// if (cl._req._header["connection"] == "close") {
 	// 	_headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
