@@ -288,8 +288,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 		}
 		} // switch end
 	} // while end
-	spx_log_(request_method);
-	spx_log_(return_location);
 	uri_resolved_sets.print_();
 	return return_location;
 }
