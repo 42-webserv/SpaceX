@@ -39,6 +39,7 @@ public:
 	size_t		 _cgi_size;
 	size_t		 _cgi_read;
 	int			 _write_to_cgi_fd;
+	int			 _read_from_cgi_fd;
 	int			 _pid;
 	int			 _cgi_state;
 	bool		 _is_chnkd;

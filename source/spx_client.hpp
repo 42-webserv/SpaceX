@@ -29,7 +29,7 @@
 #define BUFFER_SIZE 4 * 1024
 #define IOV_VEC_SIZE 16
 
-#define MAX_EVENT_LIST 500
+#define MAX_EVENT_LIST 1000
 
 // // gzip & deflate are not implemented. for extension.
 // enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
@@ -77,6 +77,7 @@ public:
 	void reset_();
 
 	bool req_res_controller_(struct kevent* cur_event);
+	bool state_req_body_();
 	bool request_line_parser_();
 	bool request_line_check_(std::string& req_line);
 	bool header_field_parser_();

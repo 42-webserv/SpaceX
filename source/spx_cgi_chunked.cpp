@@ -41,7 +41,7 @@ ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
 		}
 		return true;
 	}
-	spx_log_("chunked try next");
+	// spx_log_("chunked try next");
 	return false;
 }
 
@@ -54,10 +54,10 @@ ChunkedField::chunked_body_can_parse_chnkd_skip_(Client& cl) {
 		}
 	}
 	if (cl._res._write_finished && cl._buf.buf_size_() >= 2) {
-		// if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
-		// 	// chunked error
-		// 	throw(std::exception());
-		// }
+		if (cl._buf.find_pos_(CR) != 0 || cl._buf.find_pos_(LF) != 1) {
+			// chunked error
+			throw(std::exception());
+		}
 		_chnkd_size -= cl._buf.delete_size_(2);
 		if (_last_chnkd) {
 			// chunked last
@@ -67,7 +67,7 @@ ChunkedField::chunked_body_can_parse_chnkd_skip_(Client& cl) {
 		}
 		return true;
 	}
-	spx_log_("chunked try next");
+	spx_log_("chunked try next. chunked size", _chnkd_size);
 	return false;
 }
 
@@ -167,6 +167,7 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 						if (cl._state == REQ_HOLD) {
 							cl._state = REQ_CLEAR;
 						}
+						spx_log_("cliet state", cl._state);
 					}
 					cl._req._body_size += _chnkd_size;
 					_chnkd_size += 2;
@@ -210,6 +211,7 @@ CgiField::CgiField()
 	, _cgi_size(0)
 	, _cgi_read(0)
 	, _write_to_cgi_fd(0)
+	, _read_from_cgi_fd(0)
 	, _pid(0)
 	, _cgi_state(CGI_HEADER)
 	, _is_chnkd(false)
@@ -224,13 +226,14 @@ CgiField::clear_() {
 	_cgi_header.clear();
 	_from_cgi.clear_();
 	_to_cgi.clear_();
-	_cgi_size		 = 0;
-	_cgi_read		 = 0;
-	_write_to_cgi_fd = 0;
-	_pid			 = 0;
-	_cgi_state		 = CGI_HEADER;
-	_is_chnkd		 = false;
-	_cgi_done		 = false;
+	_cgi_size		  = 0;
+	_cgi_read		  = 0;
+	_write_to_cgi_fd  = 0;
+	_read_from_cgi_fd = 0;
+	_pid			  = 0;
+	_cgi_state		  = CGI_HEADER;
+	_is_chnkd		  = false;
+	_cgi_done		  = false;
 }
 
 bool
@@ -297,9 +300,10 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		_write_to_cgi_fd = write_to_cgi[1];
 	}
 	close(read_from_cgi[1]);
+	_read_from_cgi_fd = read_from_cgi[0];
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	add_change_list(change_list, _pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
+	// add_change_list(change_list, _pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
 	spx_log_("CGIIIII cgi _pid", _pid);
 	spx_log_("CGIIIII client_fd", ((Client*)cur_event->udata)->_client_fd);
 	// sleep(10);
