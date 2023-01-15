@@ -146,6 +146,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				uri_resolved_sets.is_cgi_  = true;
 				uri_resolved_sets.cgi_loc_ = &loc_it->second;
 				flag_for_uri_status |= Kuri_cgi;
+				flag_for_uri_status |= Kflag_cgi_pass;
 			}
 			temp.clear();
 			state = uri_find_delimeter_case;
@@ -281,6 +282,18 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					if (dir) {
 						closedir(dir);
 					}
+				}
+			}
+			if (flag_for_uri_status & Kuri_cgi && !(flag_for_uri_status & Kuri_cgi_pass)) {
+				std::ifstream file;
+				file.open(uri_resolved_sets.script_filename_.c_str(), std::ios::in);
+				if (file.good()) {
+					spx_log_("cgi file exist");
+					file.close();
+				} else {
+					spx_log_("cgi file doesn't exist");
+					uri_resolved_sets.cgi_loc_ = NULL;
+					uri_resolved_sets.is_cgi_  = false;
 				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);

@@ -136,7 +136,8 @@ typedef enum {
 	Kuri_depth_uri		 = 1 << 1,
 	Kuri_check_extension = 1 << 2,
 	Kuri_cgi			 = 1 << 3,
-	Kuri_path_info		 = 1 << 4
+	Kuri_path_info		 = 1 << 4,
+	Kuri_cgi_pass		 = 1 << 5
 } uri_flag_e;
 
 typedef struct uri_resolved {

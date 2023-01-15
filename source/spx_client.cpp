@@ -600,7 +600,7 @@ Client::write_response_() {
 	if (_res._header_sent == false) {
 
 #ifdef CONSOLE_LOG
-		spx_console_log_(_res._res_header.substr(0, _res._res_header.find("\n")),
+		spx_console_log_(_res._res_header.substr(0, _res._res_header.find_first_of('\r')),
 						 this->_established_time,
 						 _res._body_size,
 						 _req._req_mthd,
