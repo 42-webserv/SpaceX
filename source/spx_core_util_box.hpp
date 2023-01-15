@@ -183,7 +183,7 @@ spx_console_log_(std::string start_line, struct timeval const& established, cons
 	int msec = (now.tv_usec - established.tv_usec) / 1000;
 	if (msec < 0) {
 		msec += 1000;
-		now.tv_sec--;
+		--now.tv_sec;
 	}
 
 	std::cout
