@@ -142,6 +142,11 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			} else {
 				candidate_surfix_index = loc_it->second.index;
 			}
+			if (!(return_location->cgi_path_info.empty())) {
+				uri_resolved_sets.is_cgi_  = true;
+				uri_resolved_sets.cgi_loc_ = &loc_it->second;
+				flag_for_uri_status |= Kuri_cgi;
+			}
 			temp.clear();
 			state = uri_find_delimeter_case;
 			break;
