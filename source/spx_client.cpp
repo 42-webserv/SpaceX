@@ -21,7 +21,10 @@ Client::Client(event_list_t* change_list)
 	, _storage() {
 }
 
-Client::~Client() { }
+Client::~Client() {
+	reset_();
+	_buf.clear_();
+}
 
 void
 Client::reset_() {
@@ -430,26 +433,20 @@ Client::req_res_controller_(struct kevent* cur_event) {
 void
 Client::disconnect_client_() {
 	// client status, tmp file...? check.
-	// if (_req._body_fd > 0) {
-	// 	close(_req._body_fd);
-	// 	add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	// 	// remove(_req._uri_resolv.script_filename_.c_str());
-	// }
-	// if (_res._body_fd > 0) {
-	// 	close(_res._body_fd);
-	// 	add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	// }
-	// if (_cgi._read_from_cgi_fd > 0) {
-	// 	close(_cgi._read_from_cgi_fd);
-	// 	add_change_list(*change_list, _cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	// }
-	// if (_cgi._write_to_cgi_fd > 0) {
-	// 	close(_cgi._write_to_cgi_fd);
-	// 	add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	// }
-	// add_change_list(*change_list, _client_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	// add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	close(_client_fd);
+	if (_req._body_fd > 0) {
+		remove(_req._uri_resolv.script_filename_.c_str());
+		close(_req._body_fd);
+	}
+	if (_res._body_fd > 0) {
+		close(_res._body_fd);
+	}
+	if (_cgi._read_from_cgi_fd > 0) {
+		close(_cgi._read_from_cgi_fd);
+	}
+	if (_cgi._write_to_cgi_fd > 0) {
+		close(_cgi._write_to_cgi_fd);
+	}
+	// close(_client_fd);
 }
 
 // read only request header & body message
@@ -459,7 +456,7 @@ Client::read_to_client_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
 	// int fd	   = open("aaa", O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	// _buf.write_debug_(fd);
-	if (n_read < 0) {
+	if (n_read <= 0) {
 		// TODO: error handle
 		return;
 	}
@@ -477,7 +474,7 @@ void
 Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _cgi._from_cgi);
 	// _cgi._from_cgi.write_debug_();
-	if (n_read < 0) {
+	if (n_read <= 0) {
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
 		close(_cgi._write_to_cgi_fd);
@@ -495,7 +492,7 @@ void
 Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
 	// _res._res_buf.write_debug_();
-	if (n_read < 0) {
+	if (n_read <= 0) {
 		spx_log_("INTERNAL");
 		// std::cerr << "INTERNAL!!" << std::endl;
 		// std::cerr << "cur_event->fd : " << cur_event->ident << std::endl;
@@ -530,6 +527,9 @@ Client::write_for_upload_(struct kevent* cur_event) {
 
 	if (_req._is_chnkd) {
 		n_write = _chnkd._chnkd_body.write_(cur_event->ident);
+		if (n_write < 0) {
+			return false;
+		}
 		_req._body_read += n_write;
 		// spx_log_("uploading body size", _req._body_read);
 		if (_req._body_read == _req._cnt_len) {
@@ -551,6 +551,9 @@ Client::write_for_upload_(struct kevent* cur_event) {
 			return false;
 		}
 		n_write = _req._body_buf.write_(cur_event->ident);
+		if (n_write < 0) {
+			return false;
+		}
 		spx_log_("body_fd: ", cur_event->ident);
 		spx_log_("write len: ", n_write);
 		_req._body_read += n_write;
@@ -580,6 +583,9 @@ Client::write_to_cgi_(struct kevent* cur_event) {
 	// spx_log_("write to cgi. n_write", n_write);
 	// spx_log_("write to cgi. _req._cnt_len", _req._cnt_len);
 	// }
+	if (n_write < 0) {
+		return false;
+	}
 	_cgi._cgi_read += n_write;
 	spx_log_("write to cgi. _cgi._cgi_read", _cgi._cgi_read);
 	spx_log_("write to cgi. _req._cnt_len", _req._cnt_len);
@@ -611,7 +617,7 @@ Client::write_response_() {
 #endif
 		n_write = write(_client_fd, _res._res_header.c_str(), _res._res_header.size());
 		if (n_write < 0) {
-			spx_log_("write error");
+			// spx_log_("write error");
 			// disconnect_client_();
 			return false;
 		}
@@ -646,7 +652,7 @@ Client::write_response_() {
 			// }
 		}
 		if (n_write < 0) {
-			spx_log_("write error");
+			// spx_log_("write error");
 			// disconnect_client_();
 			return false;
 		}
@@ -658,6 +664,7 @@ Client::write_response_() {
 		if (_req._uri_resolv.is_cgi_) {
 			if ((_cgi._is_chnkd && _res._body_write == _cgi._cgi_read)
 				|| (_cgi._is_chnkd == false && _res._body_write == _res._body_size)) {
+				close(_res._body_fd);
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;
@@ -666,7 +673,7 @@ Client::write_response_() {
 			}
 		} else {
 			if (_res._body_write == _res._body_size) {
-
+				close(_res._body_fd);
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;

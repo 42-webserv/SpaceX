@@ -108,14 +108,16 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		return;
 	}
-	if ((cl._req._req_mthd & REQ_HEAD) == false) {
-		_body_fd = error_req_fd;
-	} else {
-		_body_fd = -1;
-	}
 
 	setContentType_(page_path);
 	setContentLength_(error_req_fd);
+
+	if ((cl._req._req_mthd & REQ_HEAD)) {
+		close(error_req_fd);
+		_body_fd = -1;
+	} else {
+		_body_fd = error_req_fd;
+	}
 
 	spx_log_("ERROR_RESPONSE!!");
 	write_to_response_buffer_(make_to_string_());

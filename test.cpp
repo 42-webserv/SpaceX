@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <string>
 #include <sys/event.h>
 #include <sys/socket.h>
@@ -34,7 +35,9 @@ main(void) {
 	int			   event_len;
 	struct kevent* cur_event;
 
-	add_change_list(change_list, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+	static int l = 0;
+	add_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+	add_change_list(change_list, fd, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 1, NULL);
 
 	while (true) {
 		event_len = kevent(kq, &change_list.front(), change_list.size(), event_list,
@@ -50,12 +53,15 @@ main(void) {
 
 			switch (cur_event->filter) {
 			case EVFILT_READ: {
-				static int i;
-				char	   buf[20];
+				char buf[20];
 
-				if (i == 0) {
-					close(cur_event->ident);
-					open("b", O_RDONLY);
+				if (l == 0) {
+					// close(cur_event->ident);
+					// open("b", O_RDONLY);
+					// printf("flags: %d\n", cur_event->flags);
+					// printf("fflags: %d\n", cur_event->fflags);
+					int n_read = read(cur_event->ident, buf, 20);
+					write(STDOUT_FILENO, buf, n_read);
 					write(STDOUT_FILENO, "asdf", 4);
 				} else {
 					int n_read = read(cur_event->ident, buf, 20);
@@ -67,9 +73,13 @@ main(void) {
 				break;
 			case EVFILT_PROC:
 				break;
-			case EVFILT_TIMER:
-				// TODO: timer
-				break;
+			case EVFILT_TIMER: {
+				close(cur_event->ident);
+				fd = open("b", O_RDONLY);
+				add_change_list(change_list, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+			}
+			// TODO: timer
+			break;
 			}
 		}
 		// add_change_list(change_list, )

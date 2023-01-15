@@ -93,13 +93,14 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event,
 			}
 		}
 		exit(spx_error);
-	} else {
-		// client_t* cl = static_cast<client_t*>(cur_event->udata);
-		// if (cl != NULL && cl->_client_fd == cur_event->ident) {
-		// 	cl->disconnect_client_();
-		// 	delete cl;
-		// }
 	}
+	// else {
+	// 	// client_t* cl = static_cast<client_t*>(cur_event->udata);
+	// 	// if (cl != NULL && cl->_client_fd == cur_event->ident) {
+	// 	// 	cl->disconnect_client_();
+	// 	// 	delete cl;
+	// 	// }
+	// }
 }
 
 void
@@ -125,7 +126,7 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 			spx_log_("write_for_upload");
 			if (cl->write_for_upload_(cur_event) == false) {
 				// spx_log_("too large file to upload");
-				cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
+				// cl->error_response_keep_alive_(HTTP_STATUS_NOT_ACCEPTABLE);
 				return;
 			}
 		} else {
@@ -137,10 +138,9 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 
 void
 proc_event_wait_pid(struct kevent* cur_event, event_list_t& change_list) {
-	client_t*  cl = static_cast<client_t*>(cur_event->udata);
-	int		   status;
-	int		   pid;
-	static int l;
+	client_t* cl = static_cast<client_t*>(cur_event->udata);
+	int		  status;
+	int		  pid;
 
 	pid = waitpid(cl->_cgi._pid, &status, 0);
 	spx_log_("waitpid stat_loc", status);
@@ -152,9 +152,9 @@ proc_event_wait_pid(struct kevent* cur_event, event_list_t& change_list) {
 		// 	cl->_state = REQ_SKIP_BODY;
 		// }
 		close(cl->_cgi._write_to_cgi_fd);
-		add_change_list(change_list, cl->_cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		// add_change_list(change_list, cl->_cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		close(cl->_cgi._read_from_cgi_fd);
-		add_change_list(change_list, cl->_cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+		// add_change_list(change_list, cl->_cgi._read_from_cgi_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
 	spx_log_("pid", pid);
@@ -164,7 +164,6 @@ proc_event_wait_pid(struct kevent* cur_event, event_list_t& change_list) {
 	// 	sleep(10);
 	// 	exit(1);
 	// }
-	++l;
 }
 
 void
@@ -186,12 +185,12 @@ session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list)
 	storage->session_cleaner();
 }
 
-void
+bool
 eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// eof close fd.
 	client_t* cl = static_cast<client_t*>(cur_event->udata);
 	if (cl == NULL) {
-		return;
+		return false;
 	}
 	// if (cur_event->ident == cl->_client_fd) {
 	// 	if (cur_event->filter == EVFILT_READ) {
@@ -202,16 +201,23 @@ eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
 	// cgi case. server file does not return EV_EOF.
 	if (cur_event->filter == EVFILT_READ) {
 		if (cur_event->ident == cl->_client_fd) {
-			cl->disconnect_client_();
-			delete cl;
-			return;
-		}
-		int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
-		if (n_read < 0) {
 			// cl->disconnect_client_();
 			// delete cl;
-			return;
+			cl->disconnect_client_();
+			close(cur_event->ident);
+			delete cl;
+			// add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_ADD | EV_UDATA_SPECIFIC, NOTE_USECONDS, 10000, cl);
+			return false;
 		}
+		int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
+		if (cur_event->data && n_read <= 0) {
+			// cl->disconnect_client_();
+			// delete cl;
+			close(cur_event->ident);
+			proc_event_wait_pid(cur_event, change_list);
+			return true;
+		}
+		spx_log_("n_read", n_read);
 		if (n_read == cur_event->data) {
 			cl->_cgi._cgi_done	= true;
 			cl->_cgi._cgi_state = CGI_HEADER;
@@ -228,6 +234,7 @@ eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
 		close(cur_event->ident);
 		// add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DELETE, 0, 0, NULL);
 	}
+	return true;
 	// }
 }
 
@@ -239,6 +246,9 @@ kqueue_module(port_list_t& port_info) {
 	int				  kq;
 	rdbuf_t			  rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
 	session_storage_t storage;
+
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 
 	kq = kqueue();
 	if (kq == -1) {
@@ -256,7 +266,6 @@ kqueue_module(port_list_t& port_info) {
 			add_change_list(change_list, i, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 		}
 	}
-
 	// Session Checker
 	add_change_list(change_list, -1, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, EXPIRED_CLEANER_TIME,
 					&storage);
@@ -286,17 +295,18 @@ kqueue_module(port_list_t& port_info) {
 			spx_log_("event_filter:", cur_event->filter);
 			spx_log_("cur->ident:", cur_event->ident);
 			spx_log_("cur->flags:", cur_event->flags);
+			spx_log_("cur->data:", cur_event->data);
 			// if (cur_event->udata != NULL) {
 			// 	spx_log_("state", ((Client*)cur_event->udata)->_state);
 			// }
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
-					if (cur_event->filter == EVFILT_PROC) {
-						spx_log_("PROC1 flags", cur_event->flags);
-						spx_log_("PROC1 fflags", cur_event->fflags);
-						// exit(1);
-						// proc_event_wait_pid(cur_event, change_list);
-					}
+					// if (cur_event->filter == EVFILT_PROC) {
+					// 	spx_log_("PROC1 flags", cur_event->flags);
+					// 	spx_log_("PROC1 fflags", cur_event->fflags);
+					// 	// exit(1);
+					// 	// proc_event_wait_pid(cur_event, change_list);
+					// }
 					kevent_error_handler(port_info, cur_event, change_list);
 					// switch (cur_event->data) {
 					// case ENOENT:
@@ -304,7 +314,9 @@ kqueue_module(port_list_t& port_info) {
 					// }
 					// continue;
 				} else {
-					eof_case_handler(cur_event, change_list);
+					if (eof_case_handler(cur_event, change_list) == false) {
+						break;
+					}
 				}
 				continue;
 			}
@@ -322,7 +334,10 @@ kqueue_module(port_list_t& port_info) {
 					// added by space 23.1.14
 					session_timer_event_handler(cur_event, change_list);
 				} else {
-					// TODO: timer
+					// TODO:  	timer
+					// client_t* cl = static_cast<client_t*>(cur_event->udata);
+					// delete cl;
+					// add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE | EV_UDATA_SPECIFIC, 0, 0, cl);
 				}
 				break;
 			}

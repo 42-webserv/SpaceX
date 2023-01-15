@@ -5,7 +5,8 @@
 #include "spx_client.hpp"
 
 #ifndef EXPIRED_CLEANER_TIME
-#define EXPIRED_CLEANER_TIME 3600
+#define EXPIRED_CLEANER_TIME 10
+// #define EXPIRED_CLEANER_TIME 3600
 #endif
 
 void add_change_list(event_list_t& change_list,

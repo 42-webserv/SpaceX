@@ -22,7 +22,7 @@ DEBUG_FLAG	+=	CONSOLE_LOG
 ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
 endif
-
+# 
 CXXFLAGS	+=	$(LOG)
 
 SRC			=	spacex.cpp \

@@ -10,7 +10,10 @@ SpxBuffer::SpxBuffer()
 
 SpxBuffer::~SpxBuffer() {
 	// std::cout << "destructor buf size " << _buf.size() << std::endl;
-	clear_();
+	while (_buf.size()) {
+		delete[] static_cast<char*>(_buf.back().iov_base);
+		_buf.pop_back();
+	}
 }
 
 char*
@@ -158,10 +161,10 @@ SpxBuffer::move_(SpxBuffer& to_buf, size_t size) {
 
 void
 SpxBuffer::clear_() {
-	for (iov_t::iterator it = _buf.begin(); it != _buf.end(); ++it) {
-		delete[] static_cast<char*>(it->iov_base);
+	while (_buf.size()) {
+		delete[] static_cast<char*>(_buf.back().iov_base);
+		_buf.pop_back();
 	}
-	_buf.clear();
 	_buf_size	   = 0;
 	_partial_point = 0;
 }
