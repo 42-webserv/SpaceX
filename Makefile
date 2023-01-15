@@ -21,7 +21,7 @@ ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
 endif
 
-# CXXFLAGS	+=	$(LOG)
+CXXFLAGS	+=	$(LOG)
 CXXFLAGS	+=	-D CONSOLE_LOG
 
 SRC			=	spacex.cpp \
@@ -64,7 +64,7 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
-# CXXFLAGS	+=	$(DEBUG)
+CXXFLAGS	+=	$(DEBUG)
 # CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	$(OPT)
 # CXXFLAGS	+=	-fno-sanitize-recover

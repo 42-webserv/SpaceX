@@ -1,10 +1,8 @@
 #include "spx_client.hpp"
 #include "spx_cgi_module.hpp"
-#include "spx_kqueue_module.hpp"
-
-#include "spx_session_storage.hpp"
-
 #include "spx_core_util_box.hpp"
+#include "spx_kqueue_module.hpp"
+#include "spx_session_storage.hpp"
 
 Client::Client(event_list_t* change_list)
 	: change_list(change_list)
@@ -143,12 +141,13 @@ Client::set_cookie_() {
 				spx_log_("MAKING NEW SESSION");
 				std::string session_key = _storage->generate_session_id(_client_fd);
 				_storage->add_new_session(session_key);
-				_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME;
+				_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME + ";" + " cookie-count=0";
 			} else {
-				session_t& session = _storage->find_value_by_key((*find_cookie).second);
-				session.count_++;
+				session_t&		  session = _storage->find_value_by_key((*find_cookie).second);
+				std::stringstream ss;
+				ss << session.count_++;
 				session.refresh_time();
-				_req.session_id = SESSIONID + (*find_cookie).second + "; " + MAX_AGE + AGE_TIME;
+				_req.session_id = SESSIONID + (*find_cookie).second + "; " + MAX_AGE + AGE_TIME + ";" + " cookie-count=" + ss.str();
 				// spx_log_("SESSIONCOUNT", session.count_);
 			}
 		}
@@ -157,7 +156,7 @@ Client::set_cookie_() {
 		spx_log_("NOT FOUND SESSION => MAKING NEW SESSION");
 		std::string session_key = _storage->generate_session_id(_client_fd);
 		_storage->add_new_session(session_key);
-		_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME;
+		_req.session_id = SESSIONID + session_key + "; " + MAX_AGE + AGE_TIME + ";" + " cookie-count=0";
 	}
 	// COOKIE & SESSION END
 }
@@ -330,6 +329,10 @@ Client::req_res_controller_(struct kevent* cur_event) {
 
 		if (_req._uri_loc) {
 			_req._body_limit = _req._uri_loc->client_max_body_size;
+		}
+
+		if (_req._req_mthd & REQ_DELETE) {
+			_req._uri_resolv.is_cgi_ = false;
 		}
 
 		set_cookie_();
@@ -602,7 +605,6 @@ bool
 Client::write_response_() {
 	// no chunked case.
 	int n_write;
-	spx_log_("write_response_ _res._header_sent", _res._header_sent);
 	if (_res._header_sent == false) {
 
 #ifdef CONSOLE_LOG
@@ -627,7 +629,6 @@ Client::write_response_() {
 		} else {
 			_res._res_header.clear();
 			_res._header_sent = true;
-			spx_log_("write response body size", _res._body_size);
 			if (_res._body_size == 0 || (_req._req_mthd & REQ_HEAD)) {
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
