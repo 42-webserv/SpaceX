@@ -450,7 +450,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		return;
 	}
-	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != -1) {
+	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != SIZE_T_MAX) {
 		_cgi.cgi_controller_(*this);
 	}
 }
