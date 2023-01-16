@@ -591,12 +591,18 @@ spx_config_syntax_checker(std::string const&	   buf,
 					if (!(flag_location_part & Kflag_cgi_path_info)) {
 						return error__("conf_location_zero", "cgi_path_info not defined", line_number_count);
 					}
+					if (flag_location_part & Kflag_cgi_pass) {
+						return error__("conf_location_zero", "cgi_pass should be not here", line_number_count);
+					}
 					std::pair<std::map<const std::string, uri_location_t>::iterator, bool> check_dup;
 					check_dup = saved_cgi_list_map_1.insert(std::make_pair(temp_uri_location_info.uri, temp_uri_location_info));
 					if (check_dup.second == false) {
 						return error__("conf_location_zero", "duplicate cgi location", line_number_count);
 					}
 				} else if (temp_uri_location_info.uri.at(0) == '/') { // location_case
+					if (flag_location_part & Kflag_cgi_pass && (flag_location_part & (Kflag_cgi_path_info | Kflag_redirect | Kflag_index | Kflag_autoindex))) {
+						return error__("conf_location_zero", "cgi_pass can't be exist with index, autoindex, redirect, cgi_path_info", line_number_count);
+					}
 					if (!(flag_location_part & Kflag_root)) {
 						if (temp_basic_server_info.root.empty()) {
 							temp_uri_location_info.root = cur_path + temp_uri_location_info.uri;
