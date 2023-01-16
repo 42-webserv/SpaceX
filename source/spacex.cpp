@@ -22,9 +22,14 @@ namespace {
 		case 1:
 			file.open("./config/default.conf", std::ios_base::in);
 			break;
-		case 2:
+		case 2: {
+			std::string conf_file = argv[1];
+			if (conf_file.size() < 6 || conf_file.substr(conf_file.size() - 5, 5) != ".conf") {
+				error_exit("config file must be end with '.conf' and config file name must be longer than 5");
+			}
 			file.open(argv[1], std::ios_base::in);
 			break;
+		}
 		default:
 			error_exit("usage: ./spacex [config_file]");
 		}
