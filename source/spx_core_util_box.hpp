@@ -149,7 +149,7 @@ method_map_str_color_(int const status) {
 		METHOD__MAP_COLOR_(XX)
 #undef XX
 	default:
-		return "<unknown>";
+		return BCOLOR_RED "UNKNOWN" COLOR_RESET;
 	}
 }
 
@@ -191,7 +191,8 @@ spx_console_log_(std::string start_line, struct timeval const& established, cons
 		<< std::setw(3) << std::right << now.tv_sec - established.tv_sec << "."
 		<< std::setfill('0') << std::setw(3) << msec << " secs: "
 		<< std::setfill(' ') << std::setw(13) << std::right << byte << " bytes ==>  "
-		<< std::setw(5) << std::left << method_map_str_color_(method) << "\t" << color << uri << COLOR_RESET << std::endl;
+		<< std::setw(20) << std::left << method_map_str_color_(method) << color << "  "
+		<< uri << COLOR_RESET << std::endl;
 }
 
 #endif
