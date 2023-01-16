@@ -83,12 +83,9 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 	int			error_req_fd;
 
 	if (cl._req._serv_info) {
-		page_path = cl._req._serv_info->get_error_page_path_(error_code);
-		spx_log_("page_path = ", page_path);
+		page_path	 = cl._req._serv_info->get_error_page_path_(error_code);
 		error_req_fd = open(page_path.c_str(), O_RDONLY);
-		spx_log_("error_req_fd : ", error_req_fd);
 	} else {
-		spx_log_("serv info is NULL");
 		error_req_fd = -1;
 	}
 	if (error_req_fd < 0) {
@@ -109,8 +106,8 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		return;
 	}
 
-	setContentType_(page_path);
-	setContentLength_(error_req_fd);
+	set_content_type_(page_path);
+	set_content_length_(error_req_fd);
 
 	if ((cl._req._req_mthd & REQ_HEAD)) {
 		close(error_req_fd);
@@ -119,7 +116,6 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		_body_fd = error_req_fd;
 	}
 
-	spx_log_("ERROR_RESPONSE!!");
 	write_to_response_buffer_(make_to_string_());
 	if (_body_fd <= 0) {
 		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
@@ -135,7 +131,7 @@ ResField::make_response_header_(Client& cl) {
 	std::string		   content;
 
 	// Set Date Header
-	setDate_();
+	set_date_();
 	if (!cl._req.session_id.empty()) {
 		_headers.push_back(header("Set-Cookie", cl._req.session_id));
 	}
@@ -149,41 +145,34 @@ ResField::make_response_header_(Client& cl) {
 	switch (cl._req._req_mthd) {
 	case REQ_GET:
 	case REQ_HEAD:
+		// folder skip logic
 		if (uri[uri.size() - 1] != '/') {
-			spx_log_("uri.cstr()", uri.c_str());
 			req_fd = file_open_(uri.c_str());
-		} else {
-			spx_log_("folder skip");
 		}
-		spx_log_("uri_locations", cl._req._uri_loc);
-		spx_log_("req_fd", req_fd);
 		if (req_fd == 0) {
-			spx_log_("folder skip");
 			make_error_response_(cl, HTTP_STATUS_FORBIDDEN);
 			return;
 		} else if (req_fd == -1
 				   && (cl._req._uri_loc == NULL || cl._req._uri_loc->autoindex_flag == Kautoindex_off)) {
-			// std::cerr << "ERROR!!" << std::endl;
 			make_error_response_(cl, HTTP_STATUS_NOT_FOUND);
 			return;
 		} else if (req_fd == -1
 				   && cl._req._uri_loc->autoindex_flag == Kautoindex_on) {
-			spx_log_("uri=======", cl._req._uri_resolv.script_filename_);
 			content = generate_autoindex_page(req_fd, cl._req._uri_resolv);
 			std::stringstream ss;
 			ss << content.size();
 			_headers.push_back(header(CONTENT_LENGTH, ss.str()));
 			_body_size = content.size();
+
+			// autoindex fail case
 			if (content.empty()) {
-				// autoindex fail case
 				make_error_response_(cl, HTTP_STATUS_FORBIDDEN);
 				return;
 			}
 		}
 		if (req_fd != -1) {
-			spx_log_("res_header");
-			setContentType_(uri);
-			setContentLength_(req_fd);
+			set_content_type_(uri);
+			set_content_length_(req_fd);
 			if (cl._req._req_mthd == REQ_GET) {
 				_body_fd = req_fd;
 			} else {
@@ -191,7 +180,6 @@ ResField::make_response_header_(Client& cl) {
 				close(req_fd);
 			}
 		} else {
-			// autoindex case?
 			_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		}
 		break;
@@ -226,8 +214,7 @@ void
 ResField::make_cgi_response_header_(Client& cl) {
 
 	// Set Date Header
-	setDate_();
-	spx_log_("make_cgi_res_header");
+	set_date_();
 	std::map<std::string, std::string>::iterator it;
 
 	it = cl._cgi._cgi_header.find("status");
@@ -236,23 +223,17 @@ ResField::make_cgi_response_header_(Client& cl) {
 	} else {
 		_status_code = 200;
 	}
-	// headers_.push_back(header("Set-Cookie", "SESSIONID=123456;"));
-	// settting response_header size  + content-length size to res_field
+
 	_headers.push_back(header(CONNECTION, KEEP_ALIVE));
 
 	it = cl._cgi._cgi_header.find("content-length");
 	if (it != cl._cgi._cgi_header.end()) {
 		_headers.push_back(header(CONTENT_LENGTH, it->second));
 	} else {
-		// if (cl._cgi._is_chnkd) {
-		// 	_body_size = cl._cgi._cgi_read;
-		// } else {
 		_body_size = cl._cgi._from_cgi.buf_size_();
-		// }
 		std::stringstream ss;
 		ss << _body_size;
 		_headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
-		// headers_.push_back(header(CONTENT_LENGTH, "0"));
 	}
 	write_to_response_buffer_(make_to_string_());
 	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
@@ -260,7 +241,6 @@ ResField::make_cgi_response_header_(Client& cl) {
 
 void
 ResField::make_redirect_response_(Client& cl) {
-	spx_log_("uri_loc->redirect", cl._req._uri_loc->redirect);
 	_status_code = HTTP_STATUS_MOVED_PERMANENTLY;
 	_status		 = http_status_str(HTTP_STATUS_MOVED_PERMANENTLY);
 	_headers.push_back(header("Location", cl._req._uri_loc->redirect));
@@ -271,8 +251,6 @@ ResField::make_redirect_response_(Client& cl) {
 void
 ResField::write_to_response_buffer_(const std::string& content) {
 	_res_header.insert(_res_header.end(), content.begin(), content.end());
-	// _buf_size += content.size();
-	// _write_ready = WRITE_READY;
 }
 
 std::string
@@ -301,7 +279,7 @@ ResField::file_open_(const char* dir) const {
 }
 
 off_t
-ResField::setContentLength_(int fd) {
+ResField::set_content_length_(int fd) {
 	if (fd < 0)
 		return 0;
 	off_t length = lseek(fd, 0, SEEK_END);
@@ -309,16 +287,14 @@ ResField::setContentLength_(int fd) {
 
 	std::stringstream ss;
 	ss << length;
-	spx_log_("setContentLength. length", length);
 	_body_size = length;
-	// _body_size += length;
 
 	_headers.push_back(header(CONTENT_LENGTH, ss.str()));
 	return length;
 }
 
 void
-ResField::setContentType_(std::string uri) {
+ResField::set_content_type_(std::string uri) {
 
 	std::string::size_type uri_ext_size = uri.find_last_of('.');
 	std::string			   ext;
@@ -341,7 +317,7 @@ ResField::setContentType_(std::string uri) {
 }
 
 void
-ResField::setDate_(void) {
+ResField::set_date_(void) {
 	std::time_t now			 = std::time(nullptr);
 	std::tm*	current_time = std::gmtime(&now);
 
