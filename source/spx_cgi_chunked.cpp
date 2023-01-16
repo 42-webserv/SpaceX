@@ -23,14 +23,12 @@ ChunkedField::clear_() {
 
 bool
 ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
-	// spx_log_("cl._buf.buf_size_", cl._buf.buf_size_());
 	if (_chnkd_size > 2) {
 		_chnkd_size -= cl._buf.move_(_chnkd_body, _chnkd_size - 2);
 		if (_chnkd_size != 2) {
 			return true;
 		}
 	}
-	// spx_log_("chunked_body_can_parse_chnkd");
 	if (cl._buf.buf_size_() >= 2) {
 		_chnkd_size -= cl._buf.delete_size_(2);
 		if (_last_chnkd) {
@@ -41,7 +39,6 @@ ChunkedField::chunked_body_can_parse_chnkd_(Client& cl) {
 		}
 		return true;
 	}
-	// spx_log_("chunked try next");
 	return false;
 }
 
@@ -67,14 +64,12 @@ ChunkedField::chunked_body_can_parse_chnkd_skip_(Client& cl) {
 		}
 		return true;
 	}
-	spx_log_("chunked try next. chunked size", _chnkd_size);
 	return false;
 }
 
 bool
 ChunkedField::chunked_body_(Client& cl) {
 	std::string len;
-	int			start_line_end;
 
 	if (_first_chnkd) {
 		_first_chnkd = false;
@@ -84,7 +79,6 @@ ChunkedField::chunked_body_(Client& cl) {
 			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		}
 	}
-	spx_log_("controller - req body chunked.");
 	try {
 		while (true) {
 			if (_chnkd_size) {
@@ -97,12 +91,8 @@ ChunkedField::chunked_body_(Client& cl) {
 			}
 			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
-				spx_log_("size str len", len);
 				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
 					add_change_list(*cl.change_list, cl._client_fd, EVFILT_READ, EV_ENABLE, 0, _chnkd_size - cl._buf.buf_size_(), &cl);
-					spx_log_("size str _chnkd_size", _chnkd_size);
-					spx_log_("_req._body_size", cl._req._body_size);
-					spx_log_("_req._body_limit", cl._req._body_limit);
 					if (_chnkd_size == 0) {
 						_last_chnkd = true;
 					}
@@ -113,18 +103,14 @@ ChunkedField::chunked_body_(Client& cl) {
 					}
 					continue;
 				} else {
-					// chunked error
-					spx_log_("chunked error. len", len);
 					throw(std::exception());
 				}
 			} else {
-				// chunked start line not exist.
 				return false;
 			}
 		}
 	} catch (...) {
 		if (cl._req._body_size > cl._req._body_limit) {
-			spx_log_("send over limit");
 			// send over limit.
 			close(cl._req._body_fd);
 			remove(cl._req._upld_fn.c_str());
@@ -145,9 +131,7 @@ ChunkedField::chunked_body_(Client& cl) {
 bool
 ChunkedField::skip_chunked_body_(Client& cl) {
 	std::string len;
-	int			start_line_end;
 
-	spx_log_("controller - req skip body chunked.");
 	try {
 		while (true) {
 			if (_chnkd_size) {
@@ -160,14 +144,12 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 			}
 			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
-				spx_log_("size str len", len);
 				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
 					if (_chnkd_size == 0) {
 						_last_chnkd = true;
 						if (cl._state == REQ_HOLD) {
 							cl._state = REQ_CLEAR;
 						}
-						spx_log_("cliet state", cl._state);
 					}
 					cl._req._body_size += _chnkd_size;
 					_chnkd_size += 2;
@@ -177,7 +159,6 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 					continue;
 				} else {
 					// chunked error
-					spx_log_("chunked error. len", len);
 					throw(std::exception());
 				}
 			} else {
@@ -271,9 +252,6 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		script[2] = NULL;
 		cgi.made_env_for_cgi_(req._req_mthd);
 
-		spx_log_("CGIIIII 0", script[0]);
-		spx_log_("CGIIIII 1", script[1]);
-
 		dup2(write_to_cgi[0], STDIN_FILENO);
 		close(write_to_cgi[0]);
 		close(write_to_cgi[1]);
@@ -283,26 +261,19 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 
 		execve(script[0], const_cast<char* const*>(script),
 			   const_cast<char* const*>(&cgi.env_for_cgi_[0]));
-		spx_log_(COLOR_RED "CGI execve error" COLOR_RESET);
 		exit(EXIT_FAILURE);
 	}
-	// parent
 	close(write_to_cgi[0]);
 	if (req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
 		close(write_to_cgi[1]);
 	} else {
 		fcntl(write_to_cgi[1], F_SETFL, O_NONBLOCK);
-		// add_change_list(change_list, write_to_cgi[1], EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, cur_event->udata);
 		_write_to_cgi_fd = write_to_cgi[1];
 	}
 	close(read_from_cgi[1]);
 	_read_from_cgi_fd = read_from_cgi[0];
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
-	// add_change_list(change_list, _pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, cur_event->udata);
-	spx_log_("CGIIIII cgi _pid", _pid);
-	spx_log_("CGIIIII client_fd", ((Client*)cur_event->udata)->_client_fd);
-	// sleep(10);
 
 	return true;
 }
@@ -313,15 +284,11 @@ CgiField::cgi_header_parser_() {
 	size_t		idx;
 
 	while (true) {
-		// idx = _from_cgi.find_pos_(LF);
 		line.clear();
 		if (_from_cgi.get_lf_line_(line, 200) <= 0) {
 			return false;
 		}
-		spx_log_("cgi header!!!", line);
 		if (line.size() == 0) {
-			// request header parsed.
-			spx_log_("cgi parsed!!!", line);
 			break;
 		}
 		idx = line.find(':');
@@ -349,8 +316,6 @@ CgiField::cgi_controller_(Client& cl) {
 	case CGI_HEADER: {
 		if (_cgi_done) {
 			if (cgi_header_parser_() == false) {
-				// read more?
-				spx_log_("cgi_header_parser false");
 				return false;
 			}
 			_cgi_state = CGI_HOLD;
@@ -359,11 +324,7 @@ CgiField::cgi_controller_(Client& cl) {
 			it = _cgi_header.find("content-length");
 			if (it != _cgi_header.end()) {
 				_cgi_size = strtol(it->second.c_str(), NULL, 10);
-				// TODO: make_cgi_response_header.
-				// make_cgi_response_header();
 			} else {
-				// no content-length case.
-				// res.cgi_state_ = CGI_BODY_CHUNKED;
 				_cgi_size = -1;
 			}
 			cl._res.make_cgi_response_header_(cl);
@@ -371,8 +332,6 @@ CgiField::cgi_controller_(Client& cl) {
 	}
 	case CGI_HOLD:
 		break;
-		// if (_cgi_state == CGI_BODY_CHUNKED) {
-		// }
 	}
 	return true;
 }
