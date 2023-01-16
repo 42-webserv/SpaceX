@@ -42,7 +42,8 @@ Client::request_line_check_(std::string& req_line) {
 		_req._http_ver				 = "HTTP/1.1";
 		return true;
 	}
-	_state = E_BAD_REQ;
+	_state			= E_BAD_REQ;
+	_req._serv_info = &_port_info->my_port_default_server;
 	error_response_keep_alive_(HTTP_STATUS_BAD_REQUEST);
 	return false;
 }
