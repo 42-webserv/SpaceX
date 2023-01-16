@@ -228,6 +228,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (*it == ';') {
+				if (prev_state == conf_server_CB_open || prev_state == conf_location_CB_open){
+			return error__("conf_start", "semicolon can't exist after CB open - error", line_number_count);
+				}
 				prev_state = next_state;
 				state	   = conf_endline;
 			} else {
