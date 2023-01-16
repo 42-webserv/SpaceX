@@ -6,7 +6,7 @@
 #include "spx_core_util_box.hpp"
 
 #include <dirent.h>
-#include <libgen.h> //basename
+#include <libgen.h>
 #include <sys/stat.h>
 
 #include "spx_response_generator.hpp"

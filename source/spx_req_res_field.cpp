@@ -27,7 +27,6 @@ ReqField::~ReqField() {
 
 void
 ReqField::clear_() {
-	// _body_buf.clear_();
 	_header.clear();
 	_uri.clear();
 	_http_ver.clear();

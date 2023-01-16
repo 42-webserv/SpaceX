@@ -2,7 +2,6 @@
 #ifndef __SPX__REQ__RES__FIELD__HPP
 #define __SPX__REQ__RES__FIELD__HPP
 
-// #include "spx_client.hpp"
 #include <map>
 #include <vector>
 
@@ -60,7 +59,7 @@ public:
 	int					  _req_mthd;
 	int					  _is_chnkd;
 	int					  _flag;
-	std::string			  session_id; // session
+	std::string			  session_id;
 
 	ReqField();
 	~ReqField();

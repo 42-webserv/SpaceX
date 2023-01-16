@@ -32,11 +32,6 @@
 
 #define MAX_EVENT_LIST 1000
 
-// // gzip & deflate are not implemented. for extension.
-// enum e_transfer_encoding { TE_CHUNKED = 1 << 0,
-// 						   TE_GZIP	  = 1 << 1,
-// 						   TE_DEFLATE = 1 << 2 };
-
 typedef SpxReadBuffer						rdbuf_t;
 typedef SpxBuffer							buf_t;
 typedef std::vector<struct kevent>			event_list_t;

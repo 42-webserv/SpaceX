@@ -153,9 +153,6 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 					}
 					cl._req._body_size += _chnkd_size;
 					_chnkd_size += 2;
-					// if (cl._req._body_size > cl._req._body_limit) {
-					// 	throw(std::exception());
-					// }
 					continue;
 				} else {
 					// chunked error
@@ -167,20 +164,12 @@ ChunkedField::skip_chunked_body_(Client& cl) {
 			}
 		}
 	} catch (...) {
-		// if (cl._req._body_size > cl._req._body_limit) {
 		// send over limit.
-		// close(cl._req._body_fd);
-		// remove(cl._req._upld_fn.c_str());
-		// add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-		// cl.error_response_keep_alive_(HTTP_STATUS_PAYLOAD_TOO_LARGE);
-		// cl._state = REQ_SKIP_BODY_CHUNKED;
-		// } else {
 		cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
 		if (cl._req._body_fd != -1) {
 			add_change_list(*cl.change_list, cl._req._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		}
 		cl._state = E_BAD_REQ;
-		// }
 		return false;
 	}
 }
@@ -221,7 +210,6 @@ bool
 CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* cur_event) {
 	int write_to_cgi[2];
 	int read_from_cgi[2];
-	// pid_t _pid;
 
 	if (pipe(write_to_cgi) == -1) {
 		// pipe error

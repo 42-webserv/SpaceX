@@ -88,7 +88,7 @@ namespace {
 		}
 	}
 
-} // namespace
+} // namespace end
 
 std::string const
 generator_error_page_(uint32_t const& error_code) {

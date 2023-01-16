@@ -93,8 +93,6 @@ public:
 	SessionStorage();
 	~SessionStorage();
 
-	// void
-	//  parse_session_header(const std::string& session_header);
 	bool		is_key_exsits(const std::string& c_key) const;
 	session_t&	find_value_by_key(std::string& c_key);
 	std::string find_session_to_string(const std::string& c_key);
