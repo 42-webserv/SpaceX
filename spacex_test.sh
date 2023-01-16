@@ -76,9 +76,11 @@ do
 		error=0
 		echo ""
 		curl $resolved_method -H "Content-Type: plain/text"  $data $host$temp_uri
+
 		exit_status=$?
-		if [ $exit_status -ne 0 ];
+		if [ $exit_status -ne 0 ] && [  $exit_status -ne 143 ] ;
 		then
+			spx_log_ "$exit_status"
 			spx_log_ "\n\n\033[31mrequest [ \033[32m$request\033[0m \033[31m]  error occurred\033[0m\n\n"
 			exit 1
 		else
