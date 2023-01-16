@@ -202,12 +202,14 @@ ResField::make_response_header_(Client& cl) {
 	case REQ_DELETE:
 		_headers.push_back(header(CONTENT_LENGTH, "0"));
 	}
-	// if (cl._req._header["connection"] == "close") {
-	// 	_headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
-	// 	cl._state = E_BAD_REQ;
-	// } else {
-	// 	_headers.push_back(header(CONNECTION, KEEP_ALIVE));
-	// }
+
+	if (cl._req._header["connection"] == "close") {
+		_headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
+		cl._state = E_BAD_REQ;
+	} else {
+		_headers.push_back(header(CONNECTION, KEEP_ALIVE));
+	}
+
 	write_to_response_buffer_(make_to_string_());
 	if (!content.empty()) {
 		_res_buf.add_str(content);

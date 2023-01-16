@@ -130,6 +130,7 @@ write_event_handler(port_list_t& port_info, struct kevent* cur_event,
 				return;
 			}
 		} else {
+			// exit(1);
 			spx_log_("write_to_cgi");
 			cl->write_to_cgi_(cur_event);
 		}

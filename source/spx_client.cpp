@@ -43,6 +43,7 @@ Client::request_line_check_(std::string& req_line) {
 		return true;
 	}
 	_state = E_BAD_REQ;
+	error_response_keep_alive_(HTTP_STATUS_BAD_REQUEST);
 	return false;
 }
 
@@ -51,8 +52,9 @@ Client::request_line_parser_() {
 	std::string req_line;
 
 	spx_log_("REQ_LINE_PARSER");
+	_buf.write_debug_();
 	while (true) {
-		if (_buf.get_crlf_line_(req_line) == false) {
+		if (_buf.get_crlf_line_(req_line) != true) {
 			// read more case.
 			return false;
 		}
@@ -260,7 +262,7 @@ Client::state_req_body_() {
 	_req._body_read += n_move;
 	if (_req._body_read == _req._cnt_len) {
 		_state = REQ_HOLD;
-		_res.make_response_header_(*this);
+		// _res.make_response_header_(*this);
 	}
 	return true;
 }
@@ -288,9 +290,17 @@ Client::res_for_post_put_req_() {
 		// add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 		_chnkd.chunked_body_(*this);
 	} else {
-		add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
-		_state = REQ_BODY;
-		state_req_body_();
+		if (_req._cnt_len > _req._body_limit) {
+			// over sized.
+			close(_req._body_fd);
+			remove(_req._upld_fn.c_str());
+			error_response_keep_alive_(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+			return false;
+		} else {
+			add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
+			_state = REQ_BODY;
+			state_req_body_();
+		}
 	}
 	return false;
 }
@@ -546,27 +556,24 @@ Client::write_for_upload_(struct kevent* cur_event) {
 		}
 		return true;
 	} else {
-		if (_req._body_limit < _req._cnt_len) {
-			// over sized.
-			close(cur_event->ident);
-			remove(_req._upld_fn.c_str());
-			add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-			return false;
-		}
 		n_write = _req._body_buf.write_(cur_event->ident);
 		if (n_write < 0) {
 			return false;
 		}
 		spx_log_("body_fd: ", cur_event->ident);
 		spx_log_("write len: ", n_write);
-		_req._body_read += n_write;
-	}
-	if (_req._body_read == _req._cnt_len) {
-		close(cur_event->ident);
-		add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-		_state = REQ_HOLD;
-		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
-		_res.make_response_header_(*this);
+		// _req._body_read += n_write;
+		spx_log_("_req._body_read: ", _req._body_read);
+		spx_log_("_req._cnt_len: ", _req._cnt_len);
+
+		if (_req._body_buf.buf_size_() == 0 && _req._body_read == _req._cnt_len) {
+			spx_log_("WRITE FOR UPLOAD END!!");
+			close(cur_event->ident);
+			add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+			_state = REQ_HOLD;
+			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
+			_res.make_response_header_(*this);
+		}
 	}
 	return true;
 }
@@ -630,6 +637,7 @@ Client::write_response_() {
 			_res._res_header.clear();
 			_res._header_sent = true;
 			if (_res._body_size == 0 || (_req._req_mthd & REQ_HEAD)) {
+				spx_log_("WRITE RES HEADER END");
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;
