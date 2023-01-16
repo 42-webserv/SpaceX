@@ -248,8 +248,8 @@ kqueue_module(port_list_t& port_info) {
 	rdbuf_t			  rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
 	session_storage_t storage;
 
-	signal(SIGPIPE, SIG_IGN);
-	signal(SIGCHLD, SIG_IGN);
+	// signal(SIGPIPE, SIG_IGN);
+	// signal(SIGCHLD, SIG_IGN);
 
 	kq = kqueue();
 	if (kq == -1) {

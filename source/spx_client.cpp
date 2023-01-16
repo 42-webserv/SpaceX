@@ -53,7 +53,7 @@ Client::request_line_parser_() {
 	std::string req_line;
 
 	spx_log_("REQ_LINE_PARSER");
-	_buf.write_debug_();
+	// _buf.write_debug_();
 	while (true) {
 		if (_buf.get_crlf_line_(req_line) != true) {
 			// read more case.
@@ -376,6 +376,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		case REQ_PUT:
 			return res_for_post_put_req_();
 		case REQ_DELETE:
+			spx_log_("REMOVE!!!", _req._uri_resolv.script_filename_.c_str());
 			if (remove(_req._uri_resolv.script_filename_.c_str()) == -1) {
 				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
 			} else {
