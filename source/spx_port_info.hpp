@@ -201,10 +201,10 @@ typedef std::vector<port_info_t> port_info_vec;
 status
 socket_init_and_build_port_info(total_port_server_map_p& config_info,
 								port_info_vec&			 port_info,
-								uint32_t&				 socket_size);
+								int64_t&				 socket_size,
+								int64_t&				 first_socket);
 
-int
-socket_init(total_port_server_map_p const& config_info);
+int socket_init(total_port_server_map_p const& config_info);
 
 // e.g. std::map<const std::string, const uri_location_t> uri_location_map_p;
 // e.g. std::map<const std::string, server_info_t>  server_map_p;

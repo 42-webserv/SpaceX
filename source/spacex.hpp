@@ -8,7 +8,8 @@
 #include "spx_parse_config.hpp"
 
 typedef struct main_info {
-	uint32_t	  socket_size;
+	int64_t		  socket_size;
+	int64_t		  first_socket;
 	port_info_vec port_info;
 
 } main_info_t;

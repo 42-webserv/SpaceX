@@ -1,9 +1,12 @@
 #include "spx_port_info.hpp"
+#include "spx_autoindex_generator.hpp"
 #include "spx_core_type.hpp"
+#include "spx_core_util_box.hpp"
 #include "spx_req_res_field.hpp"
 
 #include <cstddef>
 #include <dirent.h>
+#include <string>
 #include <sys/socket.h>
 
 namespace {
@@ -11,12 +14,10 @@ namespace {
 	inline void
 	close_socket_and_exit__(int const prev_socket_size, port_info_vec& port_info) {
 		spx_log_(COLOR_RED "close_socket_and_exit__" COLOR_RESET);
-		if (prev_socket_size != 0) {
-			for (int i = 0; i <= prev_socket_size; ++i) {
-				if (i == port_info[i].listen_sd) {
-					spx_log_("close port: ", port_info[i].my_port);
-					close(port_info[i].listen_sd);
-				}
+		for (int i = 0; i <= prev_socket_size; ++i) {
+			if (i == port_info[i].listen_sd) {
+				spx_log_("close port: ", port_info[i].my_port);
+				close(port_info[i].listen_sd);
 			}
 		}
 		exit(spx_error);
@@ -401,8 +402,11 @@ server_info_for_copy_stage_t::print_() const {
 void
 server_info_t::print_(void) const {
 	std::cout << COLOR_GREEN << " [ server_name ] " << server_name << COLOR_RESET;
-	if (default_server_flag == Kdefault_server)
+	if (default_server_flag == Kdefault_server) {
 		std::cout << COLOR_RED << " <---- default_server" << COLOR_RESET << std::endl;
+	} else {
+		std::cout << std::endl;
+	}
 	std::cout << "ip: " << ip << std::endl;
 	std::cout << "port: " << port << std::endl;
 	std::cout << "root: " << root << std::endl;
@@ -428,14 +432,16 @@ server_info_t::print_(void) const {
 	}
 	std::cout << std::endl;
 
-	std::cout << COLOR_RED << "cgi_case: " << cgi_case.size() << "\t---------------" << COLOR_RESET << std::endl;
-	cgi_list_map_p::const_iterator it_cgi = cgi_case.begin();
-	while (it_cgi != cgi_case.end()) {
-		std::cout << "\n[ cgi ] " << it_cgi->first << std::endl;
-		it_cgi->second.print_();
-		it_cgi++;
+	if (cgi_case.size() != 0) {
+		std::cout << COLOR_RED << "cgi_case: " << cgi_case.size() << "\t---------------" << COLOR_RESET << std::endl;
+		cgi_list_map_p::const_iterator it_cgi = cgi_case.begin();
+		while (it_cgi != cgi_case.end()) {
+			std::cout << "\n[ cgi ] " << it_cgi->first << std::endl;
+			it_cgi->second.print_();
+			it_cgi++;
+		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
 }
 
 /* NOTE: uri_location_t
@@ -533,8 +539,9 @@ port_info_t::search_server_config_(std::string const& host_name) {
 status
 socket_init_and_build_port_info(total_port_server_map_p& config_info,
 								port_info_vec&			 port_info,
-								uint32_t&				 socket_size) {
-	uint32_t prev_socket_size;
+								int64_t&				 socket_size,
+								int64_t&				 first_socket) {
+	int64_t prev_socket_size;
 
 	for (total_port_server_map_p::const_iterator it = config_info.begin(); it != config_info.end(); ++it) {
 
@@ -548,6 +555,9 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 				temp_port_info.listen_sd = socket(AF_INET, SOCK_STREAM, 0);
 				prev_socket_size		 = socket_size;
 				socket_size				 = temp_port_info.listen_sd;
+				if (prev_socket_size == -1) {
+					first_socket = socket_size;
+				}
 				if (temp_port_info.listen_sd < 0) {
 					error_str("socket error");
 					close_socket_and_exit__(prev_socket_size, port_info);
@@ -579,27 +589,18 @@ socket_init_and_build_port_info(total_port_server_map_p& config_info,
 					error_fn("listen error", close, temp_port_info.listen_sd);
 					close_socket_and_exit__(prev_socket_size, port_info);
 				}
-				if (prev_socket_size == 0) {
-					uint32_t i = 0;
-					while (i < socket_size) {
-						port_info.push_back(temp_port_info);
-						++i;
-					}
-				} else {
-					uint32_t i = prev_socket_size + 1;
-					while (i < socket_size) {
-						port_info.push_back(temp_port_info);
-						++i;
-					}
+				int64_t i = prev_socket_size;
+				while (i < socket_size) {
+					port_info.push_back(temp_port_info);
+					++i;
 				}
-				port_info.push_back(temp_port_info);
 				break;
 			}
 			++it2;
 		}
 		if (it2 == it->second.end()) {
 			std::cerr << "no default server in port " << it->first << std::endl;
-			close_socket_and_exit__(prev_socket_size, port_info);
+			close_socket_and_exit__(socket_size, port_info);
 		}
 	}
 	if (socket_size == 0) {
