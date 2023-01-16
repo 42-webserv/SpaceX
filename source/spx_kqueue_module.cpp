@@ -187,53 +187,36 @@ session_timer_event_handler(struct kevent* cur_event, event_list_t& change_list)
 }
 
 bool
-eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
+eof_case_handler(struct kevent* cur_event, event_list_t& change_list, std::vector<client_t*>& for_close) {
 	// eof close fd.
 	client_t* cl = static_cast<client_t*>(cur_event->udata);
 	if (cl == NULL) {
-		return false;
+		return true;
 	}
-	// if (cur_event->ident == cl->_client_fd) {
-	// 	if (cur_event->filter == EVFILT_READ) {
-	// 		spx_log_("client socket closed", cur_event->ident);
-	// 		// std::cerr << "client socket closed : " << cur_event->ident << std::endl;
-	// 	}
-	// } else {
-	// cgi case. server file does not return EV_EOF.
 	if (cur_event->filter == EVFILT_READ) {
 		if (cur_event->ident == cl->_client_fd) {
-			// cl->disconnect_client_();
-			// delete cl;
 			cl->disconnect_client_();
 			close(cur_event->ident);
-			delete cl;
-			// add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_ADD | EV_UDATA_SPECIFIC, NOTE_USECONDS, 10000, cl);
-			return false;
+			for_close.push_back(cl);
+			return true;
 		}
 		int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
 		if (cur_event->data && n_read <= 0) {
-			// cl->disconnect_client_();
-			// delete cl;
 			close(cur_event->ident);
 			proc_event_wait_pid(cur_event, change_list);
 			return true;
 		}
-		spx_log_("n_read", n_read);
 		if (n_read == cur_event->data) {
 			cl->_cgi._cgi_done	= true;
 			cl->_cgi._cgi_state = CGI_HEADER;
 
 			cl->_cgi.cgi_controller_(*cl);
 
-			spx_log_("cgi read close");
 			close(cur_event->ident);
-			// add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, cl);
 			proc_event_wait_pid(cur_event, change_list);
 		}
 	} else {
-		spx_log_("cgi write close");
 		close(cur_event->ident);
-		// add_change_list(change_list, cur_event->ident, cur_event->filter, EV_DELETE, 0, 0, NULL);
 	}
 	return true;
 	// }
@@ -242,14 +225,12 @@ eof_case_handler(struct kevent* cur_event, event_list_t& change_list) {
 void
 kqueue_module(port_list_t& port_info) {
 
-	event_list_t	  change_list;
-	struct kevent	  event_list[MAX_EVENT_LIST];
-	int				  kq;
-	rdbuf_t			  rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
-	session_storage_t storage;
-
-	// signal(SIGPIPE, SIG_IGN);
-	// signal(SIGCHLD, SIG_IGN);
+	event_list_t		   change_list;
+	struct kevent		   event_list[MAX_EVENT_LIST];
+	int					   kq;
+	rdbuf_t				   rdbuf(BUFFER_SIZE, IOV_VEC_SIZE);
+	session_storage_t	   storage;
+	std::vector<client_t*> for_close;
 
 	kq = kqueue();
 	if (kq == -1) {
@@ -273,7 +254,6 @@ kqueue_module(port_list_t& port_info) {
 
 	int			   event_len;
 	struct kevent* cur_event;
-	// int			   l = 0;
 
 	while (true) {
 		event_len = kevent(kq, &change_list.front(), change_list.size(),
@@ -288,34 +268,14 @@ kqueue_module(port_list_t& port_info) {
 			exit(spx_error);
 		}
 		change_list.clear();
-		// std::cout << "current loop: " << l++ << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
-			spx_log_("event_len:", event_len);
-			spx_log_("event_filter:", cur_event->filter);
-			spx_log_("cur->ident:", cur_event->ident);
-			spx_log_("cur->flags:", cur_event->flags);
-			spx_log_("cur->data:", cur_event->data);
-			// if (cur_event->udata != NULL) {
-			// 	spx_log_("state", ((Client*)cur_event->udata)->_state);
-			// }
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
-					// if (cur_event->filter == EVFILT_PROC) {
-					// 	spx_log_("PROC1 flags", cur_event->flags);
-					// 	spx_log_("PROC1 fflags", cur_event->fflags);
-					// 	// exit(1);
-					// 	// proc_event_wait_pid(cur_event, change_list);
-					// }
 					kevent_error_handler(port_info, cur_event, change_list);
-					// switch (cur_event->data) {
-					// case ENOENT:
-					// 	break;
-					// }
-					// continue;
 				} else {
-					if (eof_case_handler(cur_event, change_list) == false) {
+					if (eof_case_handler(cur_event, change_list, for_close) == false) {
 						break;
 					}
 				}
@@ -323,24 +283,23 @@ kqueue_module(port_list_t& port_info) {
 			}
 			switch (cur_event->filter) {
 			case EVFILT_READ:
-				spx_log_("event_read");
 				read_event_handler(port_info, cur_event, change_list, &rdbuf, &storage);
 				break;
 			case EVFILT_WRITE:
 				write_event_handler(port_info, cur_event, change_list);
 				break;
 			case EVFILT_TIMER:
-				spx_log_("event_timer");
 				if (cur_event->ident == -1) {
-					// added by space 23.1.14
 					session_timer_event_handler(cur_event, change_list);
-				} else {
-					// TODO:  	timer
-					// client_t* cl = static_cast<client_t*>(cur_event->udata);
-					// delete cl;
-					// add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE | EV_UDATA_SPECIFIC, 0, 0, cl);
 				}
 				break;
+			}
+		}
+
+		if (for_close.size()) {
+			while (for_close.size()) {
+				delete for_close.back();
+				for_close.pop_back();
 			}
 		}
 	}
