@@ -311,7 +311,7 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == ULONG_MAX) {
+	if (lf_pos == SIZE_T_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;
@@ -333,7 +333,7 @@ SpxBuffer::get_crlf_cpy_line_(std::string& line, size_t size) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == ULONG_MAX) {
+	if (lf_pos == SIZE_T_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;
@@ -354,7 +354,7 @@ SpxBuffer::get_lf_line_(std::string& line, size_t size) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == ULONG_MAX) {
+	if (lf_pos == SIZE_T_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;

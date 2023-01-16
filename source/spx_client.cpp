@@ -354,8 +354,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
 		close(_cgi._write_to_cgi_fd);
-		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		// add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		return;
 	}
 	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != SIZE_T_MAX) {
@@ -368,6 +367,7 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
 
 	if (n_read <= 0) {
+		// error_exit("read_to_res_buffer");
 		// error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		// close(cur_event->ident);
 		// add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
@@ -377,7 +377,6 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	_res._body_read += n_read;
 	if (_res._body_read == _res._body_size) {
 		close(cur_event->ident);
-		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 	}
 }

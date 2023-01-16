@@ -181,7 +181,7 @@ ResField::clear_() {
 	_body_write		= 0;
 	_body_size		= 0;
 	_body_fd		= -1;
-	_is_chnkd		= 0;
+	_is_chnkd		= false;
 	_header_sent	= 0;
 	_write_finished = false;
 	_version_minor	= 1;
