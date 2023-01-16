@@ -41,7 +41,6 @@ for field, filename in files.items():
     response += "<p>{}: {}</p>\n".format(field, filename)
 response += "</center></body></html>"
 
-# print("Content-Length: {}".format(len(response)))
 print("\r")
 print(response)
 

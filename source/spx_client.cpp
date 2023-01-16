@@ -429,6 +429,7 @@ Client::disconnect_client_() {
 void
 Client::read_to_client_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
+	_buf.write_debug_();
 	if (n_read <= 0) {
 		return;
 	}
