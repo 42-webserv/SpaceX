@@ -32,6 +32,7 @@ cnt=0
 
 method_list=("GET" "HEAD" "PUT" "POST" "DELETE" "SPACEX" )
 len2=${#method_list[@]}
+total=$(($len * $len2))
 #spx_log_ "$len2"
 
 if [ -z $2 ];
@@ -49,7 +50,7 @@ do
 	j=0
 	while [ $j -lt $len2 ];
 	do
-		echo "\n$cnt : -----------------------------"
+		echo "\n\n\n\n\n\n$cnt / $total -----------------------------"
 		method=${method_list[$j]}
 		request="$method $temp_uri HTTP/1.1"
 		spx_log_ "\033[32m$request\033[0m"
@@ -60,9 +61,11 @@ do
 		fi
 
 		data=""
+		cont_len=""
 		if [ $body == 1 ];
 		then
-			data="-data \"hello spacex\""
+			data="-d \"hello_spacex\""
+			#cont_len="-H \"Content-Length: 12\""
 		fi
 
 		resolved_method=$method
@@ -74,17 +77,18 @@ do
 		fi
 
 		error=0
+		read wait
 		echo ""
-		curl $resolved_method -H "Content-Type: plain/text"  $data $host$temp_uri
+		curl $resolved_method -H "Content-Type: plain/text" $cont_len $data $host$temp_uri
 
 		exit_status=$?
 		if [ $exit_status -ne 0 ] && [  $exit_status -ne 143 ] ;
 		then
-			spx_log_ "$exit_status"
-			spx_log_ "\n\n\033[31mrequest [ \033[32m$request\033[0m \033[31m]  error occurred\033[0m\n\n"
+			spx_log_ "\n exit_status: $exit_status"
+			spx_log_ "\033[31mrequest [ \033[32m$request\033[0m \033[31m]  error occurred\033[0m\n\n"
 			exit 1
 		else
-			spx_log_ "\033[32msuccess\033[0m"
+			spx_log_ "\n\033[32msuccess\033[0m"
 		fi
 
 		echo ""
