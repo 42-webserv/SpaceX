@@ -39,6 +39,7 @@ typedef std::vector<port_info_t>			port_list_t;
 typedef std::map<std::string, std::string>	cgi_header_t;
 typedef std::map<std::string, std::string>	req_header_t;
 typedef std::pair<std::string, std::string> header;
+typedef std::vector<Client*>				close_vec_t;
 
 class Client;
 class ReqField;

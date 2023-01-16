@@ -48,7 +48,7 @@ OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 #	Compile Flags
 #==============================================================================
 CXX			=	c++
-# CXX_WARN_FLAGS	=	all extra error
+CXX_WARN_FLAGS	=	all extra error
 #// NOTE: Need to uncomment later
 CXX_STD_FLAGS	=	c++98
 CXXFLAGS	+=	$(addprefix -W, $(CXX_WARN_FLAGS))

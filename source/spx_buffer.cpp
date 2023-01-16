@@ -5,11 +5,9 @@ SpxBuffer::SpxBuffer()
 	: _buf()
 	, _buf_size(0)
 	, _partial_point(0) {
-	// std::cout << "constructor buf size " << _buf.size() << std::endl;
 }
 
 SpxBuffer::~SpxBuffer() {
-	// std::cout << "destructor buf size " << _buf.size() << std::endl;
 	while (_buf.size()) {
 		delete[] static_cast<char*>(_buf.back().iov_base);
 		_buf.pop_back();
@@ -96,7 +94,6 @@ SpxBuffer::delete_size_for_move_(size_t size) {
 
 size_t
 SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
-	// std::cout << "partial" << std::endl;
 	size_t		 del_size = _buf.front().iov_len;
 	struct iovec new_iov;
 
@@ -124,7 +121,6 @@ SpxBuffer::move_partial_case_(SpxBuffer& to_buf, size_t size) {
 
 size_t
 SpxBuffer::move_nonpartial_case_(SpxBuffer& to_buf, size_t size) {
-	// std::cout << "nonpartial" << std::endl;
 	size_t			tmp_size = size;
 	struct iovec	new_iov;
 	iov_t::iterator it = _buf.begin();
@@ -195,7 +191,6 @@ SpxBuffer::write_debug_(int fd) {
 	if (n_write <= 0) {
 		return n_write;
 	}
-	// delete_size_(n_write);
 	return n_write;
 }
 
@@ -311,13 +306,12 @@ SpxBuffer::get_str_cpy_(std::string& str, size_t size) {
 int
 SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 	size_t lf_pos;
-	size_t tmp_size;
 
 	if (_buf.empty()) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == -1) {
+	if (lf_pos == ULONG_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;
@@ -334,13 +328,12 @@ SpxBuffer::get_crlf_line_(std::string& line, size_t size) {
 int
 SpxBuffer::get_crlf_cpy_line_(std::string& line, size_t size) {
 	size_t lf_pos;
-	size_t tmp_size;
 
 	if (_buf.empty()) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == -1) {
+	if (lf_pos == ULONG_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;
@@ -356,13 +349,12 @@ SpxBuffer::get_crlf_cpy_line_(std::string& line, size_t size) {
 int
 SpxBuffer::get_lf_line_(std::string& line, size_t size) {
 	size_t lf_pos;
-	size_t tmp_size;
 
 	if (_buf.empty()) {
 		return false;
 	}
 	lf_pos = find_pos_(LF, size);
-	if (lf_pos == -1) {
+	if (lf_pos == ULONG_MAX) {
 		return false;
 	} else if (lf_pos == 0) {
 		return -1;
@@ -406,7 +398,6 @@ SpxReadBuffer::SpxReadBuffer(size_t _rdbuf_buf_size, int _rdbuf_iov_vec_size)
 }
 
 SpxReadBuffer::~SpxReadBuffer() {
-	// std::cout << "rdbuf destructor size " << _rdbuf.size() << std::endl;
 	while (_rdbuf.size()) {
 		delete[] static_cast<char*>(_rdbuf.back().iov_base);
 		_rdbuf.pop_back();
@@ -417,7 +408,7 @@ void
 SpxReadBuffer::set_empty_buf_() {
 	struct iovec tmp;
 
-	while (_rdbuf.size() < _rdbuf_iov_vec_size) {
+	while (_rdbuf.size() < static_cast<size_t>(_rdbuf_iov_vec_size)) {
 		tmp.iov_base = new char[_rdbuf_buf_size];
 		tmp.iov_len	 = _rdbuf_buf_size;
 		_rdbuf.push_back(tmp);
@@ -427,7 +418,6 @@ SpxReadBuffer::set_empty_buf_() {
 ssize_t
 SpxReadBuffer::read_(int fd, SpxBuffer& buf) {
 	set_empty_buf_();
-	// std::cout << "empty_buf size " << _rdbuf.size() << std::endl;
 	ssize_t n_read = readv(fd, &_rdbuf.front(), _rdbuf.size());
 
 	if (n_read <= 0) {
@@ -442,7 +432,6 @@ SpxReadBuffer::read_(int fd, SpxBuffer& buf) {
 		++it;
 	}
 	buf.get_buf_().insert(buf.get_buf_().end(), _rdbuf.begin(), it);
-	// std::cout << "buf size " << _buf.size() << std::endl;
 	_rdbuf.erase(_rdbuf.begin(), it);
 
 	return n_read;

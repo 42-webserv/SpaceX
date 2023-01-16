@@ -17,9 +17,9 @@ ReqField::ReqField()
 	, _upld_fn()
 	, _uri_loc(NULL)
 	, _uri_resolv()
-	, _flag(0)
 	, _req_mthd(REQ_LINE_PARSING)
-	, _is_chnkd(false) {
+	, _is_chnkd(false)
+	, _flag(0) {
 }
 
 ReqField::~ReqField() {
@@ -37,19 +37,19 @@ ReqField::clear_() {
 	_cnt_len	= -1;
 	_body_fd	= -1;
 	_uri_loc	= NULL;
-	_flag		= 0;
 	_req_mthd	= REQ_LINE_PARSING;
 	_is_chnkd	= false;
+	_flag		= 0;
 }
 
 ResField::ResField()
 	: _res_header()
 	, _dwnl_fn()
 	, _res_buf()
-	, _body_fd(-1)
 	, _body_read(0)
 	, _body_write(0)
 	, _body_size(0)
+	, _body_fd(-1)
 	, _is_chnkd(false)
 	, _header_sent(0)
 	, _write_finished(false)
@@ -61,6 +61,25 @@ ResField::ResField()
 }
 
 ResField::~ResField() {
+}
+
+void
+ResField::clear_() {
+	_res_header.clear();
+	_dwnl_fn.clear();
+	_headers.clear();
+	_res_buf.clear_();
+	_body_read		= 0;
+	_body_write		= 0;
+	_body_size		= 0;
+	_body_fd		= -1;
+	_is_chnkd		= 0;
+	_header_sent	= 0;
+	_write_finished = false;
+	_version_minor	= 1;
+	_version_major	= 1;
+	_status_code	= 200;
+	_status			= "OK";
 }
 
 void
@@ -323,23 +342,4 @@ ResField::set_date_(void) {
 	char date_buf[32];
 	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
 	_headers.push_back(header("Date", date_buf));
-}
-
-void
-ResField::clear_() {
-	_res_header.clear();
-	_dwnl_fn.clear();
-	_headers.clear();
-	_res_buf.clear_();
-	_body_fd		= -1;
-	_body_read		= 0;
-	_body_write		= 0;
-	_body_size		= 0;
-	_is_chnkd		= 0;
-	_header_sent	= 0;
-	_write_finished = false;
-	_version_minor	= 1;
-	_version_major	= 1;
-	_status_code	= 200;
-	_status			= "OK";
 }
