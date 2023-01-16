@@ -90,6 +90,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 	//  initialize
 	uri_resolved_sets.is_cgi_  = false;
 	uri_resolved_sets.cgi_loc_ = NULL;
+	uri_resolved_sets.cgi_path_info_.clear();
 	uri_resolved_sets.request_uri_.clear();
 	uri_resolved_sets.resolved_request_uri_.clear();
 	uri_resolved_sets.script_name_.clear();
@@ -143,7 +144,15 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			} else {
 				candidate_surfix_index = loc_it->second.index;
 			}
-			if (!(return_location->cgi_path_info.empty())) {
+			if (!(return_location->cgi_pass.empty())) {
+				std::string				 extension = loc_it->second.cgi_pass.substr(loc_it->second.cgi_pass.find_last_of('.'));
+				cgi_list_map_p::iterator cgi_it	   = cgi_case.find(extension);
+				if (cgi_it != cgi_case.end()) {
+					uri_resolved_sets.cgi_path_info_   = cgi_it->second.cgi_path_info;
+					uri_resolved_sets.script_filename_ = loc_it->second.cgi_pass;
+				} else {
+					uri_resolved_sets.cgi_path_info_ = loc_it->second.cgi_pass;
+				}
 				uri_resolved_sets.is_cgi_  = true;
 				uri_resolved_sets.cgi_loc_ = &loc_it->second;
 				flag_for_uri_status |= Kuri_cgi;
@@ -226,8 +235,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					if (cgi_it != cgi_case.end()) {
 						uri_resolved_sets.cgi_loc_ = &cgi_it->second;
 						if (uri_resolved_sets.cgi_loc_->accepted_methods_flag & request_method) {
-							uri_resolved_sets.is_cgi_ = true;
-							return_location			  = &cgi_it->second;
+							uri_resolved_sets.is_cgi_		 = true;
+							uri_resolved_sets.cgi_path_info_ = cgi_it->second.cgi_path_info;
+							return_location					 = &cgi_it->second;
 							flag_for_uri_status |= Kuri_cgi;
 						}
 					}
@@ -262,7 +272,7 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 
 		case uri_done: {
 			if (flag_for_uri_status & Kuri_depth_uri && flag_for_uri_status & Kuri_notfound_uri) {
-				// return_location			   = NULL;
+				return_location			   = NULL;
 				uri_resolved_sets.cgi_loc_ = NULL;
 				uri_resolved_sets.is_cgi_  = false;
 			} else if (!(flag_for_uri_status & Kuri_cgi)
@@ -274,7 +284,6 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 			}
 			uri_resolved_sets.script_filename_ = path_resolve_(candidate_physical_path + uri_resolved_sets.script_name_);
 			uri_resolved_sets.script_name_	   = path_resolve_(candidate_phenomenon_path + uri_resolved_sets.script_name_);
-
 			if (!(flag_for_uri_status & (Kuri_notfound_uri | Kuri_cgi | Kuri_check_extension))
 				&& !(candidate_surfix_index.empty())) {
 				DIR* dir = NULL;
@@ -286,6 +295,9 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 						closedir(dir);
 					}
 				}
+			}
+			if (flag_for_uri_status & Kflag_cgi_pass) {
+				uri_resolved_sets.script_filename_ = uri_resolved_sets.cgi_loc_->cgi_pass;
 			}
 			// if (flag_for_uri_status & Kuri_cgi && !(flag_for_uri_status & Kuri_cgi_pass)) {
 			// 	std::ifstream file;
@@ -359,6 +371,7 @@ uri_resolved_t::print_(void) const {
 	} else {
 		spx_log_("cgi_location_t: ON");
 	}
+	spx_log_("cgi_path_info: ", cgi_path_info_);
 	spx_log_("request_uri: ", request_uri_);
 	spx_log_("resolved_request_uri: ", resolved_request_uri_);
 	spx_log_("script_name: ", script_name_);

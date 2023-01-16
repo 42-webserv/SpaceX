@@ -228,8 +228,8 @@ spx_config_syntax_checker(std::string const&	   buf,
 				break;
 			}
 			if (*it == ';') {
-				if (prev_state == conf_server_CB_open || prev_state == conf_location_CB_open){
-			return error__("conf_start", "semicolon can't exist after CB open - error", line_number_count);
+				if (prev_state == conf_server_CB_open || prev_state == conf_location_CB_open) {
+					return error__("conf_start", "semicolon can't exist after CB open - error", line_number_count);
 				}
 				prev_state = next_state;
 				state	   = conf_endline;
@@ -605,13 +605,13 @@ spx_config_syntax_checker(std::string const&	   buf,
 						}
 					}
 					if (flag_location_part & Kflag_saved_path) {
-						if (!(flag_location_part & Kflag_cgi_path_info) && temp_uri_location_info.saved_path.at(0) == '.') {
+						if (!(flag_location_part & Kflag_cgi_pass) && temp_uri_location_info.saved_path.at(0) == '.') {
 							return error__("conf_location_zero", "location saved_path must not start with '.' ", line_number_count);
 						}
 					} else {
 						temp_uri_location_info.saved_path = temp_uri_location_info.uri + "_saved";
 					}
-					if (!(flag_location_part & (Kflag_redirect | Kflag_cgi_path_info))) {
+					if (!(flag_location_part & (Kflag_redirect | Kflag_cgi_pass))) {
 						DIR* dir = opendir(temp_uri_location_info.root.c_str());
 						if (dir == NULL) {
 							return error__("conf_location_zero", "location root is not valid dir_name. check exist or control level", line_number_count);
@@ -1038,9 +1038,15 @@ spx_config_syntax_checker(std::string const&	   buf,
 			}
 			if (syntax_(isspace_, static_cast<uint8_t>(*it)) || *it == ';') {
 				temp_uri_location_info.cgi_pass = temp_string;
-				prev_state						= state;
-				state							= conf_start;
-				next_state						= conf_waiting_location_value;
+				std::fstream exist_test;
+				exist_test.open(temp_uri_location_info.cgi_pass.c_str(), std::ios::in);
+				if (!exist_test.is_open()) {
+					return error__("conf_cgi_pass", "invalid cgi_pass", line_number_count);
+				}
+				exist_test.close();
+				prev_state = state;
+				state	   = conf_start;
+				next_state = conf_waiting_location_value;
 				flag_location_part |= Kflag_cgi_pass;
 				temp_string.clear();
 				break;
@@ -1058,8 +1064,9 @@ spx_config_syntax_checker(std::string const&	   buf,
 				std::fstream exist_test;
 				exist_test.open(temp_uri_location_info.cgi_path_info.c_str(), std::ios::in);
 				if (!exist_test.is_open()) {
-					return error__("conf_cgi_path_info", "invalid cgi script", line_number_count);
+					return error__("conf_cgi_path_info", "invalid cgi_pass_info", line_number_count);
 				}
+				exist_test.close();
 				prev_state = state;
 				state	   = conf_start;
 				next_state = conf_waiting_location_value;

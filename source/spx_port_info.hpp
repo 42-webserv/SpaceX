@@ -143,6 +143,7 @@ typedef enum {
 typedef struct uri_resolved {
 	bool			is_cgi_;
 	uri_location_t* cgi_loc_;
+	std::string		cgi_path_info_;
 	std::string		request_uri_;
 	std::string		resolved_request_uri_;
 	std::string		script_name_;
