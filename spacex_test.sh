@@ -9,7 +9,7 @@ spx_log_() {
 if [ -z $1 ];
 then
 	echo "\033[31mconf argument required\033[0m"
-	echo "./req_test_per_location.sh [some.conf]"
+	echo "./spacex_test.sh [some.conf]"
 	exit
 fi
 
@@ -34,7 +34,12 @@ method_list=("GET" "HEAD" "PUT" "POST" "DELETE" "SPACEX" )
 len2=${#method_list[@]}
 #spx_log_ "$len2"
 
-host="localhost:8080"
+if [ -z $2 ];
+then
+	host="localhost:8080"
+else
+	host=$2
+fi
 #should  check port parsing
 ############################
 while [ $i -lt $len ];
@@ -67,12 +72,18 @@ do
 		else
 			resolved_method="-X $method"
 		fi
-		
+
 		error=0
 		echo ""
-		echo $(curl $resolved_method -H "Content-Type: plain/text"  $data $host$temp_ur)
-
-
+		curl $resolved_method -H "Content-Type: plain/text"  $data $host$temp_uri
+		exit_status=$?
+		if [ $exit_status -ne 0 ];
+		then
+			spx_log_ "\n\n\033[31mrequest [ \033[32m$request\033[0m \033[31m]  error occurred\033[0m\n\n"
+			exit 1
+		else
+			spx_log_ "\033[32msuccess\033[0m"
+		fi
 
 		echo ""
 		let j++
@@ -80,5 +91,6 @@ do
 	done
     let i++
 done
+
 #curl -X POST -H “Content-Type: plain/text” –data "" localhost:port/location
 #curl –resolve example.com:80:127.0.0.1 http://example.com/
