@@ -189,9 +189,9 @@ spx_console_log_(std::string start_line, struct timeval const& established, cons
 	std::cout
 		<< color << std::setw(35) << std::left << start_line
 		<< std::setw(3) << std::right << now.tv_sec - established.tv_sec << "."
-		<< std::setfill('0') << std::setw(3) << msec << " secs:\t"
-		<< std::setfill(' ') << std::setw(10) << std::right << byte << " bytes ==>\t"
-		<< method_map_str_color_(method) << "\t" << color << uri << COLOR_RESET << std::endl;
+		<< std::setfill('0') << std::setw(3) << msec << " secs: "
+		<< std::setfill(' ') << std::setw(13) << std::right << byte << " bytes ==>  "
+		<< std::setw(5) << std::left << method_map_str_color_(method) << "\t" << color << uri << COLOR_RESET << std::endl;
 }
 
 #endif

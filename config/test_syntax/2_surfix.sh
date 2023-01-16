@@ -85,22 +85,22 @@ server {
         redirect         https://github.com;
     }
 
-    location /42 {
+    location /42 {;
         accepted_methods GET HEAD;
         redirect         https://profile.intra.42.fr;
     }
 
-    location /a {
+    location /a {;
         accepted_methods GET HEAD;
         redirect         b;
     }
 
-    location /i {
+    location /i {;
         accepted_methods GET HEAD;
         redirect         index;
     }
 
-    # location /b {
+    # location /b {;
     #     accepted_methods GET HEAD;
     #     redirect         a;
     # }
