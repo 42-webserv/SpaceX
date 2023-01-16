@@ -62,7 +62,7 @@ public:
 	rdbuf_t*		   _rdbuf;
 	buf_t			   _buf;
 	int				   _state;
-	int				   _skip_size;
+	size_t			   _skip_size;
 	port_info_t*	   _port_info;
 	struct sockaddr_in _sockaddr;
 	session_storage_t* _storage;

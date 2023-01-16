@@ -68,7 +68,7 @@ Client::request_line_parser_() {
 bool
 Client::header_field_parser_() {
 	std::string key_val;
-	int			idx;
+	size_t		idx;
 
 	while (true) {
 		key_val.clear();
@@ -160,17 +160,17 @@ Client::error_response_keep_alive_(http_status error_code) {
 	}
 	if (_req._req_mthd & (REQ_GET | REQ_HEAD | REQ_DELETE)) {
 		if (_req._is_chnkd) {
-			_req._body_size = -1;
+			_req._body_size = SIZE_T_MAX;
 			_state			= REQ_SKIP_BODY_CHUNKED;
 		} else {
-			if (_req._cnt_len == -1 || _req._cnt_len == 0) {
+			if (_req._cnt_len == SIZE_T_MAX || _req._cnt_len == 0) {
 				_state = REQ_HOLD;
 			} else {
 				_state = REQ_SKIP_BODY;
 			}
 		}
 	} else {
-		if (_req._is_chnkd || _req._cnt_len == -1) {
+		if (_req._is_chnkd || _req._cnt_len == SIZE_T_MAX) {
 			_req._body_size = -1;
 			_state			= REQ_SKIP_BODY_CHUNKED;
 		} else {
@@ -224,7 +224,7 @@ Client::res_for_get_head_req_() {
 
 	if (_req._is_chnkd) {
 		_state = REQ_SKIP_BODY_CHUNKED;
-	} else if (_req._cnt_len == 0 || _req._cnt_len == -1) {
+	} else if (_req._cnt_len == 0 || _req._cnt_len == SIZE_T_MAX) {
 		_state = REQ_HOLD;
 	} else {
 		_skip_size = _req._cnt_len;
@@ -259,7 +259,7 @@ Client::res_for_post_put_req_() {
 		return false;
 	}
 
-	if (_req._is_chnkd || _req._cnt_len == -1) {
+	if (_req._is_chnkd || _req._cnt_len == SIZE_T_MAX) {
 		_req._body_size = 0;
 		_req._cnt_len	= -1;
 		_state			= REQ_BODY_CHUNKED;
@@ -347,7 +347,7 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			}
 			if (_req._is_chnkd) {
 				_state = REQ_SKIP_BODY_CHUNKED;
-			} else if (_req._cnt_len == 0 || _req._cnt_len == -1) {
+			} else if (_req._cnt_len == 0 || _req._cnt_len == SIZE_T_MAX) {
 				_state = REQ_HOLD;
 			} else {
 				_skip_size = _req._cnt_len;
