@@ -65,6 +65,12 @@ public:
 	~ReqField();
 
 	void clear_();
+	bool set_uri_info_and_cookie_(Client& cl);
+	bool host_check_(std::string& host);
+
+	bool res_for_get_head_req_(Client& cl);
+	bool res_for_post_put_req_(Client& cl);
+	void res_for_delete_req_(Client& cl);
 };
 
 class ResField {
@@ -90,19 +96,20 @@ public:
 	ResField();
 	~ResField();
 
+	void clear_();
+
+	void make_error_response_(Client& cl, http_status error_code);
+	void make_response_header_(Client& cl);
+	void make_cgi_response_header_(Client& cl);
+	void make_redirect_response_(Client& cl);
+
 	int			file_open_(const char* dir) const;
 	off_t		set_content_length_(int fd);
 	void		set_content_type_(std::string uri);
 	void		set_date_();
-	std::string handle_static_error_page_();
 	std::string make_to_string_() const;
 	void		write_to_response_buffer_(const std::string& content);
-	void		clear_();
 
-	void make_error_response_(Client& cl, http_status error_code);
-	void make_response_header_(Client& cl);
-	void make_redirect_response_(Client& cl);
-	void make_cgi_response_header_(Client& cl);
 	// 	/* RESPONSE END*/
 };
 

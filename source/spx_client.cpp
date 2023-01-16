@@ -57,6 +57,7 @@ Client::request_line_parser_() {
 			// read more case.
 			return false;
 		}
+		spx_log_(req_line);
 		if (req_line.size())
 			break;
 	}
@@ -76,6 +77,7 @@ Client::header_field_parser_() {
 			if (key_val.empty()) {
 				break;
 			}
+			spx_log_(key_val);
 			idx = key_val.find(':');
 			if (idx != std::string::npos) {
 				for (std::string::iterator it = key_val.begin(); it != key_val.begin() + idx; ++it) {
@@ -112,14 +114,6 @@ Client::header_field_parser_() {
 	}
 
 	return true;
-}
-
-bool
-Client::host_check_(std::string& host) {
-	if (host.empty() || (host.size() && host.find_first_of(" \t") == std::string::npos)) {
-		return true;
-	}
-	return false;
 }
 
 void
@@ -210,30 +204,6 @@ Client::do_cgi_(struct kevent* cur_event) {
 }
 
 bool
-Client::res_for_get_head_req_() {
-	_res.make_response_header_(*this);
-
-	if (_res._body_fd > 0) {
-		if (_res._body_size) {
-			add_change_list(*change_list, _res._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this);
-		} else {
-			close(_res._body_fd);
-			_res._body_fd = -1;
-		}
-	}
-
-	if (_req._is_chnkd) {
-		_state = REQ_SKIP_BODY_CHUNKED;
-	} else if (_req._cnt_len == 0 || _req._cnt_len == SIZE_T_MAX) {
-		_state = REQ_HOLD;
-	} else {
-		_skip_size = _req._cnt_len;
-		_state	   = REQ_SKIP_BODY;
-	}
-	return false;
-}
-
-bool
 Client::state_req_body_() {
 	int n_move = _buf.move_(_req._body_buf, _req._cnt_len - _req._body_read);
 
@@ -242,41 +212,6 @@ Client::state_req_body_() {
 		_state = REQ_HOLD;
 	}
 	return true;
-}
-
-bool
-Client::res_for_post_put_req_() {
-	_req._upld_fn = _req._uri_resolv.script_filename_;
-
-	if (_req._req_mthd & REQ_POST) {
-		_req._body_fd = open(_req._upld_fn.c_str(), O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
-	} else {
-		_req._body_fd = open(_req._upld_fn.c_str(), O_WRONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
-	}
-	if (_req._body_fd < 0) {
-		// 405 not allowed error with keep-alive connection.
-		error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
-		return false;
-	}
-
-	if (_req._is_chnkd || _req._cnt_len == SIZE_T_MAX) {
-		_req._body_size = 0;
-		_req._cnt_len	= -1;
-		_state			= REQ_BODY_CHUNKED;
-		_chnkd.chunked_body_(*this);
-	} else {
-		if (_req._cnt_len > _req._body_limit) {
-			close(_req._body_fd);
-			remove(_req._upld_fn.c_str());
-			error_response_keep_alive_(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
-			return false;
-		} else {
-			add_change_list(*change_list, _req._body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
-			_state = REQ_BODY;
-			state_req_body_();
-		}
-	}
-	return false;
 }
 
 bool
@@ -297,27 +232,12 @@ Client::req_res_controller_(struct kevent* cur_event) {
 			return false;
 		}
 
-		std::string& host = _req._header["host"];
-
-		_req._serv_info = &_port_info->search_server_config_(host);
-		if (host_check_(host) == false) {
-			_res.make_error_response_(*this, HTTP_STATUS_BAD_REQUEST);
-			_state = E_BAD_REQ;
+		if (_req.set_uri_info_and_cookie_(*this) == false) {
 			return false;
 		}
-		_req._uri_loc = _req._serv_info->get_uri_location_t_(_req._uri, _req._uri_resolv, _req._req_mthd);
 
-		if (_req._uri_loc) {
-			_req._body_limit = _req._uri_loc->client_max_body_size;
-		}
-
-		if (_req._req_mthd & REQ_DELETE) {
-			_req._uri_resolv.is_cgi_ = false;
-		}
-
-		set_cookie_();
-
-		if (_req._uri_loc == NULL || (_req._uri_loc->accepted_methods_flag & _req._req_mthd) == false) {
+		if (_req._uri_loc == NULL
+			|| (_req._uri_loc->accepted_methods_flag & _req._req_mthd) == false) {
 			_req._uri_resolv.is_cgi_ = false;
 			if (_req._uri_loc == NULL) {
 				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
@@ -335,24 +255,12 @@ Client::req_res_controller_(struct kevent* cur_event) {
 		switch (_req._req_mthd) {
 		case REQ_GET:
 		case REQ_HEAD:
-			return res_for_get_head_req_();
+			return _req.res_for_get_head_req_(*this);
 		case REQ_POST:
 		case REQ_PUT:
-			return res_for_post_put_req_();
+			return _req.res_for_post_put_req_(*this);
 		case REQ_DELETE:
-			if (remove(_req._uri_resolv.script_filename_.c_str()) == -1) {
-				error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
-			} else {
-				_res.make_response_header_(*this);
-			}
-			if (_req._is_chnkd) {
-				_state = REQ_SKIP_BODY_CHUNKED;
-			} else if (_req._cnt_len == 0 || _req._cnt_len == SIZE_T_MAX) {
-				_state = REQ_HOLD;
-			} else {
-				_skip_size = _req._cnt_len;
-				_state	   = REQ_SKIP_BODY;
-			}
+			_req.res_for_delete_req_(*this);
 			break;
 		}
 		break;
@@ -429,7 +337,6 @@ Client::disconnect_client_() {
 void
 Client::read_to_client_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _buf);
-	_buf.write_debug_();
 	if (n_read <= 0) {
 		return;
 	}
@@ -447,8 +354,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 		close(cur_event->ident);
 		close(_cgi._write_to_cgi_fd);
-		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+		// add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		return;
 	}
 	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != SIZE_T_MAX) {
@@ -461,16 +367,16 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
 
 	if (n_read <= 0) {
-		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-		close(cur_event->ident);
-		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+		// error_exit("read_to_res_buffer");
+		// error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
+		// close(cur_event->ident);
+		// add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		return;
 	}
 
 	_res._body_read += n_read;
 	if (_res._body_read == _res._body_size) {
 		close(cur_event->ident);
-		add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 	}
 }
@@ -569,6 +475,7 @@ Client::write_response_() {
 		if (_req._uri_resolv.is_cgi_) {
 			n_write = _cgi._from_cgi.write_(_client_fd);
 		} else {
+			_res._res_buf.write_debug_();
 			n_write = _res._res_buf.write_(_client_fd);
 		}
 		if (n_write < 0) {

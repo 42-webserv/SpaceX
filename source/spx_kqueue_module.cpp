@@ -66,7 +66,7 @@ kqueue_module(port_list_t& port_info) {
 				write_event_handler(cur_event);
 				break;
 			case EVFILT_TIMER:
-				if (cur_event->ident == ULONG_MAX) {
+				if (cur_event->ident == SIZE_T_MAX) {
 					session_timer_event_handler(cur_event);
 				}
 				break;
@@ -103,7 +103,7 @@ create_client_event(uintptr_t serv_sd, event_list_t& change_list, port_info_t& p
 	uintptr_t client_fd = accept(serv_sd, NULL, NULL);
 #endif
 
-	if (client_fd == ULONG_MAX) {
+	if (client_fd == SIZE_T_MAX) {
 		error_str("accept error");
 		return false;
 	} else {

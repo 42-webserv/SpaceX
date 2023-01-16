@@ -79,21 +79,19 @@ public:
 	bool request_line_parser_();
 	bool request_line_check_(std::string& req_line);
 	bool header_field_parser_();
-	bool host_check_(std::string& host);
 	void set_cookie_();
+
 	void error_response_keep_alive_(http_status error_code);
 	void do_cgi_(struct kevent* cur_event);
-	bool res_for_get_head_req_();
-	bool res_for_post_put_req_();
 
 	void disconnect_client_();
-	bool write_to_cgi_(struct kevent* cur_event);
-	bool write_response_();
-	bool write_for_upload_(struct kevent* cur_event);
-
 	void read_to_client_buffer_(struct kevent* cur_event);
 	void read_to_cgi_buffer_(struct kevent* cur_event);
 	void read_to_res_buffer_(struct kevent* cur_event);
+
+	bool write_for_upload_(struct kevent* cur_event);
+	bool write_to_cgi_(struct kevent* cur_event);
+	bool write_response_();
 };
 
 typedef Client client_t;

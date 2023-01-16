@@ -65,7 +65,7 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 LEAK		=	-fsanitize=leak
 
 CXXFLAGS	+=	$(DEBUG)
-# CXXFLAGS	+=	$(SNTZ)
+CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	$(OPT)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
