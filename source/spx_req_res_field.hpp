@@ -92,19 +92,14 @@ public:
 	~ResField();
 
 	int			file_open_(const char* dir) const;
-	off_t		setContentLength_(int fd);
-	void		setContentType_(std::string uri);
-	void		setDate_();
+	off_t		set_content_length_(int fd);
+	void		set_content_type_(std::string uri);
+	void		set_date_();
 	std::string handle_static_error_page_();
 	std::string make_to_string_() const;
 	void		write_to_response_buffer_(const std::string& content);
 	void		clear_();
 
-	/* session & SESSION */
-	void setSessionHeader(std::string session_id);
-	/* RESPONSE END*/
-
-	// 	/* RESPONSE */
 	void make_error_response_(Client& cl, http_status error_code);
 	void make_response_header_(Client& cl);
 	void make_redirect_response_(Client& cl);
