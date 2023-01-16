@@ -42,6 +42,114 @@ ReqField::clear_() {
 	_flag		= 0;
 }
 
+bool
+ReqField::set_uri_info_and_cookie_(Client& cl) {
+	std::string& host = _header["host"];
+
+	_serv_info = &cl._port_info->search_server_config_(host);
+	if (host_check_(host) == false) {
+		cl._res.make_error_response_(cl, HTTP_STATUS_BAD_REQUEST);
+		cl._state = E_BAD_REQ;
+		return false;
+	}
+	_uri_loc = _serv_info->get_uri_location_t_(_uri, _uri_resolv, _req_mthd);
+
+	if (_uri_loc) {
+		_body_limit = _uri_loc->client_max_body_size;
+	}
+
+	if (_req_mthd & REQ_DELETE) {
+		_uri_resolv.is_cgi_ = false;
+	}
+
+	cl.set_cookie_();
+	return true;
+}
+
+bool
+ReqField::host_check_(std::string& host) {
+	if (host.empty() || (host.size() && host.find_first_of(" \t") == std::string::npos)) {
+		return true;
+	}
+	return false;
+}
+
+bool
+ReqField::res_for_get_head_req_(Client& cl) {
+	cl._res.make_response_header_(cl);
+
+	if (cl._res._body_fd > 0) {
+		if (cl._res._body_size) {
+			add_change_list(*cl.change_list, cl._res._body_fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, &cl);
+		} else {
+			close(cl._res._body_fd);
+			cl._res._body_fd = -1;
+		}
+	}
+
+	if (_is_chnkd) {
+		cl._state = REQ_SKIP_BODY_CHUNKED;
+	} else if (_cnt_len == 0 || _cnt_len == SIZE_T_MAX) {
+		cl._state = REQ_HOLD;
+	} else {
+		cl._skip_size = _cnt_len;
+		cl._state	  = REQ_SKIP_BODY;
+	}
+	return false;
+}
+
+bool
+ReqField::res_for_post_put_req_(Client& cl) {
+	_upld_fn = _uri_resolv.script_filename_;
+
+	if (_req_mthd & REQ_POST) {
+		_body_fd = open(_upld_fn.c_str(), O_WRONLY | O_CREAT | O_NONBLOCK | O_APPEND, 0644);
+	} else {
+		_body_fd = open(_upld_fn.c_str(), O_WRONLY | O_CREAT | O_NONBLOCK | O_TRUNC, 0644);
+	}
+	if (_body_fd < 0) {
+		// 405 not allowed error with keep-alive connection.
+		cl.error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
+		return false;
+	}
+
+	if (_is_chnkd || _cnt_len == SIZE_T_MAX) {
+		_body_size = 0;
+		_cnt_len   = -1;
+		cl._state  = REQ_BODY_CHUNKED;
+		cl._chnkd.chunked_body_(cl);
+	} else {
+		if (_cnt_len > _body_limit) {
+			close(_body_fd);
+			remove(_upld_fn.c_str());
+			cl.error_response_keep_alive_(HTTP_STATUS_RANGE_NOT_SATISFIABLE);
+			return false;
+		} else {
+			add_change_list(*cl.change_list, _body_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
+			cl._state = REQ_BODY;
+			cl.state_req_body_();
+		}
+	}
+	return false;
+}
+
+void
+ReqField::res_for_delete_req_(Client& cl) {
+	if (remove(_uri_resolv.script_filename_.c_str()) == -1) {
+		cl.error_response_keep_alive_(HTTP_STATUS_NOT_FOUND);
+	} else {
+		cl._res.make_response_header_(cl);
+	}
+	if (_is_chnkd) {
+		cl._state = REQ_SKIP_BODY_CHUNKED;
+	} else if (_cnt_len == 0 || _cnt_len == SIZE_T_MAX) {
+		cl._state = REQ_HOLD;
+	} else {
+		cl._skip_size = _cnt_len;
+		cl._state	  = REQ_SKIP_BODY;
+	}
+}
+
 ResField::ResField()
 	: _res_header()
 	, _dwnl_fn()
@@ -84,7 +192,6 @@ ResField::clear_() {
 
 void
 ResField::make_error_response_(Client& cl, http_status error_code) {
-
 	_status		 = http_status_str(error_code);
 	_status_code = error_code;
 
@@ -143,7 +250,6 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 // this is main logic to make response
 void
 ResField::make_response_header_(Client& cl) {
-
 	const std::string& uri	  = cl._req._uri_resolv.script_filename_;
 	int				   req_fd = -1;
 	std::string		   content;
@@ -230,7 +336,6 @@ ResField::make_response_header_(Client& cl) {
 
 void
 ResField::make_cgi_response_header_(Client& cl) {
-
 	// Set Date Header
 	set_date_();
 	std::map<std::string, std::string>::iterator it;
@@ -266,23 +371,6 @@ ResField::make_redirect_response_(Client& cl) {
 	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 }
 
-void
-ResField::write_to_response_buffer_(const std::string& content) {
-	_res_header.insert(_res_header.end(), content.begin(), content.end());
-}
-
-std::string
-ResField::make_to_string_() const {
-	std::stringstream stream;
-	stream << "HTTP/" << _version_major << "." << _version_minor
-		   << " " << _status_code << " " << _status << CRLF;
-	for (std::vector<header>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-		stream << it->first << ": " << it->second << CRLF;
-	}
-	stream << CRLF;
-	return stream.str();
-}
-
 int
 ResField::file_open_(const char* dir) const {
 	struct stat buf;
@@ -313,7 +401,6 @@ ResField::set_content_length_(int fd) {
 
 void
 ResField::set_content_type_(std::string uri) {
-
 	std::string::size_type uri_ext_size = uri.find_last_of('.');
 	std::string			   ext;
 
@@ -342,4 +429,21 @@ ResField::set_date_(void) {
 	char date_buf[32];
 	std::strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %T GMT", current_time);
 	_headers.push_back(header("Date", date_buf));
+}
+
+std::string
+ResField::make_to_string_() const {
+	std::stringstream stream;
+	stream << "HTTP/" << _version_major << "." << _version_minor
+		   << " " << _status_code << " " << _status << CRLF;
+	for (std::vector<header>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		stream << it->first << ": " << it->second << CRLF;
+	}
+	stream << CRLF;
+	return stream.str();
+}
+
+void
+ResField::write_to_response_buffer_(const std::string& content) {
+	_res_header.insert(_res_header.end(), content.begin(), content.end());
 }
