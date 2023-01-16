@@ -9,7 +9,7 @@ spx_log_() {
 if [ -z $1 ];
 then
 	echo "\033[31mconf argument required\033[0m"
-	echo "./spacex_test.sh [some.conf]"
+	echo "./spacex_test.sh [some.conf] [localhost:port_number]"
 	exit
 fi
 
