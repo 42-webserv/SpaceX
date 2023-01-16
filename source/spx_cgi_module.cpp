@@ -92,8 +92,6 @@ CgiModule::made_env_for_cgi_(int status) {
 				}
 			} else if (it->first == "authorization") {
 				vec_env_.push_back("HTTP_AUTHORIZATION=" + it->second);
-				// } else if (it->first == "auth-scheme") {
-				// 	vec_env_.push_back("AUTH_TYPE=" + it->second);
 			} else {
 				vec_env_.push_back("X_" + dashline_to_underline__(it->first) + "=" + it->second);
 			}
@@ -265,7 +263,6 @@ CgiModule::made_env_for_cgi_(int status) {
 
 	for (uint32_t i = 0; i < vec_env_.size(); ++i) {
 		env_for_cgi_.push_back(vec_env_[i].c_str());
-		// std::cerr << vec_env_[i].c_str() << std::endl;
 	}
 
 	env_for_cgi_.push_back(NULL);

@@ -100,7 +100,6 @@ Client::header_field_parser_() {
 	it = field->find("content-length");
 	if (it != field->end()) {
 		_req._cnt_len = strtoul((it->second).c_str(), NULL, 10);
-		spx_log_("content-length", _req._body_size);
 	}
 	it = field->find("transfer-encoding");
 	if (it != field->end()) {
@@ -451,7 +450,7 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		return;
 	}
-	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != -1) {
+	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != SIZE_T_MAX) {
 		_cgi.cgi_controller_(*this);
 	}
 }
@@ -477,8 +476,7 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 
 bool
 Client::write_for_upload_(struct kevent* cur_event) {
-	int	   n_write;
-	size_t buf_len;
+	int n_write;
 
 	if (_req._is_chnkd) {
 		n_write = _chnkd._chnkd_body.write_(cur_event->ident);
@@ -513,8 +511,7 @@ Client::write_for_upload_(struct kevent* cur_event) {
 
 bool
 Client::write_to_cgi_(struct kevent* cur_event) {
-	size_t buf_len;
-	int	   n_write;
+	int n_write;
 
 	n_write = _cgi._to_cgi.write_(cur_event->ident);
 
@@ -534,7 +531,7 @@ Client::write_to_cgi_(struct kevent* cur_event) {
 bool
 Client::write_response_() {
 	// no chunked case.
-	int n_write;
+	size_t n_write;
 	if (_res._header_sent == false) {
 
 #ifdef CONSOLE_LOG
