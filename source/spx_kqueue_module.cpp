@@ -69,6 +69,9 @@ kqueue_module(port_list_t& port_info) {
 				if (cur_event->ident == SIZE_T_MAX) {
 					session_timer_event_handler(cur_event);
 				}
+				// else {
+				// 	timer_event_handler(cur_event, change_list, for_close);
+				// }
 				break;
 			}
 		}
@@ -186,8 +189,8 @@ proc_event_wait_pid(struct kevent* cur_event) {
 	pid = waitpid(cl->_cgi._pid, &status, 0);
 	if (WEXITSTATUS(status) == EXIT_FAILURE) {
 		// cgi_process error exit case
-		close(cl->_cgi._write_to_cgi_fd);
-		close(cl->_cgi._read_from_cgi_fd);
+		// close(cl->_cgi._write_to_cgi_fd);
+		// close(cl->_cgi._read_from_cgi_fd);
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
 	spx_log_("pid ", pid);
@@ -242,12 +245,17 @@ kevent_eof_handler(struct kevent* cur_event, close_vec_t& for_close) {
 	}
 }
 
-void
-timer_event_handler(struct kevent* cur_event, event_list_t& change_list) {
-	// timeout(60s)
-	close(cur_event->ident);
-	add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
-}
+// void
+// timer_event_handler(struct kevent* cur_event, event_list_t& change_list, close_vec_t& for_close) {
+// 	// timeout(60s)
+// 	client_t* cl = static_cast<client_t*>(cur_event->udata);
+// 	cl->disconnect_client_();
+// 	close(cur_event->ident);
+// 	for_close.push_back(static_cast<client_t*>(cur_event->udata));
+// 	add_change_list(change_list, cur_event->ident, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+// 	add_change_list(change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+// 	add_change_list(change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+// }
 
 void
 session_timer_event_handler(struct kevent* cur_event) {
