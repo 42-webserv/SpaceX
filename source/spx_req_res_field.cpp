@@ -288,16 +288,14 @@ ResField::make_response_header_(Client& cl) {
 		} else if (req_fd == -1
 				   && cl._req._uri_loc->autoindex_flag == Kautoindex_on) {
 			content = generate_autoindex_page(req_fd, cl._req._uri_resolv);
-			std::stringstream ss;
-			ss << content.size();
-			_headers.push_back(header(CONTENT_LENGTH, ss.str()));
-			_body_size = content.size();
-
-			// autoindex fail case
 			if (content.empty()) {
 				make_error_response_(cl, HTTP_STATUS_FORBIDDEN);
 				return;
 			}
+			std::stringstream ss;
+			ss << content.size();
+			_headers.push_back(header(CONTENT_LENGTH, ss.str()));
+			_body_size = content.size();
 		}
 		if (req_fd != -1) {
 			set_content_type_(uri);

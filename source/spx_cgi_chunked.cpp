@@ -92,7 +92,7 @@ ChunkedField::chunked_body_(Client& cl) {
 			len.clear();
 			if (cl._buf.get_crlf_line_(len) == true) {
 				if (spx_chunked_syntax_start_line(len, _chnkd_size, cl._req._header) == spx_ok) {
-					add_change_list(*cl.change_list, cl._client_fd, EVFILT_READ, EV_ENABLE, 0, _chnkd_size - cl._buf.buf_size_(), &cl);
+					add_change_list(*cl.change_list, cl._client_fd, EVFILT_READ, EV_ADD, 0, _chnkd_size - cl._buf.buf_size_(), &cl);
 					if (_chnkd_size == 0) {
 						_last_chnkd = true;
 					}

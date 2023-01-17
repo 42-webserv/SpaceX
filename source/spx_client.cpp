@@ -329,6 +329,7 @@ Client::disconnect_client_() {
 		close(_cgi._read_from_cgi_fd);
 	}
 	if (_cgi._write_to_cgi_fd > 0) {
+		add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 		close(_cgi._write_to_cgi_fd);
 	}
 }

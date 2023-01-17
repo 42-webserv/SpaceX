@@ -47,8 +47,6 @@ kqueue_module(port_list_t& port_info) {
 			exit(spx_error);
 		}
 		change_list.clear();
-		// spx_log_("event_len", event_len);
-		std::cerr << "event_len : " << event_len << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
@@ -118,7 +116,6 @@ create_client_event(uintptr_t serv_sd, event_list_t& change_list, port_info_t& p
 
 		client_t* new_cl = new client_t(&change_list);
 
-		spx_log_(sizeof(client_t));
 		new_cl->_client_fd = client_fd;
 		new_cl->_rdbuf	   = rdbuf;
 		new_cl->_port_info = &port_info;
@@ -183,14 +180,9 @@ write_event_handler(struct kevent* cur_event) {
 
 void
 proc_event_wait_pid(struct kevent* cur_event) {
-	client_t* cl = static_cast<client_t*>(cur_event->udata);
-	int		  status;
-	int		  pid;
-
-	pid = waitpid(cl->_cgi._pid, &status, 0);
 	if (cur_event->data == 256) {
 		// cgi_process error exit case
-		std::cerr << cur_event->data << "\n";
+		client_t* cl = static_cast<client_t*>(cur_event->udata);
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
 }
@@ -208,6 +200,9 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event, close_vec
 	} else {
 		client_t* cl = static_cast<client_t*>(cur_event->udata);
 		if (cur_event->filter == EVFILT_READ) {
+			if (for_close.size() && for_close.back() == cur_event->udata) {
+				return;
+			}
 			if (cur_event->ident == cl->_client_fd) {
 				cl->disconnect_client_();
 				close(cur_event->ident);
