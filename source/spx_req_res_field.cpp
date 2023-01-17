@@ -84,6 +84,7 @@ ReqField::res_for_get_head_req_(Client& cl) {
 		} else {
 			close(cl._res._body_fd);
 			cl._res._body_fd = -1;
+			add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
 		}
 	}
 

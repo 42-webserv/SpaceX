@@ -238,8 +238,6 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		script[0] = req._uri_resolv.cgi_path_info_.c_str();
 		script[1] = req._uri_resolv.script_filename_.c_str();
 		script[2] = NULL;
-		spx_log_("script 0 ", script[0]);
-		spx_log_("script 1 ", script[1]);
 		cgi.made_env_for_cgi_(req._req_mthd);
 
 		dup2(write_to_cgi[0], STDIN_FILENO);
@@ -264,6 +262,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 	_read_from_cgi_fd = read_from_cgi[0];
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, _pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, cur_event->udata);
 
 	return true;
 }

@@ -71,7 +71,6 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 				std::string filename = entry->d_name;
 				result << "<tr>";
 				result << "<td>";
-				// TODO : this is something wrong
 				if (filename.compare("..") == 0) {
 					generate_root_path(full_path, path_info);
 					result << A_TAG_START << full_path << A_TAG_END;
@@ -93,7 +92,6 @@ generate_autoindex_page(int& req_fd, uri_resolved_t& path_info) {
 			if ((entry->d_type & DT_DIR) == false) {
 				// get the name of the file
 				std::string filename = entry->d_name;
-				// TODO : optimize this if statement
 				if (filename.size() > 1 && filename[0] == '.' && filename[1] != '.')
 					continue;
 				result << "<tr>";
