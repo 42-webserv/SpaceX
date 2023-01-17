@@ -6,11 +6,11 @@
 
 <body>
 	<div id="result"></div>
-	<button onclick="counting()"> count</button>
+	<button onclick="counting()"> cookie</button>
 </body>
 <script>
 	function counting() {
-		var value = document.cookie.match('(^|;) ?' + 'sessionID' + '=([^;]*)(;|$)');
+		var value = document.cookie;
 		document.getElementById("result").innerText = value;
 	}
 </script>
