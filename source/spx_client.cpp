@@ -340,6 +340,7 @@ Client::read_to_client_buffer_(struct kevent* cur_event) {
 	if (n_read <= 0) {
 		return;
 	}
+	// add_change_list(*change_list, _client_fd, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 10, this);
 
 	if (_state != REQ_HOLD) {
 		req_res_controller_(cur_event);
@@ -445,6 +446,9 @@ Client::write_response_() {
 		if (n_write < 0) {
 			return false;
 		}
+
+		// add_change_list(*change_list, _client_fd, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 10, this);
+
 		if (n_write != _res._res_header.size()) {
 			_res._res_header.erase(0, n_write);
 			return true;
@@ -467,6 +471,9 @@ Client::write_response_() {
 			if (n_write < 0) {
 				return false;
 			}
+
+			// add_change_list(*change_list, _client_fd, EVFILT_TIMER, EV_ADD, NOTE_SECONDS, 10, this);
+
 			_res._body_write += n_write;
 			if ((_cgi._is_chnkd && _res._body_write == _cgi._cgi_read)
 				|| (_cgi._is_chnkd == false && _res._body_write == _res._body_size)) {

@@ -306,13 +306,17 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				std::ifstream file;
 				file.open(uri_resolved_sets.script_filename_.c_str(), std::ios::in);
 				if (file.good()) {
+					if (!(flag_for_uri_status & Kuri_notfound_uri)) {
+							return_location = return_location_root;
+							}
 					spx_log_("cgi file exist");
 					file.close();
 				} else {
 					spx_log_("cgi file doesn't exist");
-					return_location			   = return_location_root;
-					uri_resolved_sets.cgi_loc_ = NULL;
-					uri_resolved_sets.is_cgi_  = false;
+					uri_resolved_sets.script_filename_ = uri_resolved_sets.cgi_loc_->cgi_pass; 
+//return_location			   = return_location_root;
+//					uri_resolved_sets.cgi_loc_ = NULL;
+//					uri_resolved_sets.is_cgi_  = false;
 				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);

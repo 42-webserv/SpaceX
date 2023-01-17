@@ -24,7 +24,8 @@ void proc_event_wait_pid(struct kevent* cur_event);
 void kevent_error_handler(port_list_t& port_info, struct kevent* cur_event);
 void kevent_eof_handler(struct kevent* cur_event, close_vec_t& for_close);
 
-void timer_event_handler(struct kevent* cur_event, event_list_t& change_list);
+void timer_event_handler(struct kevent* cur_event,
+						 event_list_t& change_list, close_vec_t& for_close);
 void session_timer_event_handler(struct kevent* cur_eventt);
 
 #endif
