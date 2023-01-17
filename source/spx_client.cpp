@@ -351,10 +351,6 @@ Client::read_to_cgi_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _cgi._from_cgi);
 
 	if (n_read <= 0) {
-		error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-		close(cur_event->ident);
-		close(_cgi._write_to_cgi_fd);
-		// add_change_list(*change_list, _cgi._write_to_cgi_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		return;
 	}
 	if (_cgi._cgi_state != CGI_HOLD && _req._cnt_len != SIZE_T_MAX) {
@@ -367,16 +363,13 @@ Client::read_to_res_buffer_(struct kevent* cur_event) {
 	int n_read = _rdbuf->read_(cur_event->ident, _res._res_buf);
 
 	if (n_read <= 0) {
-		// error_exit("read_to_res_buffer");
-		// error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-		// close(cur_event->ident);
-		// add_change_list(*change_list, cur_event->ident, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 		return;
 	}
 
 	_res._body_read += n_read;
 	if (_res._body_read == _res._body_size) {
 		close(cur_event->ident);
+		add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 		add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 	}
 }
@@ -393,7 +386,6 @@ Client::write_for_upload_(struct kevent* cur_event) {
 		_req._body_read += n_write;
 		if (_req._body_read == _req._cnt_len) {
 			close(cur_event->ident);
-			add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 			_state = REQ_HOLD;
 			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 			_res.make_response_header_(*this);
@@ -407,7 +399,6 @@ Client::write_for_upload_(struct kevent* cur_event) {
 
 		if (_req._body_buf.buf_size_() == 0 && _req._body_read == _req._cnt_len) {
 			close(cur_event->ident);
-			add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 			_state = REQ_HOLD;
 			add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, this);
 			_res.make_response_header_(*this);
@@ -428,7 +419,6 @@ Client::write_to_cgi_(struct kevent* cur_event) {
 	_cgi._cgi_read += n_write;
 	if (_cgi._cgi_read == _req._cnt_len) {
 		close(cur_event->ident);
-		add_change_list(*change_list, cur_event->ident, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 		_cgi._cgi_state = CGI_HEADER;
 		_state			= REQ_HOLD;
 	}
@@ -474,19 +464,12 @@ Client::write_response_() {
 		// file write
 		if (_req._uri_resolv.is_cgi_) {
 			n_write = _cgi._from_cgi.write_(_client_fd);
-		} else {
-			_res._res_buf.write_debug_();
-			n_write = _res._res_buf.write_(_client_fd);
-		}
-		if (n_write < 0) {
-			return false;
-		}
-		_res._body_write += n_write;
-
-		if (_req._uri_resolv.is_cgi_) {
+			if (n_write < 0) {
+				return false;
+			}
+			_res._body_write += n_write;
 			if ((_cgi._is_chnkd && _res._body_write == _cgi._cgi_read)
 				|| (_cgi._is_chnkd == false && _res._body_write == _res._body_size)) {
-				close(_res._body_fd);
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;
@@ -494,8 +477,12 @@ Client::write_response_() {
 				_res._write_finished = true;
 			}
 		} else {
+			n_write = _res._res_buf.write_(_client_fd);
+			if (n_write < 0) {
+				return false;
+			}
+			_res._body_write += n_write;
 			if (_res._body_write == _res._body_size) {
-				close(_res._body_fd);
 				add_change_list(*change_list, _client_fd, EVFILT_WRITE, EV_DELETE, 0, 0, this);
 				if (_state != REQ_SKIP_BODY_CHUNKED) {
 					_state = REQ_CLEAR;
@@ -503,7 +490,6 @@ Client::write_response_() {
 				_res._write_finished = true;
 			}
 		}
+		return true;
 	}
-
-	return true;
 }

@@ -222,7 +222,13 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		_headers.push_back(header(CONTENT_LENGTH, ss.str()));
 		_headers.push_back(header(CONTENT_TYPE, MIME_TYPE_HTML));
 		std::string tmp = make_to_string_();
+
+		if (!cl._req.session_id.empty()) {
+			_headers.push_back(header("Set-Cookie", cl._req.session_id));
+		}
+
 		write_to_response_buffer_(tmp);
+
 		if ((cl._req._req_mthd & REQ_HEAD) == false) {
 			// write_to_response_buffer_(error_page);
 			cl._res._res_buf.add_str(error_page);
@@ -241,6 +247,10 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		_body_fd = error_req_fd;
 	}
 
+	if (!cl._req.session_id.empty()) {
+		_headers.push_back(header("Set-Cookie", cl._req.session_id));
+	}
+
 	write_to_response_buffer_(make_to_string_());
 	if (_body_fd <= 0) {
 		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);
@@ -256,9 +266,6 @@ ResField::make_response_header_(Client& cl) {
 
 	// Set Date Header
 	set_date_();
-	if (!cl._req.session_id.empty()) {
-		_headers.push_back(header("Set-Cookie", cl._req.session_id));
-	}
 
 	// Redirect
 	if (cl._req._uri_loc != NULL && !(cl._req._uri_loc->redirect.empty())) {
@@ -321,6 +328,9 @@ ResField::make_response_header_(Client& cl) {
 	} else {
 		_headers.push_back(header(CONNECTION, KEEP_ALIVE));
 	}
+	if (!cl._req.session_id.empty()) {
+		_headers.push_back(header("Set-Cookie", cl._req.session_id));
+	}
 
 	write_to_response_buffer_(make_to_string_());
 	if (!content.empty()) {
@@ -357,6 +367,9 @@ ResField::make_cgi_response_header_(Client& cl) {
 		std::stringstream ss;
 		ss << _body_size;
 		_headers.push_back(header(CONTENT_LENGTH, ss.str().c_str()));
+	}
+	if (!cl._req.session_id.empty()) {
+		_headers.push_back(header("Set-Cookie", cl._req.session_id));
 	}
 	write_to_response_buffer_(make_to_string_());
 	add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);

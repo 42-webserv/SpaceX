@@ -15,7 +15,7 @@ NAME		= spacex
 # DEBUG_FLAG	+= LOG_FILE_MODE
 # DEBUG_FLAG	+= LOG_MODE
 # DEBUG_FLAG 	+= CONFIG_DEBUG
-DEBUG_FLAG	+=	DEBUG
+# DEBUG_FLAG	+=	DEBUG
 
 ifdef DEBUG_FLAG
 	LOG	+=	$(addprefix -D , $(DEBUG_FLAG))
@@ -64,8 +64,8 @@ MEM			=	-fsanitize=memory -fsanitize-memory-track-origins \
 				-fPIE -pie -fno-omit-frame-pointer
 LEAK		=	-fsanitize=leak
 
-CXXFLAGS	+=	$(DEBUG)
-CXXFLAGS	+=	$(SNTZ)
+# CXXFLAGS	+=	$(DEBUG)
+# CXXFLAGS	+=	$(SNTZ)
 # CXXFLAGS	+=	$(OPT)
 # CXXFLAGS	+=	-fno-sanitize-recover
 # CXXFLAGS	+=	-fstack-protector -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
