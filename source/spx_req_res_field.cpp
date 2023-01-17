@@ -196,8 +196,6 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 	_status		 = http_status_str(error_code);
 	_status_code = error_code;
 
-	// headers_.push_back(header("Server", "SpaceX/12.26"));
-
 	if (error_code == HTTP_STATUS_BAD_REQUEST) {
 		_headers.push_back(header(CONNECTION, CONNECTION_CLOSE));
 	} else {
@@ -231,7 +229,6 @@ ResField::make_error_response_(Client& cl, http_status error_code) {
 		write_to_response_buffer_(tmp);
 
 		if ((cl._req._req_mthd & REQ_HEAD) == false) {
-			// write_to_response_buffer_(error_page);
 			cl._res._res_buf.add_str(error_page);
 		}
 		add_change_list(*cl.change_list, cl._client_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, &cl);

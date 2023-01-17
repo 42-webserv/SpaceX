@@ -235,13 +235,11 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 					std::string				 check_extension = temp.substr(pos_);
 					cgi_list_map_p::iterator cgi_it			 = cgi_case.find(check_extension);
 					if (cgi_it != cgi_case.end()) {
-						uri_resolved_sets.cgi_loc_ = &cgi_it->second;
-						// if (uri_resolved_sets.cgi_loc_->accepted_methods_flag & request_method) {
+						uri_resolved_sets.cgi_loc_		 = &cgi_it->second;
 						uri_resolved_sets.is_cgi_		 = true;
 						uri_resolved_sets.cgi_path_info_ = cgi_it->second.cgi_path_info;
 						return_location					 = &cgi_it->second;
 						flag_for_uri_status |= Kuri_cgi;
-						// }
 					}
 				}
 				if (!(flag_for_uri_status & Kuri_cgi)) {
@@ -307,16 +305,13 @@ server_info_t::get_uri_location_t_(std::string const& uri,
 				file.open(uri_resolved_sets.script_filename_.c_str(), std::ios::in);
 				if (file.good()) {
 					if (!(flag_for_uri_status & Kuri_notfound_uri)) {
-							return_location = return_location_root;
-							}
+						return_location = return_location_root;
+					}
 					spx_log_("cgi file exist");
 					file.close();
 				} else {
 					spx_log_("cgi file doesn't exist");
-					uri_resolved_sets.script_filename_ = uri_resolved_sets.cgi_loc_->cgi_pass; 
-//return_location			   = return_location_root;
-//					uri_resolved_sets.cgi_loc_ = NULL;
-//					uri_resolved_sets.is_cgi_  = false;
+					uri_resolved_sets.script_filename_ = uri_resolved_sets.cgi_loc_->cgi_pass;
 				}
 			}
 			uri_resolved_sets.path_info_			= path_resolve_(uri_resolved_sets.path_info_);
@@ -503,7 +498,6 @@ uri_location_t::~uri_location() {
 
 void
 uri_location_t::print_(void) const {
-	// std::cout << "uri_location_t: " << this << std::endl;
 	std::cout << "module_state: " << module_state << std::endl;
 	std::cout << "accepted_methods_flag: ";
 	if (accepted_methods_flag & KGet)

@@ -47,6 +47,8 @@ kqueue_module(port_list_t& port_info) {
 			exit(spx_error);
 		}
 		change_list.clear();
+		// spx_log_("event_len", event_len);
+		std::cerr << "event_len : " << event_len << std::endl;
 
 		for (int i = 0; i < event_len; ++i) {
 			cur_event = &event_list[i];
@@ -69,9 +71,6 @@ kqueue_module(port_list_t& port_info) {
 				if (cur_event->ident == SIZE_T_MAX) {
 					session_timer_event_handler(cur_event);
 				}
-				// else {
-				// 	timer_event_handler(cur_event, change_list, for_close);
-				// }
 				break;
 			}
 		}
@@ -189,8 +188,9 @@ proc_event_wait_pid(struct kevent* cur_event) {
 	int		  pid;
 
 	pid = waitpid(cl->_cgi._pid, &status, 0);
-	if (cur_event->data) {
+	if (cur_event->data == 256) {
 		// cgi_process error exit case
+		std::cerr << cur_event->data << "\n";
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
 }

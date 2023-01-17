@@ -317,7 +317,6 @@ spx_chunked_syntax_start_line(std::string&						  line,
 
 	state = chunked_start;
 
-	// write(STDOUT_FILENO, &buf.rdsaved_[buf.rdcheckedp], buf.rdsaved_.size() - buf.rdchecked_);
 	while (state != chunked_done) {
 		switch (state) {
 		case chunked_start: {

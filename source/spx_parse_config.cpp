@@ -109,7 +109,6 @@ spx_config_syntax_checker(std::string const&	   buf,
 		conf_location_CB_open, // 15
 		conf_location_CB_close,
 		conf_accepted_methods,
-		// conf_set_module_case, // NOTE: specific action info
 		conf_root,
 		conf_index,
 		conf_autoindex, // 20
