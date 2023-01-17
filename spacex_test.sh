@@ -32,7 +32,7 @@ cnt=0
 
 method_list=("GET" "HEAD" "PUT" "POST" "DELETE" "SPACEX" )
 len2=${#method_list[@]}
-total=$(($len * $len2))
+total=$((($len * $len2) - 1))
 #spx_log_ "$len2"
 
 if [ -z $2 ];

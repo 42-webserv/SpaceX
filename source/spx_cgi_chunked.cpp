@@ -238,6 +238,8 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 		script[0] = req._uri_resolv.cgi_path_info_.c_str();
 		script[1] = req._uri_resolv.script_filename_.c_str();
 		script[2] = NULL;
+		spx_log_("script 0 ", script[0]);
+		spx_log_("script 1 ", script[1]);
 		cgi.made_env_for_cgi_(req._req_mthd);
 
 		dup2(write_to_cgi[0], STDIN_FILENO);

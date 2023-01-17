@@ -190,6 +190,8 @@ proc_event_wait_pid(struct kevent* cur_event) {
 		close(cl->_cgi._read_from_cgi_fd);
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
+	spx_log_("pid ", pid);
+	spx_log_("status ", status);
 	(void)pid;
 }
 
