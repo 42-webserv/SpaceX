@@ -52,7 +52,7 @@ kqueue_module(port_list_t& port_info) {
 			cur_event = &event_list[i];
 			if (cur_event->flags & (EV_ERROR | EV_EOF)) {
 				if (cur_event->flags & EV_ERROR) {
-					kevent_error_handler(port_info, cur_event);
+					kevent_error_handler(port_info, cur_event, for_close);
 				} else {
 					kevent_eof_handler(cur_event, for_close);
 				}
@@ -117,7 +117,9 @@ create_client_event(uintptr_t serv_sd, event_list_t& change_list, port_info_t& p
 			error_str("setsockopt error");
 		}
 
-		client_t* new_cl   = new client_t(&change_list);
+		client_t* new_cl = new client_t(&change_list);
+
+		spx_log_(sizeof(client_t));
 		new_cl->_client_fd = client_fd;
 		new_cl->_rdbuf	   = rdbuf;
 		new_cl->_port_info = &port_info;
@@ -187,19 +189,17 @@ proc_event_wait_pid(struct kevent* cur_event) {
 	int		  pid;
 
 	pid = waitpid(cl->_cgi._pid, &status, 0);
-	if (WEXITSTATUS(status) == EXIT_FAILURE) {
+	if (cur_event->data) {
 		// cgi_process error exit case
-		// close(cl->_cgi._write_to_cgi_fd);
-		// close(cl->_cgi._read_from_cgi_fd);
 		cl->error_response_keep_alive_(HTTP_STATUS_INTERNAL_SERVER_ERROR);
 	}
 	spx_log_("pid ", pid);
-	spx_log_("status ", status);
+	spx_log_("status ", cur_event->data);
 	(void)pid;
 }
 
 void
-kevent_error_handler(port_list_t& port_info, struct kevent* cur_event) {
+kevent_error_handler(port_list_t& port_info, struct kevent* cur_event, close_vec_t& for_close) {
 	if (cur_event->ident < port_info.size()) {
 		error_str("kevent() error!");
 		for (int i = 0; static_cast<size_t>(i) < port_info.size(); i++) {
@@ -208,6 +208,16 @@ kevent_error_handler(port_list_t& port_info, struct kevent* cur_event) {
 			}
 		}
 		exit(spx_error);
+	} else {
+		client_t* cl = static_cast<client_t*>(cur_event->udata);
+		if (cur_event->filter == EVFILT_READ) {
+			if (cur_event->ident == cl->_client_fd) {
+				cl->disconnect_client_();
+				close(cur_event->ident);
+				for_close.push_back(cl);
+				return;
+			}
+		}
 	}
 }
 
@@ -228,7 +238,7 @@ kevent_eof_handler(struct kevent* cur_event, close_vec_t& for_close) {
 		int n_read = cl->_rdbuf->read_(cur_event->ident, cl->_cgi._from_cgi);
 		if (cur_event->data && n_read <= 0) {
 			close(cur_event->ident);
-			proc_event_wait_pid(cur_event);
+			// proc_event_wait_pid(cur_event);
 			return;
 		}
 		if (n_read == cur_event->data) {
@@ -238,10 +248,12 @@ kevent_eof_handler(struct kevent* cur_event, close_vec_t& for_close) {
 			cl->_cgi.cgi_controller_(*cl);
 
 			close(cur_event->ident);
-			proc_event_wait_pid(cur_event);
+			// proc_event_wait_pid(cur_event);
 		}
-	} else {
+	} else if (cur_event->filter == EVFILT_WRITE) {
 		close(cur_event->ident);
+	} else {
+		proc_event_wait_pid(cur_event);
 	}
 }
 

@@ -264,6 +264,7 @@ CgiField::cgi_handler_(ReqField& req, event_list_t& change_list, struct kevent* 
 	_read_from_cgi_fd = read_from_cgi[0];
 	fcntl(read_from_cgi[0], F_SETFL, O_NONBLOCK);
 	add_change_list(change_list, read_from_cgi[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, cur_event->udata);
+	add_change_list(change_list, _pid, EVFILT_PROC, EV_ADD, NOTE_EXIT | NOTE_EXITSTATUS, 0, cur_event->udata);
 
 	return true;
 }
