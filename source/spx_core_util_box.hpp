@@ -145,7 +145,7 @@ method_map_str_color_(int const status) {
 	switch (status) {
 #define XX(num, name, color) \
 	case REQ_##name:         \
-		return #color #name COLOR_RESET;
+		return "\033[1;37m" #color #name COLOR_RESET;
 		METHOD__MAP_COLOR_(XX)
 #undef XX
 	default:
