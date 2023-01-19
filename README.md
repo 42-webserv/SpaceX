@@ -1,19 +1,46 @@
 # SpaceX
 
 
-[컨벤션](https://github.com/42-webserv/SpaceX/wiki/CodeConvention)
 
-[설계도](https://github.com/42-webserv/SpaceX/wiki/Blueprint)
+## About
+This project is..
 
-[RFC 문서](https://github.com/42-webserv/SpaceX/wiki/RFC)
+Webserver benchmarking nginx's config and some features.
+> Nginx 의 기능일부와 config를 벤치마킹하여 만든 "웹 서버" 입니다.
 
-[레퍼런스](https://github.com/42-webserv/SpaceX/wiki/References)
+## What we did was... 
+
+* Socket & socket settings
+* IO/Multiplexing with Kqueue
+  + kqueue kevent management
+* read & write buffer management
+* CGI processing
+  + CGI environment setting
+  + pipe management
+* Parsing
+  + configuration file syntax checking
+  + HTTP 1.1 Request Message
+    + URI, HTTP METHOD, header
+    + parsial message process
+* Cookie & Session Management
+
+> 소켓, Kqueue, 읽기/쓰기 버퍼 관리, CGI 처리, HTTP 요청/응답처리, 쿠키/세션 처리 
+
 
 ## Period
 
 2022-11-22 ~ 2023-01-18
 
 ![image](https://user-images.githubusercontent.com/13278955/213350628-33502676-d02c-4c62-bd4c-f3b25a0574f2.png)
+
+## Project Things
+[Project Convention](https://github.com/42-webserv/SpaceX/wiki/CodeConvention)
+
+[Blueprint](https://github.com/42-webserv/SpaceX/wiki/Blueprint)
+
+[RFC Documents](https://github.com/42-webserv/SpaceX/wiki/RFC)
+
+[References](https://github.com/42-webserv/SpaceX/wiki/References)
 
 ---
 
