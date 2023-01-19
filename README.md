@@ -9,6 +9,14 @@
 
 [레퍼런스](https://github.com/42-webserv/SpaceX/wiki/References)
 
+## Period
+
+2022-11-22 ~ 2023-01-18
+
+![image](https://user-images.githubusercontent.com/13278955/213350628-33502676-d02c-4c62-bd4c-f3b25a0574f2.png)
+
+---
+
 
 
 
