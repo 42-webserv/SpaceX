@@ -1,5 +1,5 @@
 # SpaceX
-
+![parrot_dance](https://user-images.githubusercontent.com/13278955/213354563-523fdc49-b0a8-4af0-b16c-e12fae7d9653.gif)
 
 
 ## About
@@ -30,10 +30,10 @@ I/O Multiplexing with kqueue
 > 소켓, Kqueue, 읽기/쓰기 버퍼 관리, CGI 처리, HTTP 요청/응답처리, 쿠키/세션 처리 
 
 
-## Period
+## Period 
 
 2022-11-22 ~ 2023-01-18
-
+### Evaluation Score
 ![image](https://user-images.githubusercontent.com/13278955/213350628-33502676-d02c-4c62-bd4c-f3b25a0574f2.png)
 
 ## Project Things
