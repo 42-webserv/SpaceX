@@ -24,7 +24,7 @@ I/O Multiplexing with kqueue
   + configuration file syntax checking
   + HTTP 1.1 Request Message
     + URI, HTTP METHOD, header
-    + parsial message process
+    + partial message process
 * Cookie & Session Management
 
 > 소켓, Kqueue, 읽기/쓰기 버퍼 관리, CGI 처리, HTTP 요청/응답처리, 쿠키/세션 처리 
