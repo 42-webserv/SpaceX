@@ -1,3 +1,12 @@
+# webserv
+### <i>This is when you finally understand why a URL starts with HTTP</i>
+* This project is about writing your own HTTP server.
+* You will be able to test it with an actual browser.
+* HTTP is one of the most used protocols on the internet. 
+* Knowing its arcane will be useful, even if you won’t be working on a website.
+
+<br>
+
 # SpaceX
 ![parrot_dance](https://user-images.githubusercontent.com/13278955/213354563-523fdc49-b0a8-4af0-b16c-e12fae7d9653.gif)
 
